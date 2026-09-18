@@ -6,19 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
   Dimensions,
   Animated,
   Switch,
   Modal,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 340);
 
 const QUICK_ACTIONS = [
@@ -59,20 +57,19 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('home');
 
-  // Sidebar & Modal state
+  // Sidebar & Modal animation state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
-  // Editable user account state
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  // User account state
   const [userProfile, setUserProfile] = useState({
     name: 'Juan Dela Cruz',
     email: 'juan.delacruz@suyolink.ph',
     phone: '+63 917 123 4567',
     address: 'Makati City, Metro Manila',
-    role: 'Verified Requestor & Doer',
   });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...userProfile });
 
   // Sidebar interactive toggles & sections
@@ -81,8 +78,6 @@ export default function DashboardScreen() {
 
   // Open sidebar
   const openSidebar = () => {
-    setTempProfile({ ...userProfile });
-    setIsEditingProfile(false);
     setIsSidebarOpen(true);
     Animated.parallel([
       Animated.timing(sidebarAnim, {
@@ -113,18 +108,15 @@ export default function DashboardScreen() {
       }),
     ]).start(() => {
       setIsSidebarOpen(false);
-      setIsEditingProfile(false);
       setExpandedSection(null);
     });
   };
 
   // Save edited profile
   const handleSaveProfile = () => {
-    if (!tempProfile.name.trim()) {
-      return;
-    }
+    if (!tempProfile.name.trim()) return;
     setUserProfile({ ...tempProfile });
-    setIsEditingProfile(false);
+    setIsEditModalOpen(false);
   };
 
   const toggleSection = (section) => {
@@ -137,8 +129,9 @@ export default function DashboardScreen() {
 
       {/* Hunter Green Header Section */}
       <View style={styles.headerHero}>
-        {/* 1. Top Bar: Sidebar Icon (Left) and Notification Icon (Right). Logout icon removed. */}
+        {/* 1. TOP BAR: Sidebar Hamburger Icon (Left), Notification + Profile Icon (Right) */}
         <View style={styles.topBarRow}>
+          {/* Left: Sidebar Icon */}
           <TouchableOpacity
             onPress={openSidebar}
             style={styles.headerIconButton}
@@ -148,36 +141,37 @@ export default function DashboardScreen() {
             <Ionicons name="menu-outline" size={26} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.headerIconButton}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
-            <View style={styles.unreadBadgeDot} />
-          </TouchableOpacity>
+          {/* Right: Notification Icon and Profile Avatar Icon placed beside each other */}
+          <View style={styles.headerRightActions}>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
+              <View style={styles.unreadBadgeDot} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={openSidebar}
+              style={styles.topProfileAvatarButton}
+              activeOpacity={0.8}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="person" size={20} color="#163523" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* 2. Profile Icon & Welcome Greeting: Placed neatly below the sidebar icon */}
-        <TouchableOpacity
-          style={styles.profileSectionBelow}
-          activeOpacity={0.8}
-          onPress={openSidebar}
-        >
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={22} color="#163523" />
-          </View>
-          <View style={styles.profileTextWrapper}>
-            <Text style={styles.greetingSub}>Welcome back,</Text>
-            <Text style={styles.userNameText}>{userProfile.name}</Text>
-          </View>
-          <View style={styles.profileEditHintPill}>
-            <Ionicons name="create-outline" size={13} color="#D7EBE0" />
-            <Text style={styles.profileEditHintText}>Account</Text>
-          </View>
-        </TouchableOpacity>
+        {/* 2. MODERN WELCOME GREETING: Clean, unboxed typography directly on Hunter Green */}
+        <View style={styles.welcomeGreetingContainer}>
+          <Text style={styles.welcomeSubText}>Welcome back,</Text>
+          <Text style={styles.welcomeNameText}>
+            {userProfile.name} <Text style={styles.welcomeWavingHand}>👋</Text>
+          </Text>
+        </View>
 
-        {/* 3. Search Bar: Positioned above the live tracking card */}
+        {/* 3. SEARCH BAR: Elegantly placed below greeting, above live tracking */}
         <View style={styles.searchBarContainer}>
           <Ionicons name="search-outline" size={20} color="#7A9384" style={styles.searchIcon} />
           <TextInput
@@ -187,10 +181,10 @@ export default function DashboardScreen() {
           />
         </View>
 
-        {/* Generous separation space between Search Bar and Live Tracking */}
+        {/* Generous separation space separating Search Bar and Live Tracking */}
         <View style={styles.searchTrackingSpacer} />
 
-        {/* 4. Live Parcel Status Banner */}
+        {/* 4. LIVE TRACKING CARD */}
         <View style={styles.activeParcelCard}>
           <View style={styles.parcelCardHeader}>
             <View style={styles.liveIndicator}>
@@ -203,7 +197,7 @@ export default function DashboardScreen() {
           <Text style={styles.parcelStatusHeadline}>Courier is 5 mins away</Text>
           <Text style={styles.parcelAddressSub}>To: Unit 402, High Street Residences</Text>
 
-          {/* Progress Bar inside Card */}
+          {/* Progress Bar */}
           <View style={styles.cardProgressBarTrack}>
             <View style={styles.cardProgressBarFill} />
           </View>
@@ -325,7 +319,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ========================================================== */}
-      {/* SIDEBAR DRAWER OVERLAY & MODAL                             */}
+      {/* SIDEBAR DRAWER OVERLAY & PANEL                             */}
       {/* ========================================================== */}
       {isSidebarOpen && (
         <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
@@ -360,7 +354,7 @@ export default function DashboardScreen() {
                   <View style={styles.sidebarLogoCircle}>
                     <Ionicons name="paper-plane" size={16} color="#163523" />
                   </View>
-                  <Text style={styles.sidebarBrandTitle}>SuyoLink Menu</Text>
+                  <Text style={styles.sidebarBrandTitle}>SuyoLink</Text>
                 </View>
                 <TouchableOpacity
                   onPress={closeSidebar}
@@ -377,114 +371,40 @@ export default function DashboardScreen() {
                 contentContainerStyle={styles.sidebarScrollContent}
                 showsVerticalScrollIndicator={false}
               >
-                {/* 1. EDITABLE PROFILE / ACCOUNT CARD */}
-                <View style={styles.accountCard}>
-                  <View style={styles.accountHeaderRow}>
-                    <View style={styles.accountAvatarWrapper}>
-                      <Ionicons name="person" size={26} color="#FFFFFF" />
-                      <View style={styles.verifiedDot}>
-                        <Ionicons name="checkmark-sharp" size={10} color="#FFFFFF" />
-                      </View>
+                {/* 1. ACCOUNT IN SIDEBAR: 1 single line with circle verified profile, name, and small clickable edit icon */}
+                <View style={styles.sidebarAccountSingleLine}>
+                  {/* Circle Verified Profile Avatar */}
+                  <View style={styles.verifiedAvatarWrapper}>
+                    <View style={styles.verifiedAvatarCircle}>
+                      <Ionicons name="person" size={20} color="#FFFFFF" />
                     </View>
-                    <View style={styles.accountHeaderMeta}>
-                      <Text style={styles.accountName}>{userProfile.name}</Text>
-                      <Text style={styles.accountRoleBadge}>{userProfile.role}</Text>
+                    <View style={styles.verifiedBadgeDot}>
+                      <Ionicons name="checkmark-sharp" size={9} color="#FFFFFF" />
                     </View>
                   </View>
 
-                  {!isEditingProfile ? (
-                    /* Read-Only Account View */
-                    <View style={styles.accountDetailsBlock}>
-                      <View style={styles.accountDetailRow}>
-                        <Ionicons name="mail-outline" size={16} color="#52695C" />
-                        <Text style={styles.accountDetailText}>{userProfile.email}</Text>
-                      </View>
-                      <View style={styles.accountDetailRow}>
-                        <Ionicons name="call-outline" size={16} color="#52695C" />
-                        <Text style={styles.accountDetailText}>{userProfile.phone}</Text>
-                      </View>
-                      <View style={styles.accountDetailRow}>
-                        <Ionicons name="location-outline" size={16} color="#52695C" />
-                        <Text style={styles.accountDetailText}>{userProfile.address}</Text>
-                      </View>
+                  {/* User Name in the same line */}
+                  <Text style={styles.sidebarAccountNameText} numberOfLines={1}>
+                    {userProfile.name}
+                  </Text>
 
-                      <TouchableOpacity
-                        style={styles.editAccountButton}
-                        activeOpacity={0.8}
-                        onPress={() => {
-                          setTempProfile({ ...userProfile });
-                          setIsEditingProfile(true);
-                        }}
-                      >
-                        <Ionicons name="pencil" size={15} color="#1E4D2B" />
-                        <Text style={styles.editAccountButtonText}>Edit Profile</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    /* Editable Form View */
-                    <View style={styles.editFormBlock}>
-                      <Text style={styles.editInputLabel}>Full Name</Text>
-                      <TextInput
-                        style={styles.editInput}
-                        value={tempProfile.name}
-                        onChangeText={(text) => setTempProfile({ ...tempProfile, name: text })}
-                        placeholder="Full Name"
-                        placeholderTextColor="#9EB3A7"
-                      />
-
-                      <Text style={styles.editInputLabel}>Email Address</Text>
-                      <TextInput
-                        style={styles.editInput}
-                        value={tempProfile.email}
-                        onChangeText={(text) => setTempProfile({ ...tempProfile, email: text })}
-                        placeholder="Email"
-                        keyboardType="email-address"
-                        placeholderTextColor="#9EB3A7"
-                      />
-
-                      <Text style={styles.editInputLabel}>Contact Number</Text>
-                      <TextInput
-                        style={styles.editInput}
-                        value={tempProfile.phone}
-                        onChangeText={(text) => setTempProfile({ ...tempProfile, phone: text })}
-                        placeholder="Contact Number"
-                        keyboardType="phone-pad"
-                        placeholderTextColor="#9EB3A7"
-                      />
-
-                      <Text style={styles.editInputLabel}>Default Address</Text>
-                      <TextInput
-                        style={styles.editInput}
-                        value={tempProfile.address}
-                        onChangeText={(text) => setTempProfile({ ...tempProfile, address: text })}
-                        placeholder="Address"
-                        placeholderTextColor="#9EB3A7"
-                      />
-
-                      <View style={styles.editFormButtonsRow}>
-                        <TouchableOpacity
-                          style={styles.cancelEditButton}
-                          activeOpacity={0.7}
-                          onPress={() => setIsEditingProfile(false)}
-                        >
-                          <Text style={styles.cancelEditButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.saveEditButton}
-                          activeOpacity={0.8}
-                          onPress={handleSaveProfile}
-                        >
-                          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                          <Text style={styles.saveEditButtonText}>Save</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
+                  {/* Small clickable edit icon right beside the name */}
+                  <TouchableOpacity
+                    style={styles.smallEditIconButton}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    onPress={() => {
+                      setTempProfile({ ...userProfile });
+                      setIsEditModalOpen(true);
+                    }}
+                  >
+                    <Ionicons name="pencil-sharp" size={13} color="#1E4D2B" />
+                  </TouchableOpacity>
                 </View>
 
                 {/* Section Separator */}
-                <Text style={styles.sidebarSectionTitle}>Preferences & Settings</Text>
+                <View style={styles.sidebarDivider} />
+                <Text style={styles.sidebarSectionTitle}>Preferences</Text>
 
                 {/* 2. PUSH NOTIFICATIONS TOGGLE */}
                 <View style={styles.sidebarMenuItem}>
@@ -556,7 +476,7 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.menuItemTextCol}>
                       <Text style={styles.menuItemTitle}>About SuyoLink</Text>
-                      <Text style={styles.menuItemSub}>v1.0.0 • Community Errands</Text>
+                      <Text style={styles.menuItemSub}>v1.0.0 • Hyperlocal Errands</Text>
                     </View>
                   </View>
                   <Ionicons
@@ -569,11 +489,11 @@ export default function DashboardScreen() {
                 {expandedSection === 'about' && (
                   <View style={styles.expandedSubCard}>
                     <Text style={styles.aboutParagraph}>
-                      SuyoLink is your trusted neighborhood peer-to-peer delivery and errand platform. Connect with reliable local doers to handle favors, document errands, and express parcel deliveries.
+                      SuyoLink connects you with reliable local doers to handle favors, document errands, and express deliveries securely in your community.
                     </Text>
                     <View style={styles.aboutMetaRow}>
                       <Text style={styles.aboutMetaLabel}>App Version:</Text>
-                      <Text style={styles.aboutMetaValue}>1.0.0 (Production Build)</Text>
+                      <Text style={styles.aboutMetaValue}>1.0.0 (Build 2026.1)</Text>
                     </View>
                     <View style={styles.aboutMetaRow}>
                       <Text style={styles.aboutMetaLabel}>Terms & Privacy:</Text>
@@ -601,6 +521,88 @@ export default function DashboardScreen() {
           </Animated.View>
         </View>
       )}
+
+      {/* ========================================================== */}
+      {/* EDIT PROFILE MODAL (Triggered by small edit icon)           */}
+      {/* ========================================================== */}
+      <Modal
+        visible={isEditModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEditModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContentCard}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalTitle}>Edit Account Profile</Text>
+              <TouchableOpacity
+                onPress={() => setIsEditModalOpen(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={20} color="#163523" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalInputLabel}>Full Name</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={tempProfile.name}
+              onChangeText={(text) => setTempProfile({ ...tempProfile, name: text })}
+              placeholder="Full Name"
+              placeholderTextColor="#8FA497"
+            />
+
+            <Text style={styles.modalInputLabel}>Email Address</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={tempProfile.email}
+              onChangeText={(text) => setTempProfile({ ...tempProfile, email: text })}
+              placeholder="Email"
+              keyboardType="email-address"
+              placeholderTextColor="#8FA497"
+            />
+
+            <Text style={styles.modalInputLabel}>Contact Number</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={tempProfile.phone}
+              onChangeText={(text) => setTempProfile({ ...tempProfile, phone: text })}
+              placeholder="Phone"
+              keyboardType="phone-pad"
+              placeholderTextColor="#8FA497"
+            />
+
+            <Text style={styles.modalInputLabel}>Default Address</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={tempProfile.address}
+              onChangeText={(text) => setTempProfile({ ...tempProfile, address: text })}
+              placeholder="Address"
+              placeholderTextColor="#8FA497"
+            />
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setIsEditModalOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSaveButton}
+                onPress={handleSaveProfile}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                <Text style={styles.modalSaveButtonText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -616,6 +618,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 22,
   },
+
+  /* Top Bar */
   topBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -631,6 +635,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  topProfileAvatarButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#D7EBE0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#4ADE80',
+  },
   unreadBadgeDot: {
     position: 'absolute',
     top: 10,
@@ -641,65 +660,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#E05A47',
   },
 
-  /* Profile icon & greeting placed below sidebar icon */
-  profileSectionBelow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+  /* Modern Welcome Greeting */
+  welcomeGreetingContainer: {
+    marginBottom: 16,
   },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#D7EBE0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  profileTextWrapper: {
-    flex: 1,
-  },
-  greetingSub: {
-    fontSize: 12,
-    color: '#A9C4B5',
+  welcomeSubText: {
+    fontSize: 13,
+    color: '#B2D0C0',
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: 3,
+    letterSpacing: 0.2,
   },
-  userNameText: {
-    fontSize: 16.5,
-    fontWeight: '700',
+  welcomeNameText: {
+    fontSize: 23,
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 0.1,
+    letterSpacing: -0.3,
   },
-  profileEditHintPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    gap: 4,
-  },
-  profileEditHintText: {
-    fontSize: 11.5,
-    color: '#D7EBE0',
-    fontWeight: '600',
+  welcomeWavingHand: {
+    fontSize: 21,
   },
 
-  /* Search Bar above Live Tracking */
+  /* Search Bar */
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
+    borderWidth: 1,
     borderColor: '#D8E5DF',
-    borderRadius: 14,
+    borderRadius: 15,
     paddingHorizontal: 14,
     height: 48,
     shadowColor: '#000000',
@@ -717,7 +706,7 @@ const styles = StyleSheet.create({
     color: '#163523',
   },
   searchTrackingSpacer: {
-    height: 18, // Generous spacing separating searchbar and live tracking
+    height: 18, // Ample space separating Searchbar and Live Tracking
   },
 
   /* Live Tracking Card */
@@ -789,7 +778,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
 
-  /* Scrollable Content Area */
+  /* Content Scroll Area */
   contentScroll: {
     flex: 1,
     backgroundColor: '#F8FAF9',
@@ -933,9 +922,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* ========================================================== */
-  /* SIDEBAR DRAWER STYLES                                      */
-  /* ========================================================== */
+  /* Sidebar Drawer */
   sidebarBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(10, 26, 17, 0.65)',
@@ -981,7 +968,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sidebarBrandTitle: {
-    fontSize: 16,
+    fontSize: 16.5,
     fontWeight: '800',
     color: '#163523',
     letterSpacing: -0.2,
@@ -1002,36 +989,30 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
   },
 
-  /* User Account Card */
-  accountCard: {
-    backgroundColor: '#163523',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#163523',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  accountHeaderRow: {
+  /* 1-Line Account Section in Sidebar */
+  sidebarAccountSingleLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 14,
+    backgroundColor: '#F4F8F5',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E2ECE6',
   },
-  accountAvatarWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  verifiedAvatarWrapper: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  verifiedAvatarCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#1E4D2B',
-    borderWidth: 2,
-    borderColor: '#4ADE80',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-  verifiedDot: {
+  verifiedBadgeDot: {
     position: 'absolute',
     bottom: -2,
     right: -2,
@@ -1042,110 +1023,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#163523',
+    borderColor: '#FFFFFF',
   },
-  accountHeaderMeta: {
+  sidebarAccountNameText: {
     flex: 1,
-  },
-  accountName: {
-    fontSize: 16.5,
+    fontSize: 15.5,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 3,
+    color: '#163523',
+    marginRight: 8,
   },
-  accountRoleBadge: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#A9C4B5',
-  },
-  accountDetailsBlock: {
-    gap: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  accountDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  accountDetailText: {
-    fontSize: 12.5,
-    color: '#D4E8DC',
-  },
-  editAccountButton: {
-    flexDirection: 'row',
+  smallEditIconButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E1EFE7',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 8,
-    marginTop: 10,
-    gap: 6,
-  },
-  editAccountButtonText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#1E4D2B',
   },
 
-  /* Edit Form Block */
-  editFormBlock: {
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+  sidebarDivider: {
+    height: 1,
+    backgroundColor: '#EEF4F0',
+    marginVertical: 18,
   },
-  editInputLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#A9C4B5',
-    marginBottom: 4,
-    marginTop: 8,
-  },
-  editInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    fontSize: 13,
-    color: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  editFormButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
-  },
-  cancelEditButton: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 10,
-    paddingVertical: 9,
-    alignItems: 'center',
-  },
-  cancelEditButtonText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#E0EDE6',
-  },
-  saveEditButton: {
-    flex: 1,
-    backgroundColor: '#4ADE80',
-    borderRadius: 10,
-    paddingVertical: 9,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  saveEditButtonText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#0D2E18',
-  },
-
-  /* Preferences Section */
   sidebarSectionTitle: {
     fontSize: 12,
     fontWeight: '700',
@@ -1193,8 +1093,6 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#718C7D',
   },
-
-  /* Expandable Sub-Cards */
   expandedSubCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -1242,11 +1140,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
-
-  /* Logout button */
   logoutWrapper: {
     marginTop: 18,
-    paddingTop: 10,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -1263,5 +1158,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#D32F2F',
+  },
+
+  /* Edit Profile Modal */
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContentCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  modalCloseButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F0F5F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalInputLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#52695C',
+    marginBottom: 5,
+    marginTop: 8,
+  },
+  modalInput: {
+    backgroundColor: '#F6F9F7',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13.5,
+    color: '#163523',
+    borderWidth: 1,
+    borderColor: '#D8E6DF',
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: '#F0F5F2',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#52695C',
+  },
+  modalSaveButton: {
+    flex: 1,
+    backgroundColor: '#1E4D2B',
+    borderRadius: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  modalSaveButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
