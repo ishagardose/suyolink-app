@@ -166,9 +166,7 @@ export default function DashboardScreen() {
         {/* 2. MODERN WELCOME GREETING: Clean, unboxed typography directly on Hunter Green */}
         <View style={styles.welcomeGreetingContainer}>
           <Text style={styles.welcomeSubText}>Welcome back,</Text>
-          <Text style={styles.welcomeNameText}>
-            {userProfile.name} <Text style={styles.welcomeWavingHand}>👋</Text>
-          </Text>
+          <Text style={styles.welcomeNameText}>{userProfile.name}</Text>
         </View>
 
         {/* 3. SEARCH BAR: Elegantly placed below greeting, above live tracking */}
@@ -676,9 +674,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
-  },
-  welcomeWavingHand: {
-    fontSize: 21,
   },
 
   /* Search Bar */
