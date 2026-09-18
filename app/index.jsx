@@ -22,19 +22,21 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SLIDES = [
   {
     id: '1',
-    title: 'Track Your Parcel',
-    description: 'See a real-time View of your package on our Map and the day of delivery',
+    title: 'Need a Favor? Get It Done.',
+    description:
+      'Post your suyo request and connect with someone who can help you get it done.',
   },
   {
     id: '2',
-    title: 'Fast & Secure Dispatch',
-    description: 'Direct courier navigation ensures prompt arrival and verified delivery status',
+    title: 'Track Your Suyo',
+    description:
+      'See the progress of your Suyo and know when your request is accepted, in progress, and completed.',
   },
 ];
 
 export default function App() {
   const router = useRouter();
-  const [activeIndex, setActiveIndex] = useState(1); // Default to 2nd pill active as in user reference
+  const [activeIndex, setActiveIndex] = useState(0); // Show 1st slide ('Need a Favor? Get It Done.') first after splash
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
   const [authModal, setAuthModal] = useState(null); // 'login' | 'signup' | null
 
@@ -105,6 +107,23 @@ export default function App() {
     }).start(() => {
       setIsOnboardingActive(false);
     });
+  };
+
+  const touchStartX = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.nativeEvent.pageX;
+  };
+
+  const handleTouchEnd = (e) => {
+    const deltaX = e.nativeEvent.pageX - touchStartX.current;
+    if (deltaX < -35) {
+      // Swiped left -> next slide
+      setActiveIndex((prev) => Math.min(prev + 1, SLIDES.length - 1));
+    } else if (deltaX > 35) {
+      // Swiped right -> prev slide
+      setActiveIndex((prev) => Math.max(prev - 1, 0));
+    }
   };
 
   // Open Login or Sign Up sheet: slide down onboarding, show auth modal
@@ -217,7 +236,11 @@ export default function App() {
           </View>
 
           {/* Curved White Sheet with Parcel Tracking Sticker */}
-          <View style={styles.whiteSheet}>
+          <View
+            style={styles.whiteSheet}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {/* Sticker Area */}
             <View style={styles.stickerWrapper}>
               <Image
