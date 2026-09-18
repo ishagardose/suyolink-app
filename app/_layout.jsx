@@ -8,9 +8,33 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#F4F7FC' },
+          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: '#FFFFFF' },
         }}
-      />
+      >
+        <Stack.Screen
+          name="index"
+          options={{ contentStyle: { backgroundColor: '#163523' } }}
+        />
+        <Stack.Screen
+          name="signup"
+          options={{ animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="login"
+          options={{ animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen name="otp-verification" />
+        <Stack.Screen name="id-verification" />
+        <Stack.Screen name="role-selection" />
+        <Stack.Screen name="welcome" />
+        <Stack.Screen
+          name="dashboard"
+          options={{
+            contentStyle: { backgroundColor: '#163523' },
+          }}
+        />
+      </Stack>
     </>
   );
 }
