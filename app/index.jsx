@@ -45,6 +45,7 @@ export default function App() {
   const initialFadeAnim = useRef(new Animated.Value(0)).current;
   const initialScaleAnim = useRef(new Animated.Value(0.92)).current;
   const bounceButtonAnim = useRef(new Animated.Value(0)).current;
+  const slideFadeAnim = useRef(new Animated.Value(1)).current;
 
   // Animate initial splash screen appearance on mount
   useEffect(() => {
@@ -109,6 +110,60 @@ export default function App() {
     });
   };
 
+  const switchSlide = (targetIndex) => {
+    Animated.sequence([
+      Animated.timing(slideFadeAnim, {
+        toValue: 0.15,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideFadeAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    setActiveIndex(targetIndex);
+  };
+
+  const goToNextSlide = () => {
+    setActiveIndex((prev) => {
+      const next = (prev + 1) % SLIDES.length;
+      Animated.sequence([
+        Animated.timing(slideFadeAnim, {
+          toValue: 0.15,
+          duration: 90,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideFadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return next;
+    });
+  };
+
+  const goToPrevSlide = () => {
+    setActiveIndex((prev) => {
+      const next = (prev - 1 + SLIDES.length) % SLIDES.length;
+      Animated.sequence([
+        Animated.timing(slideFadeAnim, {
+          toValue: 0.15,
+          duration: 90,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideFadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return next;
+    });
+  };
+
   const touchStartX = useRef(0);
 
   const handleTouchStart = (e) => {
@@ -119,10 +174,10 @@ export default function App() {
     const deltaX = e.nativeEvent.pageX - touchStartX.current;
     if (deltaX < -35) {
       // Swiped left -> next slide
-      setActiveIndex((prev) => Math.min(prev + 1, SLIDES.length - 1));
+      goToNextSlide();
     } else if (deltaX > 35) {
       // Swiped right -> prev slide
-      setActiveIndex((prev) => Math.max(prev - 1, 0));
+      goToPrevSlide();
     }
   };
 
@@ -241,21 +296,35 @@ export default function App() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Sticker Area */}
-            <View style={styles.stickerWrapper}>
-              <Image
-                source={require('../assets/hunter_green_tracking.jpg')}
-                style={styles.stickerImage}
-                resizeMode="contain"
-              />
-            </View>
+            {/* Sticker / Logo Area (Clickable to advance to next slide) */}
+            <TouchableOpacity
+              activeOpacity={0.92}
+              onPress={goToNextSlide}
+              style={styles.stickerWrapper}
+            >
+              <Animated.View style={[styles.stickerAnimatedWrapper, { opacity: slideFadeAnim }]}>
+                <Image
+                  source={require('../assets/hunter_green_tracking.jpg')}
+                  style={styles.stickerImage}
+                  resizeMode="contain"
+                />
+              </Animated.View>
+            </TouchableOpacity>
 
-            {/* Content & Typography */}
+            {/* Content & Typography (Clickable to advance to next slide) */}
             <View style={styles.sheetContent}>
-              <Text style={styles.titleText}>{SLIDES[activeIndex].title}</Text>
-              <Text style={styles.descriptionText}>
-                {SLIDES[activeIndex].description}
-              </Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={goToNextSlide}
+                style={styles.textClickableWrapper}
+              >
+                <Animated.View style={[styles.textAnimatedWrapper, { opacity: slideFadeAnim }]}>
+                  <Text style={styles.titleText}>{SLIDES[activeIndex].title}</Text>
+                  <Text style={styles.descriptionText}>
+                    {SLIDES[activeIndex].description}
+                  </Text>
+                </Animated.View>
+              </TouchableOpacity>
 
               {/* Indicator Pills */}
               <View style={styles.paginationContainer}>
@@ -264,7 +333,7 @@ export default function App() {
                   return (
                     <TouchableOpacity
                       key={slide.id}
-                      onPress={() => setActiveIndex(index)}
+                      onPress={() => switchSlide(index)}
                       activeOpacity={0.7}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       style={[
@@ -441,6 +510,12 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingHorizontal: 20,
   },
+  stickerAnimatedWrapper: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   stickerImage: {
     width: SCREEN_WIDTH * 0.84,
     height: '100%',
@@ -450,6 +525,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     marginBottom: 8,
+  },
+  textClickableWrapper: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  textAnimatedWrapper: {
+    alignItems: 'center',
+    width: '100%',
   },
   titleText: {
     fontSize: 27,

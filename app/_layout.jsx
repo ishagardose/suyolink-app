@@ -1,7 +1,16 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Prevent splash screen from auto-hiding before component tree is ready
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Hide splash screen seamlessly once root is ready
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
   return (
     <>
       <StatusBar style="light" />
