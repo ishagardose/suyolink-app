@@ -20,10 +20,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 340);
 
 const QUICK_ACTIONS = [
-  { id: '1', title: 'Send Parcel', icon: 'cube-outline' },
+  { id: '1', title: 'Post a Suyo', icon: 'hand-left-outline' },
   { id: '2', title: 'Run Errand', icon: 'bicycle-outline' },
   { id: '3', title: 'Grocery Run', icon: 'basket-outline' },
-  { id: '4', title: 'Documents', icon: 'document-text-outline' },
+  { id: '4', title: 'Queuing & Bills', icon: 'receipt-outline' },
 ];
 
 const RECENT_TASKS = [
@@ -33,7 +33,7 @@ const RECENT_TASKS = [
     status: 'In Transit',
     time: 'Est. 18 mins',
     price: '₱145.00',
-    type: 'Express Courier',
+    type: 'Document Suyo',
   },
   {
     id: 'TRK-9839',
@@ -41,7 +41,7 @@ const RECENT_TASKS = [
     status: 'Delivered',
     time: 'Delivered 10:15 AM',
     price: '₱220.00',
-    type: 'Parcel Box',
+    type: 'Special Favor Suyo',
   },
   {
     id: 'TRK-9811',
@@ -49,7 +49,7 @@ const RECENT_TASKS = [
     status: 'Delivered',
     time: 'Yesterday',
     price: '₱180.00',
-    type: 'Grocery Delivery',
+    type: 'Market Errand',
   },
 ];
 
@@ -178,27 +178,27 @@ export default function DashboardScreen() {
             <Ionicons name="search-outline" size={20} color="#7A9384" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search parcel, courier, or task ID..."
+              placeholder="Search suyo request, errand, or doer..."
               placeholderTextColor="#8FA497"
             />
           </View>
         </View>
 
-        {/* Floating Bridge: The Live Tracking Card sits overlapping the green header and white content */}
+        {/* Floating Bridge: The Live Suyo Status Card sits overlapping the green header and white content */}
         <View style={styles.floatingBridgeContainer}>
           <View style={styles.bridgeGreenBackground} />
 
-          <View style={styles.activeParcelCard}>
-            <View style={styles.parcelCardHeader}>
+          <View style={styles.activeSuyoCard}>
+            <View style={styles.suyoCardHeader}>
               <View style={styles.liveIndicator}>
                 <View style={styles.pulsingGreenDot} />
-                <Text style={styles.liveIndicatorText}>LIVE TRACKING</Text>
+                <Text style={styles.liveIndicatorText}>ACTIVE SUYO</Text>
               </View>
               <Text style={styles.trackingNumberText}>#SYL-88219</Text>
             </View>
 
-            <Text style={styles.parcelStatusHeadline}>Courier is 5 mins away</Text>
-            <Text style={styles.parcelAddressSub}>To: Unit 402, High Street Residences</Text>
+            <Text style={styles.suyoStatusHeadline}>Doer is 5 mins away</Text>
+            <Text style={styles.suyoAddressSub}>Errand: Drop off documents at Unit 402</Text>
 
             {/* Progress Bar */}
             <View style={styles.cardProgressBarTrack}>
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     height: 60, // Extends green background down under top half of card
     backgroundColor: '#163523',
   },
-  activeParcelCard: {
+  activeSuyoCard: {
     backgroundColor: '#1E4D2B',
     borderRadius: 20,
     padding: 17,
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  parcelCardHeader: {
+  suyoCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -773,13 +773,13 @@ const styles = StyleSheet.create({
     color: '#B2D0C0',
     fontWeight: '600',
   },
-  parcelStatusHeadline: {
+  suyoStatusHeadline: {
     fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
   },
-  parcelAddressSub: {
+  suyoAddressSub: {
     fontSize: 13,
     color: '#C6DFD1',
     marginBottom: 14,
