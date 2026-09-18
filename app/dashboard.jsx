@@ -127,153 +127,155 @@ export default function DashboardScreen() {
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeContainer}>
       <StatusBar style="light" />
 
-      {/* Hunter Green Header Section */}
-      <View style={styles.headerHero}>
-        {/* 1. TOP BAR: Sidebar Hamburger Icon (Left), Notification + Profile Icon (Right) */}
-        <View style={styles.topBarRow}>
-          {/* Left: Sidebar Icon */}
+      {/* 1. FIXED TOP BAR: Sidebar Hamburger Icon (Left), Notification + Profile Icon (Right) */}
+      <View style={styles.fixedTopBar}>
+        <TouchableOpacity
+          onPress={openSidebar}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="menu-outline" size={26} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <View style={styles.headerRightActions}>
           <TouchableOpacity
-            onPress={openSidebar}
             style={styles.headerIconButton}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="menu-outline" size={26} color="#FFFFFF" />
+            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
+            <View style={styles.unreadBadgeDot} />
           </TouchableOpacity>
 
-          {/* Right: Notification Icon and Profile Avatar Icon placed beside each other */}
-          <View style={styles.headerRightActions}>
-            <TouchableOpacity
-              style={styles.headerIconButton}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
-              <View style={styles.unreadBadgeDot} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={openSidebar}
-              style={styles.topProfileAvatarButton}
-              activeOpacity={0.8}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="person" size={20} color="#163523" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 2. MODERN WELCOME GREETING: Clean, unboxed typography directly on Hunter Green */}
-        <View style={styles.welcomeGreetingContainer}>
-          <Text style={styles.welcomeSubText}>Welcome back,</Text>
-          <Text style={styles.welcomeNameText}>{userProfile.name}</Text>
-        </View>
-
-        {/* 3. SEARCH BAR: Elegantly placed below greeting, above live tracking */}
-        <View style={styles.searchBarContainer}>
-          <Ionicons name="search-outline" size={20} color="#7A9384" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search parcel, courier, or task ID..."
-            placeholderTextColor="#8FA497"
-          />
-        </View>
-
-        {/* Generous separation space separating Search Bar and Live Tracking */}
-        <View style={styles.searchTrackingSpacer} />
-
-        {/* 4. LIVE TRACKING CARD */}
-        <View style={styles.activeParcelCard}>
-          <View style={styles.parcelCardHeader}>
-            <View style={styles.liveIndicator}>
-              <View style={styles.pulsingGreenDot} />
-              <Text style={styles.liveIndicatorText}>LIVE TRACKING</Text>
-            </View>
-            <Text style={styles.trackingNumberText}>#SYL-88219</Text>
-          </View>
-
-          <Text style={styles.parcelStatusHeadline}>Courier is 5 mins away</Text>
-          <Text style={styles.parcelAddressSub}>To: Unit 402, High Street Residences</Text>
-
-          {/* Progress Bar */}
-          <View style={styles.cardProgressBarTrack}>
-            <View style={styles.cardProgressBarFill} />
-          </View>
+          <TouchableOpacity
+            onPress={openSidebar}
+            style={styles.topProfileAvatarButton}
+            activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="person" size={20} color="#163523" />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Main Content Area */}
+      {/* 2. MAIN SCROLLABLE CONTENT */}
       <ScrollView
         style={styles.contentScroll}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Quick Action Grid */}
-        <Text style={styles.sectionHeading}>Quick Services</Text>
-        <View style={styles.quickActionGrid}>
-          {QUICK_ACTIONS.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.actionCard}
-              activeOpacity={0.75}
-            >
-              <View style={styles.actionIconCircle}>
-                <Ionicons name={item.icon} size={24} color="#1E4D2B" />
+        {/* Hunter Green Hero Section */}
+        <View style={styles.headerHeroSection}>
+          {/* Welcome Greeting */}
+          <View style={styles.welcomeGreetingContainer}>
+            <Text style={styles.welcomeSubText}>Welcome back,</Text>
+            <Text style={styles.welcomeNameText}>{userProfile.name}</Text>
+          </View>
+
+          {/* Search Bar: Placed at the top under the greeting */}
+          <View style={styles.searchBarContainer}>
+            <Ionicons name="search-outline" size={20} color="#7A9384" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search parcel, courier, or task ID..."
+              placeholderTextColor="#8FA497"
+            />
+          </View>
+        </View>
+
+        {/* Floating Bridge: The Live Tracking Card sits overlapping the green header and white content */}
+        <View style={styles.floatingBridgeContainer}>
+          <View style={styles.bridgeGreenBackground} />
+
+          <View style={styles.activeParcelCard}>
+            <View style={styles.parcelCardHeader}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.pulsingGreenDot} />
+                <Text style={styles.liveIndicatorText}>LIVE TRACKING</Text>
               </View>
-              <Text style={styles.actionTitleText}>{item.title}</Text>
+              <Text style={styles.trackingNumberText}>#SYL-88219</Text>
+            </View>
+
+            <Text style={styles.parcelStatusHeadline}>Courier is 5 mins away</Text>
+            <Text style={styles.parcelAddressSub}>To: Unit 402, High Street Residences</Text>
+
+            {/* Progress Bar */}
+            <View style={styles.cardProgressBarTrack}>
+              <View style={styles.cardProgressBarFill} />
+            </View>
+          </View>
+        </View>
+
+        {/* White Content Body */}
+        <View style={styles.whiteContentBody}>
+          {/* Quick Action Grid */}
+          <Text style={styles.sectionHeading}>Quick Services</Text>
+          <View style={styles.quickActionGrid}>
+            {QUICK_ACTIONS.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.actionCard}
+                activeOpacity={0.75}
+              >
+                <View style={styles.actionIconCircle}>
+                  <Ionicons name={item.icon} size={24} color="#1E4D2B" />
+                </View>
+                <Text style={styles.actionTitleText}>{item.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Recent Errands & Tasks */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeading}>Recent Activity</Text>
+            <TouchableOpacity activeOpacity={0.7}>
+              <Text style={styles.seeAllText}>View all</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
 
-        {/* Recent Errands & Tasks */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeading}>Recent Activity</Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.seeAllText}>View all</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.tasksList}>
-          {RECENT_TASKS.map((task) => {
-            const isDelivered = task.status === 'Delivered';
-            return (
-              <View key={task.id} style={styles.taskCard}>
-                <View style={styles.taskIconWrapper}>
-                  <Ionicons
-                    name={isDelivered ? 'checkmark-done-circle' : 'time'}
-                    size={26}
-                    color={isDelivered ? '#1E4D2B' : '#E07A2A'}
-                  />
-                </View>
-                <View style={styles.taskMeta}>
-                  <Text style={styles.taskTitle} numberOfLines={1}>
-                    {task.title}
-                  </Text>
-                  <Text style={styles.taskSub}>
-                    {task.type} • {task.time}
-                  </Text>
-                </View>
-                <View style={styles.taskPriceColumn}>
-                  <Text style={styles.taskPrice}>{task.price}</Text>
-                  <View
-                    style={[
-                      styles.statusPill,
-                      isDelivered ? styles.statusPillDelivered : styles.statusPillTransit,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusPillText,
-                        isDelivered ? styles.statusPillTextDelivered : styles.statusPillTextTransit,
-                      ]}
-                    >
-                      {task.status}
+          <View style={styles.tasksList}>
+            {RECENT_TASKS.map((task) => {
+              const isDelivered = task.status === 'Delivered';
+              return (
+                <View key={task.id} style={styles.taskCard}>
+                  <View style={styles.taskIconWrapper}>
+                    <Ionicons
+                      name={isDelivered ? 'checkmark-done-circle' : 'time'}
+                      size={26}
+                      color={isDelivered ? '#1E4D2B' : '#E07A2A'}
+                    />
+                  </View>
+                  <View style={styles.taskMeta}>
+                    <Text style={styles.taskTitle} numberOfLines={1}>
+                      {task.title}
+                    </Text>
+                    <Text style={styles.taskSub}>
+                      {task.type} • {task.time}
                     </Text>
                   </View>
+                  <View style={styles.taskPriceColumn}>
+                    <Text style={styles.taskPrice}>{task.price}</Text>
+                    <View
+                      style={[
+                        styles.statusPill,
+                        isDelivered ? styles.statusPillDelivered : styles.statusPillTransit,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          isDelivered ? styles.statusPillTextDelivered : styles.statusPillTextTransit,
+                        ]}
+                      >
+                        {task.status}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })}
+          </View>
         </View>
       </ScrollView>
 
@@ -610,19 +612,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#163523',
   },
-  headerHero: {
-    backgroundColor: '#163523',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 22,
-  },
 
-  /* Top Bar */
-  topBarRow: {
+  /* Fixed Top Bar */
+  fixedTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: '#163523',
   },
   headerIconButton: {
     width: 42,
@@ -658,7 +657,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#E05A47',
   },
 
-  /* Modern Welcome Greeting */
+  /* Content Scroll */
+  contentScroll: {
+    flex: 1,
+    backgroundColor: '#F8FAF9',
+  },
+  contentContainer: {
+    paddingBottom: 28,
+  },
+
+  /* Hunter Green Hero inside ScrollView */
+  headerHeroSection: {
+    backgroundColor: '#163523',
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 22,
+  },
   welcomeGreetingContainer: {
     marginBottom: 16,
   },
@@ -670,13 +684,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   welcomeNameText: {
-    fontSize: 23,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
 
-  /* Search Bar */
+  /* Search Bar under greeting */
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -700,22 +714,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#163523',
   },
-  searchTrackingSpacer: {
-    height: 18, // Ample space separating Searchbar and Live Tracking
-  },
 
-  /* Live Tracking Card */
+  /* Floating Bridge: Overlapping the Green Header and White Content */
+  floatingBridgeContainer: {
+    position: 'relative',
+    paddingHorizontal: 20,
+    backgroundColor: '#F8FAF9',
+  },
+  bridgeGreenBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60, // Extends green background down under top half of card
+    backgroundColor: '#163523',
+  },
   activeParcelCard: {
     backgroundColor: '#1E4D2B',
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 20,
+    padding: 17,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 6,
   },
   parcelCardHeader: {
     flexDirection: 'row',
@@ -726,7 +750,7 @@ const styles = StyleSheet.create({
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 8,
@@ -773,15 +797,11 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
 
-  /* Content Scroll Area */
-  contentScroll: {
-    flex: 1,
+  /* White Content Body */
+  whiteContentBody: {
     backgroundColor: '#F8FAF9',
-  },
-  contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingTop: 18,
   },
   sectionHeading: {
     fontSize: 18,
