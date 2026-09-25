@@ -43,6 +43,13 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: '#163523' },
           }}
         />
+        <Stack.Screen
+          name="map"
+          options={{
+            contentStyle: { backgroundColor: '#163523' },
+            animation: 'slide_from_bottom',
+          }}
+        />
       </Stack>
     </>
   );
