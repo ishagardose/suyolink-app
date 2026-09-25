@@ -10,6 +10,7 @@ import {
   Animated,
   Switch,
   Modal,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,34 +23,32 @@ const SIDEBAR_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 340);
 const QUICK_ACTIONS = [
   { id: '1', title: 'Post a Suyo', icon: 'hand-left-outline' },
   { id: '2', title: 'Run Errand', icon: 'bicycle-outline' },
-  { id: '3', title: 'Grocery Run', icon: 'basket-outline' },
-  { id: '4', title: 'Queuing & Bills', icon: 'receipt-outline' },
 ];
 
-const RECENT_TASKS = [
+const AVAILABLE_SUYOS = [
   {
-    id: 'TRK-9842',
-    title: 'Legal Documents to Makati CBD',
-    status: 'In Transit',
-    time: 'Est. 18 mins',
-    price: '₱145.00',
+    id: 'SUYO-4821',
+    title: 'Documents Delivery to Makati CBD',
+    distance: '1.2 km away',
+    reward: '₱145.00',
     type: 'Document Suyo',
+    postedTime: '10 mins ago',
   },
   {
-    id: 'TRK-9839',
-    title: 'Birthday Gift to BGC Taguig',
-    status: 'Delivered',
-    time: 'Delivered 10:15 AM',
-    price: '₱220.00',
-    type: 'Special Favor Suyo',
+    id: 'SUYO-4819',
+    title: 'Special Birthday Gift Drop to BGC',
+    distance: '3.5 km away',
+    reward: '₱220.00',
+    type: 'Special Favor',
+    postedTime: '25 mins ago',
   },
   {
-    id: 'TRK-9811',
-    title: 'Organic Produce from Market',
-    status: 'Delivered',
-    time: 'Yesterday',
-    price: '₱180.00',
+    id: 'SUYO-4811',
+    title: 'Organic Grocery Pickup from Market',
+    distance: '2.0 km away',
+    reward: '₱180.00',
     type: 'Market Errand',
+    postedTime: '1 hour ago',
   },
 ];
 
@@ -71,6 +70,16 @@ export default function DashboardScreen() {
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...userProfile });
+
+  // Active Suyo state (shows live tracking card only if in transit/on process)
+  const [activeSuyo, setActiveSuyo] = useState({
+    id: 'TRK-9842',
+    trackingNumber: '#SYL-88219',
+    status: 'In Transit', // 'In Transit' | 'On Process' | 'Delivered' | null
+    eta: 'Doer is 5 mins away',
+    detail: 'Errand: Drop off documents at Unit 402',
+    progress: '78%',
+  });
 
   // Sidebar interactive toggles & sections
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -123,11 +132,13 @@ export default function DashboardScreen() {
     setExpandedSection((prev) => (prev === section ? null : section));
   };
 
+  const hasActiveSuyo = activeSuyo && (activeSuyo.status === 'In Transit' || activeSuyo.status === 'On Process');
+
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeContainer}>
       <StatusBar style="light" />
 
-      {/* 1. FIXED TOP BAR: Sidebar Hamburger Icon (Left), Notification + Profile Icon (Right) */}
+      {/* 1. FIXED TOP BAR */}
       <View style={styles.fixedTopBar}>
         <TouchableOpacity
           onPress={openSidebar}
@@ -162,18 +173,33 @@ export default function DashboardScreen() {
       {/* 2. MAIN SCROLLABLE CONTENT */}
       <ScrollView
         style={styles.contentScroll}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: hasActiveSuyo ? 140 : 90 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hunter Green Hero Section */}
+        {/* === HERO SECTION WITH MATCHING STICKER BACKGROUND COLOR === */}
         <View style={styles.headerHeroSection}>
-          {/* Welcome Greeting */}
-          <View style={styles.welcomeGreetingContainer}>
-            <Text style={styles.welcomeSubText}>Welcome back,</Text>
-            <Text style={styles.welcomeNameText}>{userProfile.name}</Text>
+          <View style={styles.heroTextBlock}>
+            <View style={styles.locationPill}>
+              <Ionicons name="location-sharp" size={11} color="#4ADE80" />
+              <Text style={styles.locationPillText}>Makati CBD</Text>
+            </View>
+            <Text style={styles.welcomeSubText}>WELCOME BACK</Text>
+            <Text style={styles.welcomeNameText} numberOfLines={1}>{userProfile.name}</Text>
+            <Text style={styles.welcomeTagline}>Need an errand done today?</Text>
           </View>
+          <Image
+            source={require('../assets/scooter_hero_isometric.jpg')}
+            style={styles.heroImageSticker}
+            resizeMode="contain"
+          />
+        </View>
 
-          {/* Search Bar: Placed at the top under the greeting */}
+        {/* White Content Body */}
+        <View style={styles.whiteContentBody}>
+          {/* Search Bar */}
           <View style={styles.searchBarContainer}>
             <Ionicons name="search-outline" size={20} color="#7A9384" style={styles.searchIcon} />
             <TextInput
@@ -182,33 +208,32 @@ export default function DashboardScreen() {
               placeholderTextColor="#8FA497"
             />
           </View>
-        </View>
 
-        {/* Floating Bridge: The Live Suyo Status Card sits overlapping the green header and white content */}
-        <View style={styles.floatingBridgeContainer}>
-          <View style={styles.bridgeGreenBackground} />
+          {/* === STATS OVERVIEW CARDS === */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statCardLabel}>Completed</Text>
+              <Text style={styles.statCardValue}>12</Text>
+            </View>
 
-          <View style={styles.activeSuyoCard}>
-            <View style={styles.suyoCardHeader}>
-              <View style={styles.liveIndicator}>
-                <View style={styles.pulsingGreenDot} />
-                <Text style={styles.liveIndicatorText}>ACTIVE SUYO</Text>
+            <View style={styles.statCard}>
+              <Text style={styles.statCardLabel}>Earned</Text>
+              <Text style={styles.statCardValue}>₱1,240</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.statCard}
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('activity')}
+            >
+              <Text style={styles.statCardLabel}>Active</Text>
+              <View style={styles.statActiveRow}>
+                <View style={styles.activeIndicatorDot} />
+                <Text style={styles.statCardValue}>2</Text>
               </View>
-              <Text style={styles.trackingNumberText}>#SYL-88219</Text>
-            </View>
-
-            <Text style={styles.suyoStatusHeadline}>Doer is 5 mins away</Text>
-            <Text style={styles.suyoAddressSub}>Errand: Drop off documents at Unit 402</Text>
-
-            {/* Progress Bar */}
-            <View style={styles.cardProgressBarTrack}>
-              <View style={styles.cardProgressBarFill} />
-            </View>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* White Content Body */}
-        <View style={styles.whiteContentBody}>
           {/* Quick Action Grid */}
           <Text style={styles.sectionHeading}>Quick Services</Text>
           <View style={styles.quickActionGrid}>
@@ -226,50 +251,33 @@ export default function DashboardScreen() {
             ))}
           </View>
 
-          {/* Recent Errands & Tasks */}
+          {/* Available Suyos */}
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeading}>Recent Activity</Text>
+            <Text style={styles.sectionHeading}>Available suyos</Text>
             <TouchableOpacity activeOpacity={0.7}>
               <Text style={styles.seeAllText}>View all</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.tasksList}>
-            {RECENT_TASKS.map((task) => {
-              const isDelivered = task.status === 'Delivered';
+            {AVAILABLE_SUYOS.map((suyo) => {
               return (
-                <View key={task.id} style={styles.taskCard}>
+                <View key={suyo.id} style={styles.taskCard}>
                   <View style={styles.taskIconWrapper}>
-                    <Ionicons
-                      name={isDelivered ? 'checkmark-done-circle' : 'time'}
-                      size={26}
-                      color={isDelivered ? '#1E4D2B' : '#E07A2A'}
-                    />
+                    <Ionicons name="bicycle-outline" size={24} color="#1E4D2B" />
                   </View>
                   <View style={styles.taskMeta}>
                     <Text style={styles.taskTitle} numberOfLines={1}>
-                      {task.title}
+                      {suyo.title}
                     </Text>
                     <Text style={styles.taskSub}>
-                      {task.type} • {task.time}
+                      {suyo.type} • {suyo.distance}
                     </Text>
                   </View>
                   <View style={styles.taskPriceColumn}>
-                    <Text style={styles.taskPrice}>{task.price}</Text>
-                    <View
-                      style={[
-                        styles.statusPill,
-                        isDelivered ? styles.statusPillDelivered : styles.statusPillTransit,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusPillText,
-                          isDelivered ? styles.statusPillTextDelivered : styles.statusPillTextTransit,
-                        ]}
-                      >
-                        {task.status}
-                      </Text>
+                    <Text style={styles.taskPrice}>{suyo.reward}</Text>
+                    <View style={styles.statusPillTransit}>
+                      <Text style={styles.statusPillTextTransit}>{suyo.postedTime}</Text>
                     </View>
                   </View>
                 </View>
@@ -279,13 +287,49 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
+      {/* COMPACT ACTIVE SUYO BAR */}
+      {hasActiveSuyo && (
+        <View style={styles.floatingFooterActiveBarWrapper} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.floatingFooterActiveBar}
+            activeOpacity={0.92}
+            onPress={() => router.push('/map')}
+          >
+            <View style={styles.footerBarHeader}>
+              <View style={styles.footerBarLiveBadge}>
+                <View style={styles.pulsingGreenDot} />
+                <Text style={styles.footerBarLiveText}>ACTIVE SUYO</Text>
+              </View>
+              <View style={styles.footerBarTrackingRight}>
+                <Ionicons name="map-outline" size={12} color="#276739" style={{ marginRight: 3 }} />
+                <Text style={styles.footerBarTrackingText}>{activeSuyo.trackingNumber}</Text>
+              </View>
+            </View>
+
+            <View style={styles.footerBarBodyRow}>
+              <View style={styles.footerBarTextCol}>
+                <Text style={styles.footerBarHeadline}>{activeSuyo.eta}</Text>
+                <Text style={styles.footerBarSub} numberOfLines={1}>{activeSuyo.detail}</Text>
+              </View>
+              <View style={styles.footerBarChevronCircle}>
+                <Ionicons name="chevron-forward" size={14} color="#1E4D2B" />
+              </View>
+            </View>
+
+            <View style={styles.footerProgressBarTrack}>
+              <View style={[styles.footerProgressBarFill, { width: activeSuyo.progress }]} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomNavContainer}>
         {[
           { id: 'home', label: 'Home', icon: 'home' },
-          { id: 'errands', label: 'Errands', icon: 'bicycle' },
+          { id: 'mysuyos', label: 'Mysuyos', icon: 'bicycle' },
+          { id: 'messages', label: 'Messages', icon: 'chatbubbles' },
           { id: 'activity', label: 'Activity', icon: 'receipt' },
-          { id: 'profile', label: 'Account', icon: 'person' },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -294,9 +338,6 @@ export default function DashboardScreen() {
               style={styles.navItem}
               onPress={() => {
                 setActiveTab(tab.id);
-                if (tab.id === 'profile') {
-                  openSidebar();
-                }
               }}
               activeOpacity={0.7}
             >
@@ -323,7 +364,6 @@ export default function DashboardScreen() {
       {/* ========================================================== */}
       {isSidebarOpen && (
         <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-          {/* Semi-transparent Backdrop */}
           <Animated.View
             style={[
               styles.sidebarBackdrop,
@@ -337,7 +377,6 @@ export default function DashboardScreen() {
             />
           </Animated.View>
 
-          {/* Sliding Sidebar Drawer Panel */}
           <Animated.View
             style={[
               styles.sidebarDrawer,
@@ -348,7 +387,6 @@ export default function DashboardScreen() {
             ]}
           >
             <SafeAreaView edges={['top', 'bottom']} style={styles.sidebarSafeArea}>
-              {/* Sidebar Header with Brand & Close Button */}
               <View style={styles.sidebarHeader}>
                 <View style={styles.sidebarBrandRow}>
                   <View style={styles.sidebarLogoCircle}>
@@ -371,9 +409,7 @@ export default function DashboardScreen() {
                 contentContainerStyle={styles.sidebarScrollContent}
                 showsVerticalScrollIndicator={false}
               >
-                {/* 1. ACCOUNT IN SIDEBAR: 1 single line with circle verified profile, name, and small clickable edit icon */}
                 <View style={styles.sidebarAccountSingleLine}>
-                  {/* Circle Verified Profile Avatar */}
                   <View style={styles.verifiedAvatarWrapper}>
                     <View style={styles.verifiedAvatarCircle}>
                       <Ionicons name="person" size={20} color="#FFFFFF" />
@@ -383,12 +419,10 @@ export default function DashboardScreen() {
                     </View>
                   </View>
 
-                  {/* User Name in the same line */}
                   <Text style={styles.sidebarAccountNameText} numberOfLines={1}>
                     {userProfile.name}
                   </Text>
 
-                  {/* Small clickable edit icon right beside the name */}
                   <TouchableOpacity
                     style={styles.smallEditIconButton}
                     activeOpacity={0.7}
@@ -402,11 +436,9 @@ export default function DashboardScreen() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Section Separator */}
                 <View style={styles.sidebarDivider} />
                 <Text style={styles.sidebarSectionTitle}>Preferences</Text>
 
-                {/* 2. PUSH NOTIFICATIONS TOGGLE */}
                 <View style={styles.sidebarMenuItem}>
                   <View style={styles.menuItemLeft}>
                     <View style={[styles.menuItemIconCircle, { backgroundColor: '#EAF4EF' }]}>
@@ -425,7 +457,6 @@ export default function DashboardScreen() {
                   />
                 </View>
 
-                {/* 3. HELP & SUPPORT (Expandable) */}
                 <TouchableOpacity
                   style={styles.sidebarMenuItem}
                   activeOpacity={0.75}
@@ -464,7 +495,6 @@ export default function DashboardScreen() {
                   </View>
                 )}
 
-                {/* 4. ABOUT SUYOLINK (Expandable) */}
                 <TouchableOpacity
                   style={styles.sidebarMenuItem}
                   activeOpacity={0.75}
@@ -502,7 +532,6 @@ export default function DashboardScreen() {
                   </View>
                 )}
 
-                {/* 5. LOGOUT BUTTON (Inside Sidebar) */}
                 <View style={styles.logoutWrapper}>
                   <TouchableOpacity
                     style={styles.logoutButton}
@@ -523,7 +552,7 @@ export default function DashboardScreen() {
       )}
 
       {/* ========================================================== */}
-      {/* EDIT PROFILE MODAL (Triggered by small edit icon)           */}
+      {/* EDIT PROFILE MODAL                                         */}
       {/* ========================================================== */}
       <Modal
         visible={isEditModalOpen}
@@ -610,7 +639,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#163523',
+    backgroundColor: '#1C3A27',
   },
 
   /* Fixed Top Bar */
@@ -621,7 +650,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#163523',
+    backgroundColor: '#1C3A27',
+    zIndex: 100,
   },
   headerIconButton: {
     width: 42,
@@ -661,43 +691,47 @@ const styles = StyleSheet.create({
   contentScroll: {
     flex: 1,
     backgroundColor: '#F8FAF9',
+    marginTop: -1,
   },
   contentContainer: {
     paddingBottom: 28,
   },
 
-  /* Hunter Green Hero inside ScrollView */
+  /* === HERO SECTION WITH MATCHING STICKER BACKGROUND COLOR === */
   headerHeroSection: {
-    backgroundColor: '#163523',
+    width: '100%',
+    height: 185,
+    backgroundColor: '#1C3A27',
+    overflow: 'hidden',
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 22,
   },
-  welcomeGreetingContainer: {
-    marginBottom: 16,
+  heroTextBlock: {
+    flex: 1.1,
+    justifyContent: 'center',
+    zIndex: 2,
+    paddingRight: 8,
   },
-  welcomeSubText: {
-    fontSize: 13,
-    color: '#B2D0C0',
-    fontWeight: '500',
-    marginBottom: 3,
-    letterSpacing: 0.2,
-  },
-  welcomeNameText: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
+  heroImageSticker: {
+    width: '58%',
+    height: '135%',
+    position: 'absolute',
+    right: -12,
+    top: -15,
+    zIndex: 1,
+    opacity: 1,
   },
 
-  /* Search Bar under greeting */
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D8E5DF',
-    borderRadius: 15,
+    borderRadius: 16,
     paddingHorizontal: 14,
     height: 48,
     shadowColor: '#000000',
@@ -705,6 +739,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    marginBottom: 16,
+    marginTop: 16,
   },
   searchIcon: {
     marginRight: 10,
@@ -714,234 +750,348 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#163523',
   },
-
-  /* Floating Bridge: Overlapping the Green Header and White Content */
-  floatingBridgeContainer: {
-    position: 'relative',
-    paddingHorizontal: 20,
-    backgroundColor: '#F8FAF9',
-  },
-  bridgeGreenBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 60, // Extends green background down under top half of card
-    backgroundColor: '#163523',
-  },
-  activeSuyoCard: {
-    backgroundColor: '#1E4D2B',
-    borderRadius: 20,
-    padding: 17,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  suyoCardHeader: {
+  locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
     marginBottom: 8,
   },
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.22)',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  pulsingGreenDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#4ADE80',
-  },
-  liveIndicatorText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#D4E8DC',
-    letterSpacing: 0.5,
-  },
-  trackingNumberText: {
-    fontSize: 12,
-    color: '#B2D0C0',
+  locationPillText: {
+    fontSize: 11,
     fontWeight: '600',
+    color: '#D4E8DC',
+    letterSpacing: 0.2,
   },
-  suyoStatusHeadline: {
-    fontSize: 17,
+  welcomeSubText: {
+    fontSize: 11.5,
+    color: '#A8D5B8',
     fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 2,
+  },
+  welcomeNameText: {
+    fontSize: 21,
+    fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: -0.5,
     marginBottom: 4,
+    lineHeight: 26,
   },
-  suyoAddressSub: {
-    fontSize: 13,
-    color: '#C6DFD1',
-    marginBottom: 14,
-  },
-  cardProgressBarTrack: {
-    height: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  cardProgressBarFill: {
-    width: '78%',
-    height: '100%',
-    backgroundColor: '#4ADE80',
-    borderRadius: 3,
+  welcomeTagline: {
+    fontSize: 12,
+    color: '#D0EDD9',
+    fontWeight: '500',
   },
 
   /* White Content Body */
   whiteContentBody: {
     backgroundColor: '#F8FAF9',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -20,
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: 8,
   },
-  sectionHeading: {
-    fontSize: 18,
+
+  /* === STATS CARDS STYLES (THEME ADAPTED) === */
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 22,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2ECE7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statCardLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#7A9384',
+    marginBottom: 4,
+  },
+  statCardValue: {
+    fontSize: 16,
     fontWeight: '800',
     color: '#163523',
-    letterSpacing: -0.2,
-    marginBottom: 14,
+  },
+  statActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  activeIndicatorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4ADE80',
+  },
+
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#163523',
+    marginBottom: 12,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 20,
     marginBottom: 12,
   },
   seeAllText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1E4D2B',
   },
+
+  /* Quick Services Grid */
   quickActionGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    gap: 12,
   },
   actionCard: {
-    width: (SCREEN_WIDTH - 40 - 24) / 4,
-    alignItems: 'center',
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2ECE7',
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   actionIconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: '#EBF4EF',
-    borderWidth: 1,
-    borderColor: '#D2E5DB',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#EAF4EF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   actionTitleText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#284635',
-    textAlign: 'center',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#163523',
   },
+
+  /* Recent Tasks List */
   tasksList: {
-    gap: 12,
+    gap: 10,
   },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
-    borderColor: '#DFECE5',
-    borderRadius: 16,
-    padding: 14,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2ECE7',
   },
   taskIconWrapper: {
-    marginRight: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#F0F5F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   taskMeta: {
     flex: 1,
+    marginRight: 8,
   },
   taskTitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#163523',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   taskSub: {
-    fontSize: 12,
-    color: '#718C7D',
+    fontSize: 11.5,
+    color: '#6C8575',
   },
   taskPriceColumn: {
     alignItems: 'flex-end',
-    marginLeft: 8,
   },
   taskPrice: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#163523',
     marginBottom: 4,
   },
-  statusPill: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  statusPillDelivered: {
-    backgroundColor: '#E8F5EE',
-  },
   statusPillTransit: {
-    backgroundColor: '#FDF3E7',
-  },
-  statusPillText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  statusPillTextDelivered: {
-    color: '#1E4D2B',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#FDF3EC',
   },
   statusPillTextTransit: {
-    color: '#D97706',
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#D97724',
   },
+
+  /* COMPACT ACTIVE SUYO FLOATING BAR */
+  floatingFooterActiveBarWrapper: {
+    position: 'absolute',
+    bottom: 64,
+    left: 14,
+    right: 14,
+    zIndex: 90,
+  },
+  floatingFooterActiveBar: {
+    backgroundColor: '#E8F5EC',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.4)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  footerBarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  footerBarLiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(74, 222, 128, 0.25)',
+    paddingVertical: 1,
+    paddingHorizontal: 5,
+    borderRadius: 4,
+    gap: 4,
+  },
+  pulsingGreenDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#2E7D32',
+  },
+  footerBarLiveText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#1B5E20',
+    letterSpacing: 0.4,
+  },
+  footerBarTrackingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(39, 103, 57, 0.08)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  footerBarTrackingText: {
+    fontSize: 10.5,
+    color: '#1B5E20',
+    fontWeight: '700',
+  },
+  footerBarBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  footerBarTextCol: {
+    flex: 1,
+    paddingRight: 6,
+  },
+  footerBarHeadline: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 1,
+  },
+  footerBarSub: {
+    fontSize: 11,
+    color: '#4A6B53',
+  },
+  footerBarChevronCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(30, 77, 43, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerProgressBarTrack: {
+    height: 3,
+    backgroundColor: 'rgba(30, 77, 43, 0.15)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  footerProgressBarFill: {
+    height: '100%',
+    backgroundColor: '#2E7D32',
+    borderRadius: 2,
+  },
+
+  /* Bottom Navigation Bar */
   bottomNavContainer: {
-    height: 62,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E6EFEA',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: '#E2ECE7',
+    zIndex: 95,
   },
   navItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    flex: 1,
+    height: '100%',
   },
   navItemText: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#8FA497',
     fontWeight: '600',
-    marginTop: 3,
+    marginTop: 2,
   },
   navItemTextActive: {
     color: '#1E4D2B',
     fontWeight: '700',
   },
 
-  /* Sidebar Drawer */
+  /* Sidebar Drawer Styles */
   sidebarBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 26, 17, 0.65)',
-    zIndex: 99,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    zIndex: 200,
   },
   sidebarDrawer: {
     position: 'absolute',
@@ -949,25 +1099,24 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     backgroundColor: '#FFFFFF',
-    zIndex: 100,
-    shadowColor: '#000000',
+    zIndex: 201,
+    shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
     elevation: 16,
   },
   sidebarSafeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   sidebarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEF4F0',
+    borderBottomColor: '#EEF4F1',
   },
   sidebarBrandRow: {
     flexDirection: 'row',
@@ -975,18 +1124,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sidebarLogoCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: '#D7EBE0',
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#EAF4EF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   sidebarBrandTitle: {
-    fontSize: 16.5,
+    fontSize: 16,
     fontWeight: '800',
     color: '#163523',
-    letterSpacing: -0.2,
   },
   sidebarCloseButton: {
     width: 32,
@@ -1000,41 +1148,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sidebarScrollContent: {
-    padding: 18,
-    paddingBottom: 36,
+    padding: 16,
   },
-
-  /* 1-Line Account Section in Sidebar */
   sidebarAccountSingleLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F8F5',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    backgroundColor: '#F8FAF9',
+    borderRadius: 12,
+    padding: 10,
     borderWidth: 1,
-    borderColor: '#E2ECE6',
+    borderColor: '#E2ECE7',
   },
   verifiedAvatarWrapper: {
     position: 'relative',
-    marginRight: 12,
+    marginRight: 10,
   },
   verifiedAvatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#1E4D2B',
     alignItems: 'center',
     justifyContent: 'center',
   },
   verifiedBadgeDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#4ADE80',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#2E7D32',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -1042,7 +1186,7 @@ const styles = StyleSheet.create({
   },
   sidebarAccountNameText: {
     flex: 1,
-    fontSize: 15.5,
+    fontSize: 14,
     fontWeight: '700',
     color: '#163523',
     marginRight: 8,
@@ -1050,50 +1194,48 @@ const styles = StyleSheet.create({
   smallEditIconButton: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E1EFE7',
+    borderRadius: 8,
+    backgroundColor: '#EAF4EF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#CDE5D8',
   },
-
   sidebarDivider: {
     height: 1,
-    backgroundColor: '#EEF4F0',
-    marginVertical: 18,
+    backgroundColor: '#EEF4F1',
+    marginVertical: 16,
   },
   sidebarSectionTitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#718C7D',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    color: '#7A9384',
+    letterSpacing: 0.8,
     marginBottom: 10,
-    marginLeft: 4,
+    textTransform: 'uppercase',
   },
   sidebarMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F7FAF8',
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E8F0EC',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    marginBottom: 4,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     flex: 1,
+    marginRight: 10,
   },
   menuItemIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
   },
   menuItemTextCol: {
     flex: 1,
@@ -1102,27 +1244,25 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '700',
     color: '#163523',
-    marginBottom: 2,
   },
   menuItemSub: {
-    fontSize: 11.5,
-    color: '#718C7D',
+    fontSize: 11,
+    color: '#7A9384',
+    marginTop: 1,
   },
   expandedSubCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    marginTop: -4,
+    backgroundColor: '#F8FAF9',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E2ECE6',
-    gap: 10,
+    borderColor: '#E2ECE7',
   },
   helpSubRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 4,
+    gap: 8,
+    paddingVertical: 6,
   },
   helpSubText: {
     fontSize: 12.5,
@@ -1131,69 +1271,72 @@ const styles = StyleSheet.create({
   },
   aboutParagraph: {
     fontSize: 12,
-    color: '#52695C',
-    lineHeight: 18,
+    color: '#4A6354',
+    lineHeight: 17,
+    marginBottom: 8,
   },
   aboutMetaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 4,
+    paddingVertical: 3,
   },
   aboutMetaLabel: {
     fontSize: 11.5,
-    color: '#718C7D',
+    color: '#7A9384',
   },
   aboutMetaValue: {
     fontSize: 11.5,
-    color: '#163523',
     fontWeight: '600',
+    color: '#163523',
   },
   aboutMetaLink: {
     fontSize: 11.5,
+    fontWeight: '600',
     color: '#1E4D2B',
-    fontWeight: '700',
     textDecorationLine: 'underline',
   },
   logoutWrapper: {
-    marginTop: 18,
+    marginTop: 20,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF4F1',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FDECEC',
-    borderRadius: 14,
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: '#F8C8C8',
+    backgroundColor: '#FDEDEC',
+    borderRadius: 10,
+    paddingVertical: 11,
     gap: 8,
+    borderWidth: 1,
+    borderColor: '#F5CBC6',
   },
   logoutButtonText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#D32F2F',
   },
 
-  /* Edit Profile Modal */
+  /* Edit Profile Modal Styles */
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    padding: 20,
   },
   modalContentCard: {
     width: '100%',
     maxWidth: 380,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 22,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 10,
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1202,7 +1345,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: '#163523',
   },
@@ -1215,44 +1358,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalInputLabel: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#52695C',
-    marginBottom: 5,
-    marginTop: 8,
+    color: '#4A6354',
+    marginBottom: 4,
+    marginTop: 10,
   },
   modalInput: {
-    backgroundColor: '#F6F9F7',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    backgroundColor: '#F8FAF9',
+    borderWidth: 1,
+    borderColor: '#D8E5DF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
     fontSize: 13.5,
     color: '#163523',
-    borderWidth: 1,
-    borderColor: '#D8E6DF',
   },
   modalButtonsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginTop: 20,
   },
   modalCancelButton: {
     flex: 1,
     backgroundColor: '#F0F5F2',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 10,
+    height: 42,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   modalCancelButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#52695C',
+    fontWeight: '700',
+    color: '#4A6354',
   },
   modalSaveButton: {
-    flex: 1,
+    flex: 1.2,
     backgroundColor: '#1E4D2B',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 10,
+    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
