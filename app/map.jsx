@@ -1,7 +1,9 @@
-﻿import React from "react";
+import ScreenHeader from '../components/ScreenHeader';
+import ThemedText from '../components/themed/ThemedText';
+import { useTheme } from '../theme/ThemeContext';
+import React from "react";
 import {
   StyleSheet,
-  Text,
   View,
   TouchableOpacity,
   Image,
@@ -16,22 +18,14 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function MapScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
       <StatusBar style="light" />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Live Map Tracking</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader brand title="Live Map Tracking" onBack={() => router.back()} />
 
       <View style={styles.mapArea}>
         <Image
@@ -42,74 +36,52 @@ export default function MapScreen() {
         <View style={styles.mapOverlayCard}>
           <View style={styles.liveIndicatorRow}>
             <View style={styles.pulsingDot} />
-            <Text style={styles.liveText}>LIVE TRACKING</Text>
+            <ThemedText style={styles.liveText}>LIVE TRACKING</ThemedText>
           </View>
-          <Text style={styles.trackingLabel}>Doer is 5 mins away</Text>
-          <Text style={styles.trackingSub}>Errand: Drop off documents at Unit 402</Text>
+          <ThemedText style={styles.trackingLabel}>Doer is 5 mins away</ThemedText>
+          <ThemedText style={styles.trackingSub}>Errand: Drop off documents at Unit 402</ThemedText>
         </View>
       </View>
 
       <View style={styles.bottomPanel}>
         <View style={styles.doerInfoRow}>
           <View style={styles.doerAvatarCircle}>
-            <Ionicons name="person" size={22} color="#FFFFFF" />
+            <Ionicons name="person" size={22} color={colors.onPrimary} />
           </View>
           <View style={styles.doerMeta}>
-            <Text style={styles.doerName}>Alex M.</Text>
-            <Text style={styles.doerRating}>4.9 - 231 errands done</Text>
+            <ThemedText style={styles.doerName}>Alex M.</ThemedText>
+            <ThemedText style={styles.doerRating}>4.9 - 231 errands done</ThemedText>
           </View>
           <TouchableOpacity style={styles.callButton} activeOpacity={0.7}>
-            <Ionicons name="call" size={18} color="#FFFFFF" />
+            <Ionicons name="call" size={18} color={colors.onPrimary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.chatButton} activeOpacity={0.7}>
-            <Ionicons name="chatbubble-ellipses" size={18} color="#163523" />
+            <Ionicons name="chatbubble-ellipses" size={18} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>Route progress</Text>
-          <Text style={styles.progressPercent}>78%</Text>
+          <ThemedText style={styles.progressLabel}>Route progress</ThemedText>
+          <ThemedText style={styles.progressPercent}>78%</ThemedText>
         </View>
         <View style={styles.progressTrack}>
           <View style={styles.progressFill} />
         </View>
 
         <TouchableOpacity style={styles.cancelButton} activeOpacity={0.8}>
-          <Ionicons name="close-circle-outline" size={18} color="#D32F2F" />
-          <Text style={styles.cancelText}>Cancel Suyo</Text>
+          <Ionicons name="close-circle-outline" size={18} color={colors.danger} />
+          <ThemedText style={styles.cancelText}>Cancel Suyo</ThemedText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#163523" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.2,
-  },
-  headerSpacer: { width: 42 },
+const createStyles = (colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.brand },
   mapArea: {
     flex: 1,
-    backgroundColor: "#EDF5EF",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -122,7 +94,7 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: "#1E4D2B",
+    backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -134,17 +106,17 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 4,
   },
-  pulsingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#4ADE80" },
-  liveText: { fontSize: 10, fontWeight: "800", color: "#4ADE80", letterSpacing: 0.5 },
-  trackingLabel: { fontSize: 16, fontWeight: "700", color: "#FFFFFF", marginBottom: 3 },
-  trackingSub: { fontSize: 12.5, color: "#C6DFD1" },
+  pulsingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
+  liveText: { fontSize: 10, fontWeight: "800", color: colors.accent, letterSpacing: 0.5 },
+  trackingLabel: { fontSize: 16, fontWeight: "700", color: colors.onPrimary, marginBottom: 3 },
+  trackingSub: { fontSize: 12.5, color: colors.onBrand },
   bottomPanel: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
     paddingBottom: 10,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -155,18 +127,18 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#1E4D2B",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   doerMeta: { flex: 1 },
-  doerName: { fontSize: 15, fontWeight: "800", color: "#163523", marginBottom: 2 },
-  doerRating: { fontSize: 12, color: "#718C7D" },
+  doerName: { fontSize: 15, fontWeight: "800", color: colors.text, marginBottom: 2 },
+  doerRating: { fontSize: 12, color: colors.muted },
   callButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1E4D2B",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -174,21 +146,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#D7EBE0",
+    backgroundColor: colors.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
   },
   progressRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  progressLabel: { fontSize: 12.5, color: "#718C7D", fontWeight: "600" },
-  progressPercent: { fontSize: 12.5, color: "#1E4D2B", fontWeight: "800" },
+  progressLabel: { fontSize: 12.5, color: colors.muted, fontWeight: "600" },
+  progressPercent: { fontSize: 12.5, color: colors.link, fontWeight: "800" },
   progressTrack: {
     height: 6,
-    backgroundColor: "#E8F0EC",
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 3,
     overflow: "hidden",
     marginBottom: 18,
   },
-  progressFill: { width: "78%", height: "100%", backgroundColor: "#4ADE80", borderRadius: 3 },
+  progressFill: { width: "78%", height: "100%", backgroundColor: colors.accent, borderRadius: 3 },
   cancelButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -196,9 +168,9 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: colors.dangerSurface,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: colors.dangerBorder,
   },
-  cancelText: { fontSize: 13.5, fontWeight: "700", color: "#D32F2F" },
+  cancelText: { fontSize: 13.5, fontWeight: "700", color: colors.danger },
 });

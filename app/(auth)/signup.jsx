@@ -1,12 +1,12 @@
 import React from 'react';
 import { useRouter } from 'expo-router';
-import LoginSheet from '../components/LoginSheet';
+import SignUpSheet from '../../components/SignUpSheet';
 
-export default function LoginScreen() {
+export default function SignUpScreen() {
   const router = useRouter();
 
   return (
-    <LoginSheet
+    <SignUpSheet
       visible={true}
       onClose={() => {
         if (router.canGoBack()) {
@@ -15,7 +15,8 @@ export default function LoginScreen() {
           router.replace('/');
         }
       }}
-      onSwitchToSignUp={() => router.replace('/signup')}
+      onSignUpSuccess={() => router.replace('/welcome')}
+      onSwitchToLogin={() => router.replace('/login')}
     />
   );
 }

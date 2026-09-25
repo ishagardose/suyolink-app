@@ -1,7 +1,8 @@
+import ThemedText from '../components/themed/ThemedText';
+import { useTheme } from '../theme/ThemeContext';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
   Image,
   TouchableOpacity,
@@ -12,10 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
-// Modular Login and Sign Up components
-import LoginSheet from '../components/LoginSheet';
-import SignUpSheet from '../components/SignUpSheet';
+import { StatusBar } from 'expo-status-bar';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,9 +34,10 @@ const SLIDES = [
 
 export default function App() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [activeIndex, setActiveIndex] = useState(0); // Show 1st slide ('Need a Favor? Get It Done.') first after splash
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
-  const [authModal, setAuthModal] = useState(null); // 'login' | 'signup' | null
 
   // Animation values
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -65,7 +64,7 @@ export default function App() {
     ]).start();
 
     // Subtle breathing pulse for bottom chevron button
-    Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(bounceButtonAnim, {
           toValue: 6,
@@ -78,14 +77,15 @@ export default function App() {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    pulse.start();
 
     // Auto-transition to 2nd screen after 2.2 seconds
     const timer = setTimeout(() => {
       openOnboarding();
     }, 2200);
 
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); pulse.stop(); };
   }, []);
 
   const openOnboarding = () => {
@@ -181,34 +181,9 @@ export default function App() {
     }
   };
 
-  // Open Login or Sign Up sheet: slide down onboarding, show auth modal
-  const handleOpenAuth = (mode) => {
-    Animated.timing(slideAnim, {
-      toValue: SCREEN_HEIGHT,
-      duration: 320,
-      easing: Easing.inOut(Easing.cubic),
-      useNativeDriver: true,
-    }).start(() => {
-      setIsOnboardingActive(false);
-      setAuthModal(mode);
-    });
-  };
-
-  // Close Login or Sign Up sheet: slide up onboarding
-  const handleCloseAuth = () => {
-    setAuthModal(null);
-    setIsOnboardingActive(true);
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      damping: 22,
-      mass: 1,
-      stiffness: 110,
-      useNativeDriver: true,
-    }).start();
-  };
-
   return (
     <View style={styles.root}>
+      <StatusBar style="light" />
       {/* ======================================================== */}
       {/* 1. INITIAL SPLASH SCREEN (Hunter Green + Centered Logo)  */}
       {/* ======================================================== */}
@@ -251,7 +226,7 @@ export default function App() {
               onPress={openOnboarding}
               style={styles.chevronButton}
             >
-              <Ionicons name="chevron-down" size={24} color="#163523" />
+              <Ionicons name="chevron-down" size={24} color={colors.text} />
             </TouchableOpacity>
           </Animated.View>
         </SafeAreaView>
@@ -278,7 +253,7 @@ export default function App() {
               style={styles.backButton}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={24} color={colors.onPrimary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -286,7 +261,7 @@ export default function App() {
               style={styles.helpButton}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.helpButtonText}>Need some help?</Text>
+              <ThemedText style={styles.helpButtonText}>Need some help?</ThemedText>
             </TouchableOpacity>
           </View>
 
@@ -319,10 +294,10 @@ export default function App() {
                 style={styles.textClickableWrapper}
               >
                 <Animated.View style={[styles.textAnimatedWrapper, { opacity: slideFadeAnim }]}>
-                  <Text style={styles.titleText}>{SLIDES[activeIndex].title}</Text>
-                  <Text style={styles.descriptionText}>
+                  <ThemedText style={styles.titleText}>{SLIDES[activeIndex].title}</ThemedText>
+                  <ThemedText style={styles.descriptionText}>
                     {SLIDES[activeIndex].description}
-                  </Text>
+                  </ThemedText>
                 </Animated.View>
               </TouchableOpacity>
 
@@ -355,7 +330,7 @@ export default function App() {
                 activeOpacity={0.85}
                 onPress={() => router.push('/login')}
               >
-                <Text style={styles.primaryButtonText}>Log In</Text>
+                <ThemedText style={styles.primaryButtonText}>Log In</ThemedText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -363,37 +338,21 @@ export default function App() {
                 activeOpacity={0.75}
                 onPress={() => router.push('/signup')}
               >
-                <Text style={styles.secondaryButtonText}>Sign Up</Text>
+                <ThemedText style={styles.secondaryButtonText}>Sign Up</ThemedText>
               </TouchableOpacity>
             </SafeAreaView>
           </View>
         </SafeAreaView>
       </Animated.View>
 
-      {/* ======================================================== */}
-      {/* 3. SEPARATE MODULAR LOGIN & SIGN UP COMPONENTS           */}
-      {/* ======================================================== */}
-      <LoginSheet
-        visible={authModal === 'login'}
-        onClose={handleCloseAuth}
-        onLoginSuccess={() => setAuthModal(null)}
-        onSwitchToSignUp={() => setAuthModal('signup')}
-      />
-
-      <SignUpSheet
-        visible={authModal === 'signup'}
-        onClose={handleCloseAuth}
-        onSignUpSuccess={() => setAuthModal(null)}
-        onSwitchToLogin={() => setAuthModal('login')}
-      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#163523', // Signature deep Hunter Green
+    backgroundColor: colors.brand, // Signature deep Hunter Green
   },
 
   /* ------------------------------------------- */
@@ -401,7 +360,7 @@ const styles = StyleSheet.create({
   /* ------------------------------------------- */
   initialScreenContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#163523',
+    backgroundColor: colors.brand,
   },
   initialSafeArea: {
     flex: 1,
@@ -425,7 +384,7 @@ const styles = StyleSheet.create({
     height: 210,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 14,
@@ -442,10 +401,10 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#8ABFA0',
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
@@ -457,12 +416,12 @@ const styles = StyleSheet.create({
   /* ------------------------------------------- */
   secondScreenOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#163523',
+    backgroundColor: colors.brand,
     zIndex: 10,
   },
   secondScreenHeaderSafeArea: {
     flex: 1,
-    backgroundColor: '#163523',
+    backgroundColor: colors.brand,
   },
   topNavBar: {
     height: 54,
@@ -470,7 +429,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    backgroundColor: '#163523',
+    backgroundColor: colors.brand,
   },
   backButton: {
     width: 38,
@@ -485,19 +444,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   helpButtonText: {
-    color: '#D4E8DC',
+    color: colors.onBrand,
     fontSize: 14,
     fontWeight: '600',
   },
   whiteSheet: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     overflow: 'hidden',
     marginTop: 8,
     justifyContent: 'space-between',
-    shadowColor: '#000000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -537,14 +496,14 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 27,
     fontWeight: '800',
-    color: '#12261B',
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: -0.3,
     marginBottom: 10,
   },
   descriptionText: {
     fontSize: 15,
-    color: '#52695C',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 300,
@@ -562,11 +521,11 @@ const styles = StyleSheet.create({
   },
   paginationDotInactive: {
     width: 14,
-    backgroundColor: '#C8D8CF',
+    backgroundColor: colors.border,
   },
   paginationDotActive: {
     width: 24,
-    backgroundColor: '#1E4D2B',
+    backgroundColor: colors.primary,
   },
   bottomButtonsWrapper: {
     paddingHorizontal: 24,
@@ -574,34 +533,34 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: '#1E4D2B', // Signature Hunter Green
+    backgroundColor: colors.primary, // Signature Hunter Green
     height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1E4D2B',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.28,
     shadowRadius: 8,
     elevation: 4,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   secondaryButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     height: 52,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#1E4D2B',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#1E4D2B',
+    color: colors.link,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
