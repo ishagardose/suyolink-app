@@ -1,56 +1,58 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { ThemeProvider, useTheme } from '../theme/ThemeContext';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { SuyoProvider } from '../context/SuyoContext';
 
-// Prevent splash screen from auto-hiding before component tree is ready
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+function AppNavigator() {
+  const { isLoggedIn, isLoading } = useAuth();
+  const { colors, isDark, isLoading: themeLoading } = useTheme();
+  const ready = !isLoading && !themeLoading;
   useEffect(() => {
-    // Hide splash screen seamlessly once root is ready
-    SplashScreen.hideAsync().catch(() => {});
-  }, []);
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+  // Restore local state before evaluating guards, including for deep links.
+  if (!ready) return null;
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
+        initialRouteName="index"
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: colors.background },
         }}
       >
+        <Stack.Screen name="index" />
         <Stack.Screen
-          name="index"
-          options={{ contentStyle: { backgroundColor: '#163523' } }}
-        />
-        <Stack.Screen
-          name="signup"
+          name="(auth)"
           options={{ animation: 'slide_from_bottom' }}
         />
-        <Stack.Screen
-          name="login"
-          options={{ animation: 'slide_from_bottom' }}
-        />
-        <Stack.Screen name="otp-verification" />
-        <Stack.Screen name="id-verification" />
-        <Stack.Screen name="role-selection" />
-        <Stack.Screen name="welcome" />
-        <Stack.Screen
-          name="dashboard"
-          options={{
-            contentStyle: { backgroundColor: '#163523' },
-          }}
-        />
-        <Stack.Screen
-          name="map"
-          options={{
-            contentStyle: { backgroundColor: '#163523' },
-            animation: 'slide_from_bottom',
-          }}
-        />
+        <Stack.Protected guard={isLoggedIn}>
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="dashboard" />
+          <Stack.Screen name="post-suyo" />
+          <Stack.Screen
+            name="map"
+            options={{ animation: 'slide_from_bottom' }}
+          />
+        </Stack.Protected>
       </Stack>
     </>
+  );
+}
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <SuyoProvider>
+          <AppNavigator />
+        </SuyoProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
