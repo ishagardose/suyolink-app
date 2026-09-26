@@ -11,7 +11,7 @@ export default function DashboardHero({ name }) {
     <View style={styles.headerHeroSection}>
       <View style={styles.heroTextBlock}>
         <View style={styles.locationPill}>
-          <Ionicons name="location-sharp" size={11} color={colors.accent} />
+          <Ionicons name="location-sharp" size={11} color={colors.heroTextMuted} />
           <ThemedText style={styles.locationPillText}>Makati CBD</ThemedText>
         </View>
         <ThemedText style={styles.welcomeSubText}>WELCOME BACK</ThemedText>
@@ -36,7 +36,7 @@ const createStyles = (colors) =>
     headerHeroSection: {
       width: '100%',
       height: 185,
-      backgroundColor: colors.hero,
+      backgroundColor: colors.heroBackground,
       overflow: 'hidden',
       position: 'relative',
       flexDirection: 'row',
@@ -73,12 +73,12 @@ const createStyles = (colors) =>
     locationPillText: {
       fontSize: 11,
       fontWeight: '600',
-      color: colors.onBrand,
+      color: colors.heroTextMuted,
       letterSpacing: 0.2,
     },
     welcomeSubText: {
       fontSize: 11.5,
-      color: colors.onBrand,
+      color: colors.heroTextMuted,
       fontWeight: '700',
       letterSpacing: 1.2,
       marginBottom: 2,
@@ -86,14 +86,14 @@ const createStyles = (colors) =>
     welcomeNameText: {
       fontSize: 21,
       fontWeight: '800',
-      color: colors.onPrimary,
+      color: colors.heroText,
       letterSpacing: -0.5,
       marginBottom: 4,
       lineHeight: 26,
     },
     welcomeTagline: {
       fontSize: 12,
-      color: colors.onBrand,
+      color: colors.heroTextMuted,
       fontWeight: '500',
     },
   });

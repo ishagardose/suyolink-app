@@ -24,7 +24,7 @@ async function sidebar(page) {
 }
 
 test('logged-out dashboard, map and welcome deep links return to the landing page', async ({ page }) => {
-  for (const route of ['/dashboard', '/map', '/welcome']) {
+  for (const route of ['/dashboard', '/map', '/welcome', '/post-suyo']) {
     await page.goto(route);
     await expect(page).toHaveURL('http://127.0.0.1:4173/');
     await expect(page.getByText('WELCOME BACK', { exact: true })).toHaveCount(0);

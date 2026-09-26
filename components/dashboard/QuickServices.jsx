@@ -4,7 +4,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../themed/ThemedText';
 
-export default function QuickServices({ actions }) {
+export default function QuickServices({ actions, onAction }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
@@ -14,6 +14,9 @@ export default function QuickServices({ actions }) {
         {actions.map((item) => (
           <TouchableOpacity
             key={item.id}
+            accessibilityRole="button"
+            accessibilityLabel={item.title}
+            onPress={() => onAction(item.id)}
             style={styles.actionCard}
             activeOpacity={0.75}
           >

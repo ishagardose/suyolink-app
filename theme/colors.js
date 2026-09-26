@@ -3,6 +3,9 @@ export const PRIMARY = '#1E4D2B'; // Signature Hunter Green
 
 export const light = {
     primary: PRIMARY,
+    heroBackground: PRIMARY,
+    heroText: '#FFFFFF',
+    heroTextMuted: '#D4E8DC',
     background: '#FFFFFF',
     surface: '#F8FAF9',
     card: '#FFFFFF',
@@ -15,6 +18,9 @@ export const light = {
 
 export const dark = {
     primary: PRIMARY,
+    heroBackground: PRIMARY,
+    heroText: '#FFFFFF',
+    heroTextMuted: '#D4E8DC',
     background: '#0E1A13',
     surface: '#16241C',
     card: '#1B2A21',

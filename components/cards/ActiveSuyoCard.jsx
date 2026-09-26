@@ -8,38 +8,38 @@ export default function ActiveSuyoCard({ activeSuyo, onTrack }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
-        <View style={styles.floatingFooterActiveBarWrapper} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.floatingFooterActiveBar}
-            activeOpacity={0.92}
-            onPress={onTrack}
-          >
-            <View style={styles.footerBarHeader}>
-              <View style={styles.footerBarLiveBadge}>
-                <View style={styles.pulsingGreenDot} />
-                <ThemedText style={styles.footerBarLiveText}>ACTIVE SUYO</ThemedText>
-              </View>
-              <View style={styles.footerBarTrackingRight}>
-                <Ionicons name="map-outline" size={12} color={colors.success} style={{ marginRight: 3 }} />
-                <ThemedText style={styles.footerBarTrackingText}>{activeSuyo.trackingNumber}</ThemedText>
-              </View>
-            </View>
-
-            <View style={styles.footerBarBodyRow}>
-              <View style={styles.footerBarTextCol}>
-                <ThemedText style={styles.footerBarHeadline}>{activeSuyo.eta}</ThemedText>
-                <ThemedText style={styles.footerBarSub} numberOfLines={1}>{activeSuyo.detail}</ThemedText>
-              </View>
-              <View style={styles.footerBarChevronCircle}>
-                <Ionicons name="chevron-forward" size={14} color={colors.link} />
-              </View>
-            </View>
-
-            <View style={styles.footerProgressBarTrack}>
-              <View style={[styles.footerProgressBarFill, { width: activeSuyo.progress }]} />
-            </View>
-          </TouchableOpacity>
+    <View style={styles.floatingFooterActiveBarWrapper} pointerEvents="box-none">
+      <TouchableOpacity
+        style={styles.floatingFooterActiveBar}
+        activeOpacity={0.92}
+        onPress={onTrack}
+      >
+        <View style={styles.footerBarHeader}>
+          <View style={styles.footerBarLiveBadge}>
+            <View style={styles.pulsingGreenDot} />
+            <ThemedText style={styles.footerBarLiveText}>ACTIVE SUYO</ThemedText>
+          </View>
+          <View style={styles.footerBarTrackingRight}>
+            <Ionicons name="map-outline" size={12} color={colors.success} style={{ marginRight: 3 }} />
+            <ThemedText style={styles.footerBarTrackingText}>{activeSuyo.trackingNumber}</ThemedText>
+          </View>
         </View>
+
+        <View style={styles.footerBarBodyRow}>
+          <View style={styles.footerBarTextCol}>
+            <ThemedText style={styles.footerBarHeadline}>{activeSuyo.eta}</ThemedText>
+            <ThemedText style={styles.footerBarSub} numberOfLines={1}>{activeSuyo.detail}</ThemedText>
+          </View>
+          <View style={styles.footerBarChevronCircle}>
+            <Ionicons name="chevron-forward" size={14} color={colors.link} />
+          </View>
+        </View>
+
+        <View style={styles.footerProgressBarTrack}>
+          <View style={[styles.footerProgressBarFill, { width: activeSuyo.progress }]} />
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 const createStyles = (colors) => StyleSheet.create({
@@ -51,7 +51,7 @@ const createStyles = (colors) => StyleSheet.create({
     zIndex: 90,
   },
   floatingFooterActiveBar: {
-    backgroundColor: colors.successSurface,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 12,

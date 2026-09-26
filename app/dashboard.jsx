@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,13 +14,9 @@ import AvailableSuyos from '../components/dashboard/AvailableSuyos';
 import DashboardBottomNav from '../components/dashboard/DashboardBottomNav';
 import Sidebar from '../components/cards/Sidebar';
 import EditProfileModal from '../components/cards/EditProfileModal';
-import ActiveSuyoCard from '../components/cards/ActiveSuyoCard';
-import {
-  ACTIVE_SUYO,
-  AVAILABLE_SUYOS,
-  DASHBOARD_STATS,
-  QUICK_ACTIONS,
-} from '../data/dashboard';
+import { QUICK_ACTIONS } from '../data/dashboard';
+import { useSuyos } from '../context/SuyoContext';
+import { formatOffer } from '../data/suyoRequests';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -29,8 +25,31 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const hasActiveSuyo =
-    ACTIVE_SUYO && ['In Transit', 'On Process'].includes(ACTIVE_SUYO.status);
+  const { requests } = useSuyos();
+  const scrollRef = useRef(null);
+  const ownRequests = requests.filter(
+    (request) => request.requesterEmail === user.email
+  );
+  const stats = {
+    completed: ownRequests.filter((request) => request.status === 'completed')
+      .length,
+    active: ownRequests.filter(
+      (request) => !['completed', 'cancelled'].includes(request.status)
+    ).length,
+    earned: formatOffer(
+      requests
+        .filter(
+          (request) =>
+            request.providerEmail === user.email &&
+            request.status === 'completed'
+        )
+        .reduce((sum, request) => sum + request.offerCentavos, 0)
+    ),
+  };
+  const onQuickAction = (id) => {
+    if (id === 'post') router.push('/post-suyo');
+    else scrollRef.current?.scrollToEnd({ animated: true });
+  };
 
   const openEditProfile = () => {
     setIsSidebarOpen(false);
@@ -46,28 +65,25 @@ export default function DashboardScreen() {
       <DashboardHeader onOpenSidebar={() => setIsSidebarOpen(true)} />
 
       <ScrollView
+        ref={scrollRef}
         style={[styles.scroll, { backgroundColor: colors.background }]}
-        contentContainerStyle={{ paddingBottom: hasActiveSuyo ? 140 : 90 }}
+        contentContainerStyle={{ paddingBottom: 90 }}
         showsVerticalScrollIndicator={false}
       >
         <DashboardHero name={user.name} />
         <View style={[styles.body, { backgroundColor: colors.background }]}>
           <DashboardSearch />
           <DashboardStats
-            stats={DASHBOARD_STATS}
+            stats={stats}
             onViewActivity={() => setActiveTab('activity')}
           />
-          <QuickServices actions={QUICK_ACTIONS} />
-          <AvailableSuyos suyos={AVAILABLE_SUYOS} />
+          <QuickServices actions={QUICK_ACTIONS} onAction={onQuickAction} />
+          <AvailableSuyos
+            suyos={requests.filter((request) => request.status === 'open')}
+          />
         </View>
       </ScrollView>
 
-      {hasActiveSuyo && (
-        <ActiveSuyoCard
-          activeSuyo={ACTIVE_SUYO}
-          onTrack={() => router.push('/map')}
-        />
-      )}
       <DashboardBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       <Sidebar
         visible={isSidebarOpen}
