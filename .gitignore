@@ -25,13 +25,19 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
 # macOS
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # typescript
 *.tsbuildinfo
@@ -44,3 +50,21 @@ yarn-error.*
 /test-results/
 /playwright-report/
 /dist-native/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Coverage and tooling caches
+/coverage/
+/.nyc_output/
+/.cache/
+.eslintcache
+.prettiercache
+
+# Personal editor and agent settings
+/.idea/
+/.vscode/*.local.json
+/.claude/settings.local.json
+*.swp
+*.swo
+*~
