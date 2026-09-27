@@ -1,5 +1,7 @@
 # Suyo request workflow
 
+> Historical planning document. The current Supabase-backed implementation and setup instructions are in [task-workflow-release.md](task-workflow-release.md). The local-only storage and unimplemented-feature notes below describe an earlier stage.
+
 Decision: providers apply; the requester approves exactly one provider. Users can be requesters on one request and providers on another; no permanent role selection is required.
 
 ## Statuses and ownership

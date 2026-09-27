@@ -3,6 +3,7 @@ import { Animated, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import ScreenHeader from './ScreenHeader';
@@ -13,7 +14,8 @@ import ThemedButton from './themed/ThemedButton';
 
 export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess }) {
   const signup = mode === 'signup';
-  const { login, isLoggedIn } = useAuth();
+  const router = useRouter();
+  const { login, signup: register, isLoggedIn } = useAuth();
   const { colors } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -43,15 +45,18 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
     if (submitting.current) return;
     if (signup && !name.trim()) { setError('Enter your full name.'); return; }
     if (!password.trim()) { setError('Enter a password to continue.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Enter a valid email address.'); return; }
     submitting.current = true;
     setBusy(true);
     setError('');
     try {
-      await login({ email, ...(signup ? { name } : {}) });
+      const result = signup ? await register({ email, password, name }) : await login({ email, password });
       setPassword('');
-      setSubmitted(true);
+      if (result?.needsConfirmation) {
+        router.replace({ pathname: '/verify-email', params: { email: email.trim().toLowerCase() } });
+      } else setSubmitted(true);
     } catch (err) {
-      setError(err.message || 'Unable to save your session. Please try again.');
+      setError(err.message || 'Unable to sign in. Please try again.');
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -71,7 +76,7 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
                 style={styles.illustration} resizeMode="contain" />
               <ThemedText style={styles.title}>{signup ? 'Getting Started' : 'Welcome Back!'}</ThemedText>
               <ThemedText tone="textSecondary" style={styles.subtitle}>
-                {signup ? 'Create a local profile to explore SuyoLink.' : 'Sign in to explore your SuyoLink demo.'}
+                {signup ? 'Create your SuyoLink account.' : 'Sign in to your SuyoLink account.'}
               </ThemedText>
               {signup && <Field label="Full Name" icon="person-outline" value={name} onChangeText={setName}
                 placeholder="John Doe" autoCapitalize="words" editable={!busy} />}
@@ -84,7 +89,6 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
                   onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
                   <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.muted} />
                 </TouchableOpacity>} />
-              <ThemedText tone="textSecondary" style={styles.note}>Demo only. Your password is not verified or saved.</ThemedText>
               {error ? <ThemedText tone="danger" accessibilityRole="alert" style={styles.note}>{error}</ThemedText> : null}
               <ThemedButton title={signup ? 'Sign Up' : 'Log In'} onPress={submit} loading={busy} />
               <ThemedView style={styles.switchRow}>

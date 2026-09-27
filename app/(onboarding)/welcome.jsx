@@ -19,7 +19,7 @@ export default function WelcomeScreen() {
       <Image source={require('../../assets/welcome_waving_woman.png')} style={styles.image} resizeMode="contain" />
       <ThemedText style={styles.title}>Welcome, {user?.name}!</ThemedText>
       <ThemedText tone="textSecondary" style={styles.body}>
-        Your local profile is ready. Explore SuyoLink and try out the demo errands.
+        Your account is ready. Welcome to SuyoLink!
       </ThemedText>
       <ThemedButton title="Get Started" onPress={() => router.replace('/dashboard')} style={styles.button} />
     </ScrollView>

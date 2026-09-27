@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function DashboardHeader({ onOpenSidebar }) {
+export default function DashboardHeader({ onOpenSidebar, onNotifications, unreadCount = 0 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
@@ -21,6 +21,9 @@ export default function DashboardHeader({ onOpenSidebar }) {
 
       <View style={styles.headerRightActions}>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`Open notifications, ${unreadCount} unread`}
+          onPress={onNotifications}
           style={styles.headerIconButton}
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -30,7 +33,7 @@ export default function DashboardHeader({ onOpenSidebar }) {
             size={22}
             color={colors.onPrimary}
           />
-          <View style={styles.unreadBadgeDot} />
+          {unreadCount > 0 ? <View style={styles.unreadBadgeDot} /> : null}
         </TouchableOpacity>
 
         <TouchableOpacity

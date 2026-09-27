@@ -5,13 +5,16 @@ import { useSuyos } from '../../context/SuyoContext';
 import ThemedText from '../themed/ThemedText';
 import ThemedButton from '../themed/ThemedButton';
 import TaskCard from '../cards/TaskCard';
+import { useRouter } from 'expo-router';
 
 export default function AvailableSuyos({ suyos }) {
   const { colors } = useTheme();
+  const router = useRouter();
   const { isLoading, error, reload } = useSuyos();
   return (
     <View style={styles.section}>
       <ThemedText style={styles.heading}>Available suyos</ThemedText>
+      <ThemedButton title="Explore request map" onPress={() => router.push('/map')} textStyle={{ color: colors.white }} style={{ marginBottom: 12 }} />
       {isLoading ? (
         <ThemedText>Loading requests…</ThemedText>
       ) : error ? (
@@ -34,7 +37,7 @@ export default function AvailableSuyos({ suyos }) {
             suyos.map((suyo) => <TaskCard key={suyo.id} suyo={suyo} />)
           ) : (
             <ThemedText style={{ color: colors.textMuted }}>
-              No suyos yet. Tap Post a Suyo to create your first request.
+              No available suyos match this view. Try other filters or post a request.
             </ThemedText>
           )}
         </View>

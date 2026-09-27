@@ -1,176 +1,72 @@
+import React, { useMemo, useState } from 'react';
+import { ScrollView, View, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTheme } from '../theme/ThemeContext';
+import { useSuyos } from '../context/SuyoContext';
+import { useDeviceLocation } from '../context/LocationContext';
+import { distanceKm, formatDistance, hasCoordinates } from '../lib/geo';
+import { formatOffer } from '../data/suyoRequests';
+import TaskMap from '../components/maps/TaskMap';
 import ScreenHeader from '../components/ScreenHeader';
 import ThemedText from '../components/themed/ThemedText';
-import { useTheme } from '../theme/ThemeContext';
-import React from "react";
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+import ThemedButton from '../components/themed/ThemedButton';
 
 export default function MapScreen() {
-  const router = useRouter();
   const { colors } = useTheme();
-  const styles = createStyles(colors);
-
-  return (
-    <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
-      <StatusBar style="light" />
-
-      <ScreenHeader brand title="Live Map Tracking" onBack={() => router.back()} />
-
-      <View style={styles.mapArea}>
-        <Image
-          source={require("../assets/hunter_green_tracking.jpg")}
-          style={styles.mapIllustration}
-          resizeMode="contain"
-        />
-        <View style={styles.mapOverlayCard}>
-          <View style={styles.liveIndicatorRow}>
-            <View style={styles.pulsingDot} />
-            <ThemedText style={styles.liveText}>LIVE TRACKING</ThemedText>
-          </View>
-          <ThemedText style={styles.trackingLabel}>Doer is 5 mins away</ThemedText>
-          <ThemedText style={styles.trackingSub}>Errand: Drop off documents at Unit 402</ThemedText>
-        </View>
+  const router = useRouter();
+  const { requestId } = useLocalSearchParams();
+  const { requests, reload, isLoading, error } = useSuyos();
+  const { position, locate, loading, error: locationError } = useDeviceLocation();
+  const [radius, setRadius] = useState(null);
+  const [selectedId, setSelectedId] = useState(requestId || null);
+  const open = requests.filter(request => request.status === 'open' && Date.parse(request.deadline) > Date.now());
+  const target = requests.find(request => request.id === requestId && hasCoordinates(request));
+  const pinned = [...open, ...(target && !open.some(request => request.id === target.id) ? [target] : [])].filter(hasCoordinates);
+  const nearby = pinned.map(request => ({ ...request, distance: distanceKm(position, request) }))
+    .filter(request => !position || radius === null || request.distance <= radius)
+    .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+  const selected = nearby.find(request => request.id === selectedId);
+  const focus = selected || position || pinned[0];
+  const markers = useMemo(() => [
+    ...nearby.map(request => ({ id: request.id, latitude: request.latitude, longitude: request.longitude, title: request.title })),
+    ...(position ? [{ ...position, id: 'my-location', title: 'Your current location', isMe: true }] : []),
+  ], [requests, position, radius]);
+  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <ScreenHeader title="Nearby suyos" subtitle="Find tasks around you" onBack={() => router.canGoBack() ? router.back() : router.replace('/dashboard')} />
+    <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
+      <ThemedText tone="textMuted">Green pins are task locations. Blue is your location. Distances are straight-line estimates, not road distances.</ThemedText>
+      <ThemedButton title={position ? 'Refresh my location' : 'Show distance from me'} loading={loading} textStyle={{ color: colors.white }}
+        onPress={async () => { setSelectedId(null); await locate(); }} />
+      {locationError ? <ThemedText accessibilityRole="alert" tone="danger">{locationError}</ThemedText> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {[null, 1, 3, 5, 10].map(km => <TouchableOpacity key={km ?? 'all'} accessibilityRole="button"
+          accessibilityLabel={km === null ? 'All distances' : `Within ${km} km`} disabled={!position && km !== null}
+          accessibilityState={{ selected: radius === km, disabled: !position && km !== null }}
+          onPress={() => { setRadius(km); setSelectedId(null); }}
+          style={{ padding: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.border,
+            opacity: !position && km !== null ? 0.4 : 1, backgroundColor: radius === km ? colors.primary : colors.surface }}>
+          <ThemedText style={{ color: radius === km ? colors.white : colors.text }}>{km === null ? 'All' : `${km} km`}</ThemedText>
+        </TouchableOpacity>)}
       </View>
-
-      <View style={styles.bottomPanel}>
-        <View style={styles.doerInfoRow}>
-          <View style={styles.doerAvatarCircle}>
-            <Ionicons name="person" size={22} color={colors.onPrimary} />
-          </View>
-          <View style={styles.doerMeta}>
-            <ThemedText style={styles.doerName}>Alex M.</ThemedText>
-            <ThemedText style={styles.doerRating}>4.9 - 231 errands done</ThemedText>
-          </View>
-          <TouchableOpacity style={styles.callButton} activeOpacity={0.7}>
-            <Ionicons name="call" size={18} color={colors.onPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.chatButton} activeOpacity={0.7}>
-            <Ionicons name="chatbubble-ellipses" size={18} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.progressRow}>
-          <ThemedText style={styles.progressLabel}>Route progress</ThemedText>
-          <ThemedText style={styles.progressPercent}>78%</ThemedText>
-        </View>
-        <View style={styles.progressTrack}>
-          <View style={styles.progressFill} />
-        </View>
-
-        <TouchableOpacity style={styles.cancelButton} activeOpacity={0.8}>
-          <Ionicons name="close-circle-outline" size={18} color={colors.danger} />
-          <ThemedText style={styles.cancelText}>Cancel Suyo</ThemedText>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
+      <TaskMap center={focus} markers={markers} height={340} onSelect={id => setSelectedId(id === 'my-location' ? null : id)} />
+      <ThemedButton title="Refresh requests" onPress={reload} loading={isLoading} textStyle={{ color: colors.white }} />
+      {error ? <ThemedText tone="danger" accessibilityRole="alert">{error}</ThemedText> : null}
+      {!isLoading && !error ? <>
+        <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>{nearby.length} requests on map</ThemedText>
+        {!position ? <ThemedText tone="textMuted">Tap Show distance from me to sort nearby tasks and use kilometre filters.</ThemedText> : null}
+        {open.length > pinned.length ? <ThemedText tone="textMuted">{open.length - pinned.length} older requests have no map pin yet.</ThemedText> : null}
+        {!nearby.length ? <ThemedText>No requests in this area yet. Try a wider distance or post a suyo.</ThemedText> : null}
+        {nearby.map(request => <TouchableOpacity key={request.id} accessibilityRole="button" accessibilityLabel={`Focus ${request.title}`}
+          onPress={() => setSelectedId(request.id)} style={{ gap: 6, padding: 16, borderRadius: 14, borderWidth: selectedId === request.id ? 2 : 1,
+            borderColor: selectedId === request.id ? colors.primary : colors.border, backgroundColor: colors.card }}>
+          <ThemedText style={{ fontWeight: '700' }}>{request.title}</ThemedText>
+          <ThemedText>{request.location}</ThemedText>
+          <ThemedText>{formatOffer(request.offerCentavos)}{position ? ` - ${formatDistance(request.distance)}` : ''}</ThemedText>
+          {selectedId === request.id ? <><ThemedText>{request.details}</ThemedText>
+            <ThemedButton title="Open task" onPress={() => router.push({ pathname: '/suyo', params: { id: request.id } })} /></> : null}
+        </TouchableOpacity>)}
+      </> : null}
+    </ScrollView>
+  </SafeAreaView>;
 }
-
-const createStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.brand },
-  mapArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mapIllustration: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT * 0.42,
-  },
-  mapOverlayCard: {
-    position: "absolute",
-    bottom: 16,
-    left: 16,
-    right: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  liveIndicatorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  pulsingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
-  liveText: { fontSize: 10, fontWeight: "800", color: colors.accent, letterSpacing: 0.5 },
-  trackingLabel: { fontSize: 16, fontWeight: "700", color: colors.onPrimary, marginBottom: 3 },
-  trackingSub: { fontSize: 12.5, color: colors.onBrand },
-  bottomPanel: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 10,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  doerInfoRow: { flexDirection: "row", alignItems: "center", marginBottom: 18, gap: 12 },
-  doerAvatarCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  doerMeta: { flex: 1 },
-  doerName: { fontSize: 15, fontWeight: "800", color: colors.text, marginBottom: 2 },
-  doerRating: { fontSize: 12, color: colors.muted },
-  callButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chatButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  progressRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  progressLabel: { fontSize: 12.5, color: colors.muted, fontWeight: "600" },
-  progressPercent: { fontSize: 12.5, color: colors.link, fontWeight: "800" },
-  progressTrack: {
-    height: 6,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 3,
-    overflow: "hidden",
-    marginBottom: 18,
-  },
-  progressFill: { width: "78%", height: "100%", backgroundColor: colors.accent, borderRadius: 3 },
-  cancelButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: colors.dangerSurface,
-    borderWidth: 1,
-    borderColor: colors.dangerBorder,
-  },
-  cancelText: { fontSize: 13.5, fontWeight: "700", color: colors.danger },
-});

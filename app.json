@@ -35,6 +35,12 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow SuyoLink to use your location to place a task pin and show nearby request distances."
+        }
       ]
     ]
   }

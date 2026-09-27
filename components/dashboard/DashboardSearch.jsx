@@ -4,7 +4,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedTextInput from '../themed/ThemedTextInput';
 
-export default function DashboardSearch() {
+export default function DashboardSearch({ value, onChangeText }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
@@ -17,7 +17,10 @@ export default function DashboardSearch() {
       />
       <ThemedTextInput
         style={styles.searchInput}
-        placeholder="Search suyo request, errand, or doer..."
+        placeholder="Search tasks or locations..."
+        accessibilityLabel="Search tasks"
+        value={value}
+        onChangeText={onChangeText}
         placeholderTextColor={colors.muted}
       />
     </View>
