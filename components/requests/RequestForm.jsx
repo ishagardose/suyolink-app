@@ -13,6 +13,9 @@ import { CATEGORIES } from '../../data/suyoRequests';
 import ThemedText from '../themed/ThemedText';
 import ThemedTextInput from '../themed/ThemedTextInput';
 import ThemedButton from '../themed/ThemedButton';
+import LocationPicker from './LocationPicker';
+import DeadlinePicker from './DeadlinePicker';
+import { localDeadline } from '../../lib/deadline';
 
 const EMPTY = {
   title: '',
@@ -21,13 +24,16 @@ const EMPTY = {
   offerAmount: '',
   deadline: '',
   location: '',
+  coordinates: null,
   notes: '',
 };
 
 export default function RequestForm({ onPosted }) {
   const { colors } = useTheme();
   const { postRequest, isLoading, error: loadError, reload } = useSuyos();
-  const [draft, setDraft] = useState(EMPTY);
+  const [draft, setDraft] = useState(() => ({ ...EMPTY,
+    clientReference: 'post-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2),
+  }));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -128,18 +134,20 @@ export default function RequestForm({ onPosted }) {
           keyboardType: 'decimal-pad',
           maxLength: 12,
         })}
-        {field('deadline', 'Deadline', {
-          placeholder: 'YYYY-MM-DD HH:mm',
-          maxLength: 16,
-          autoCapitalize: 'none',
-        })}
-        <ThemedText style={{ color: colors.textMuted }}>
-          Use your device's local date and 24-hour time, e.g. 2026-12-31 18:30.
-        </ThemedText>
+        <ThemedText style={styles.label}>Deadline</ThemedText>
+        <View style={styles.categories}>
+          {[['In 1 hour', 1], ['In 3 hours', 3], ['Tomorrow', 24]].map(([title, hours]) =>
+            <ThemedButton key={title} title={title} variant="secondary" disabled={busy}
+              onPress={() => setDraft(prev => ({ ...prev, deadline: localDeadline(new Date(Date.now() + hours * 3600000)) }))} />)}
+        </View>
+        <DeadlinePicker value={draft.deadline} disabled={busy} onChange={deadline => setDraft(prev => ({ ...prev, deadline }))} />
+        <ThemedText tone="textMuted">Choose when the task needs to be finished, in your local time.</ThemedText>
         {field('location', 'Location', {
           placeholder: 'Address or meeting point',
           maxLength: 250,
         })}
+        <LocationPicker value={draft.coordinates} disabled={busy}
+          onChange={(coordinates) => setDraft(previous => ({ ...previous, coordinates }))} />
         {field('notes', 'Additional notes (optional)', {
           placeholder: 'Extra instructions',
           multiline: true,

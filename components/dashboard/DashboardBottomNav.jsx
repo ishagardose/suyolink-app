@@ -6,8 +6,8 @@ import ThemedText from '../themed/ThemedText';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: 'home' },
-  { id: 'mysuyos', label: 'Mysuyos', icon: 'bicycle' },
-  { id: 'messages', label: 'Messages', icon: 'chatbubbles' },
+  { id: 'mysuyos', label: 'My Suyos', icon: 'bicycle' },
+  { id: 'notifications', label: 'Notifications', icon: 'notifications' },
   { id: 'activity', label: 'Activity', icon: 'receipt' },
 ];
 
@@ -21,6 +21,9 @@ export default function DashboardBottomNav({ activeTab, onTabChange }) {
         return (
           <TouchableOpacity
             key={tab.id}
+            accessibilityRole="button"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
             style={styles.navItem}
             onPress={() => {
               onTabChange(tab.id);

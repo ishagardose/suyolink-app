@@ -3,9 +3,16 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { formatOffer, STATUS_LABELS } from '../../data/suyoRequests';
 import ThemedText from '../themed/ThemedText';
+import { distanceKm, formatDistance } from '../../lib/geo';
+import { useDeviceLocation } from '../../context/LocationContext';
+import { useRouter } from 'expo-router';
+import ThemedButton from '../themed/ThemedButton';
 
 export default function TaskCard({ suyo }) {
   const { colors } = useTheme();
+  const { position } = useDeviceLocation();
+  const router = useRouter();
+  const distance = distanceKm(position, suyo);
   const [expanded, setExpanded] = useState(false);
   const expired =
     suyo.status === 'open' && Date.parse(suyo.deadline) <= Date.now();
@@ -53,6 +60,13 @@ export default function TaskCard({ suyo }) {
           </ThemedText>
         </View>
       )}
+      {distance !== null ? <ThemedText>{formatDistance(distance)} (straight-line)</ThemedText> : null}
+      <ThemedButton title="Open task" accessibilityLabel={'Open task ' + suyo.title} onPress={() => router.push({ pathname: '/suyo', params: { id: suyo.id } })} />
+      {Number.isFinite(suyo.latitude) && Number.isFinite(suyo.longitude) ?
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={'View location for ' + suyo.title}
+          onPress={() => router.push({ pathname: '/map', params: { requestId: suyo.id } })}>
+          <ThemedText style={{ fontWeight: '700' }}>View on map</ThemedText>
+        </TouchableOpacity> : null}
     </View>
   );
 }

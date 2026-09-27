@@ -68,3 +68,7 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Keep local Supabase artifacts ignored, but version the database migrations.
+/supabase/*
+!/supabase/migrations/

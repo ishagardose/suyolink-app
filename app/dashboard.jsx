@@ -17,6 +17,13 @@ import EditProfileModal from '../components/cards/EditProfileModal';
 import { QUICK_ACTIONS } from '../data/dashboard';
 import { useSuyos } from '../context/SuyoContext';
 import { formatOffer } from '../data/suyoRequests';
+import { useDeviceLocation } from '../context/LocationContext';
+import { distanceKm } from '../lib/geo';
+import TaskFilters from '../components/dashboard/TaskFilters';
+import MySuyos from '../components/dashboard/MySuyos';
+import Notifications from '../components/dashboard/Notifications';
+import ThemedText from '../components/themed/ThemedText';
+import ThemedButton from '../components/themed/ThemedButton';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -25,10 +32,21 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { requests } = useSuyos();
+  const { requests, notifications, workflowError, error, refresh, isLoading } = useSuyos();
+  const { position } = useDeviceLocation();
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('');
+  const [radius, setRadius] = useState(0);
+  const [due, setDue] = useState(0);
+  const now = Date.now();
+  const available = requests.filter(request => request.status === 'open' && Date.parse(request.deadline) > now)
+    .filter(request => !category || request.category === category)
+    .filter(request => !query.trim() || `${request.title} ${request.details} ${request.location}`.toLowerCase().includes(query.trim().toLowerCase()))
+    .filter(request => !due || Date.parse(request.deadline) <= now + due * 3600000)
+    .filter(request => !radius || (position && distanceKm(position, request) !== null && distanceKm(position, request) <= radius));
   const scrollRef = useRef(null);
   const ownRequests = requests.filter(
-    (request) => request.requesterEmail === user.email
+    (request) => request.requesterId === user.id || request.providerId === user.id
   );
   const stats = {
     completed: ownRequests.filter((request) => request.status === 'completed')
@@ -40,7 +58,7 @@ export default function DashboardScreen() {
       requests
         .filter(
           (request) =>
-            request.providerEmail === user.email &&
+            request.providerId === user.id &&
             request.status === 'completed'
         )
         .reduce((sum, request) => sum + request.offerCentavos, 0)
@@ -48,7 +66,7 @@ export default function DashboardScreen() {
   };
   const onQuickAction = (id) => {
     if (id === 'post') router.push('/post-suyo');
-    else scrollRef.current?.scrollToEnd({ animated: true });
+    else { setActiveTab('home'); scrollRef.current?.scrollToEnd({ animated: true }); }
   };
 
   const openEditProfile = () => {
@@ -62,7 +80,8 @@ export default function DashboardScreen() {
       style={[styles.screen, { backgroundColor: colors.hero }]}
     >
       <StatusBar style="light" />
-      <DashboardHeader onOpenSidebar={() => setIsSidebarOpen(true)} />
+      <DashboardHeader onOpenSidebar={() => setIsSidebarOpen(true)} onNotifications={() => setActiveTab('notifications')}
+        unreadCount={notifications.filter(item => !item.read_at).length} />
 
       <ScrollView
         ref={scrollRef}
@@ -72,15 +91,22 @@ export default function DashboardScreen() {
       >
         <DashboardHero name={user.name} />
         <View style={[styles.body, { backgroundColor: colors.background }]}>
-          <DashboardSearch />
+          <View style={{ paddingVertical: 16, gap: 12 }}>
+            <ThemedButton title="Refresh dashboard" variant="secondary" loading={isLoading} onPress={refresh} />
+            {workflowError || error ? <ThemedText tone="danger" accessibilityRole="alert">{error || workflowError}</ThemedText> : null}
+          </View>
+          {activeTab === 'home' ? <>
+          <DashboardSearch value={query} onChangeText={setQuery} />
           <DashboardStats
             stats={stats}
             onViewActivity={() => setActiveTab('activity')}
           />
           <QuickServices actions={QUICK_ACTIONS} onAction={onQuickAction} />
+          <TaskFilters category={category} setCategory={setCategory} radius={radius} setRadius={setRadius} due={due} setDue={setDue} hasLocation={!!position} />
           <AvailableSuyos
-            suyos={requests.filter((request) => request.status === 'open')}
+            suyos={available}
           />
+          </> : activeTab === 'notifications' ? <Notifications /> : <MySuyos key={activeTab} history={activeTab === 'activity'} />}
         </View>
       </ScrollView>
 

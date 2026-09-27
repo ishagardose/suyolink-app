@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '../theme/ThemeContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SuyoProvider } from '../context/SuyoContext';
+import { LocationProvider } from '../context/LocationContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -28,6 +29,7 @@ function AppNavigator() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="verify-email" />
         <Stack.Screen
           name="(auth)"
           options={{ animation: 'slide_from_bottom' }}
@@ -36,6 +38,7 @@ function AppNavigator() {
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="dashboard" />
           <Stack.Screen name="post-suyo" />
+          <Stack.Screen name="suyo" />
           <Stack.Screen
             name="map"
             options={{ animation: 'slide_from_bottom' }}
@@ -49,9 +52,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <SuyoProvider>
+        <LocationProvider><SuyoProvider>
           <AppNavigator />
-        </SuyoProvider>
+        </SuyoProvider></LocationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

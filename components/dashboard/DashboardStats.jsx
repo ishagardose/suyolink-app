@@ -14,7 +14,7 @@ export default function DashboardStats({ stats, onViewActivity }) {
       </View>
 
       <View style={styles.statCard}>
-        <ThemedText style={styles.statCardLabel}>Earned</ThemedText>
+        <ThemedText style={styles.statCardLabel}>Completed offers</ThemedText>
         <ThemedText style={styles.statCardValue}>{stats.earned}</ThemedText>
       </View>
 

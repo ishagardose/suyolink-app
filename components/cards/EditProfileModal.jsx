@@ -8,7 +8,7 @@ import ThemedTextInput from '../themed/ThemedTextInput';
 import ThemedButton from '../themed/ThemedButton';
 
 export default function EditProfileModal({ onClose }) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, profileError } = useAuth();
   const { colors } = useTheme();
   const [draft, setDraft] = useState({ ...user });
   const [busy, setBusy] = useState(false);
@@ -35,10 +35,11 @@ export default function EditProfileModal({ onClose }) {
           ].map(({ key, label, ...props }) => <ThemedView key={key} style={styles.field}>
             <ThemedText style={styles.label}>{label}</ThemedText>
             <ThemedTextInput {...props} accessibilityLabel={label} value={draft[key]} placeholder={label}
-              editable={!busy} onChangeText={(value) => setDraft((prev) => ({ ...prev, [key]: value }))}
+              editable={!busy && key !== 'email'} onChangeText={(value) => setDraft((prev) => ({ ...prev, [key]: value }))}
               style={[styles.input, { backgroundColor: colors.input, borderColor: colors.border }]} />
           </ThemedView>)}
-          {error ? <ThemedText tone="danger" accessibilityRole="alert">{error}</ThemedText> : null}
+          <ThemedText>Email changes are not available here yet.</ThemedText>
+          {error || profileError ? <ThemedText tone="danger" accessibilityRole="alert">{error || profileError}</ThemedText> : null}
           <ThemedView style={styles.buttons}>
             <ThemedButton title="Cancel" variant="secondary" onPress={onClose} disabled={busy} style={styles.button} />
             <ThemedButton title="Save Changes" onPress={save} loading={busy} style={styles.button} />

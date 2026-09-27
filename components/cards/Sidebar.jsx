@@ -1,6 +1,6 @@
 import ThemedText from '../themed/ThemedText';
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Modal, Switch, Dimensions } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Modal, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
@@ -10,8 +10,7 @@ const SIDEBAR_WIDTH = Math.min(Dimensions.get('window').width * 0.82, 340);
 export default function Sidebar({ visible, onClose, onEditProfile }) {
   const { colors, themeMode, setThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { user: userProfile, logout } = useAuth();
-  const [pushNotifications, setPushNotifications] = useState(true);
+  const { user: userProfile, logout, isProfileReady, profileError } = useAuth();
   const [expandedSection, setExpandedSection] = useState(null);
   const [error, setError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
@@ -88,6 +87,7 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                   <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel="Edit profile"
+                    disabled={!isProfileReady}
                     style={styles.smallEditIconButton}
                     activeOpacity={0.7}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -96,6 +96,7 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                     <Ionicons name="pencil-sharp" size={13} color={colors.link} />
                   </TouchableOpacity>
                 </View>
+                {profileError ? <ThemedText tone="danger" accessibilityRole="alert">{profileError}</ThemedText> : null}
 
                 <View style={styles.sidebarDivider} />
                 <ThemedText style={styles.sidebarSectionTitle}>Preferences</ThemedText>
@@ -117,16 +118,10 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                       <Ionicons name="notifications-outline" size={18} color={colors.link} />
                     </View>
                     <View style={styles.menuItemTextCol}>
-                      <ThemedText style={styles.menuItemTitle}>Push Notifications</ThemedText>
-                      <ThemedText style={styles.menuItemSub}>Delivery alerts & promos</ThemedText>
+                      <ThemedText style={styles.menuItemTitle}>Task Notifications</ThemedText>
+                      <ThemedText style={styles.menuItemSub}>View application and task updates in Notifications</ThemedText>
                     </View>
                   </View>
-                  <Switch
-                    value={pushNotifications}
-                    onValueChange={setPushNotifications}
-                    trackColor={{ false: colors.border, true: colors.primary }}
-                    thumbColor={pushNotifications ? colors.accent : colors.onPrimary}
-                  />
                 </View>
 
                 <TouchableOpacity
