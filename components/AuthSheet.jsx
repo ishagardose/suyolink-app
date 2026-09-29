@@ -20,6 +20,7 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -45,6 +46,7 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
     if (submitting.current) return;
     if (signup && !name.trim()) { setError('Enter your full name.'); return; }
     if (!password.trim()) { setError('Enter a password to continue.'); return; }
+    if (signup && password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Enter a valid email address.'); return; }
     submitting.current = true;
     setBusy(true);
@@ -52,10 +54,16 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
     try {
       const result = signup ? await register({ email, password, name }) : await login({ email, password });
       setPassword('');
+      setConfirmPassword('');
       if (result?.needsConfirmation) {
         router.replace({ pathname: '/verify-email', params: { email: email.trim().toLowerCase() } });
       } else setSubmitted(true);
     } catch (err) {
+      if (err.code === 'email_not_confirmed') {
+        setPassword('');
+        router.push({ pathname: '/verify-email', params: { email: email.trim().toLowerCase() } });
+        return;
+      }
       setError(err.message || 'Unable to sign in. Please try again.');
     } finally {
       submitting.current = false;
@@ -89,8 +97,17 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
                   onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
                   <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.muted} />
                 </TouchableOpacity>} />
+              {signup ? <Field label="Confirm Password" icon="lock-closed-outline" value={confirmPassword}
+                onChangeText={setConfirmPassword} placeholder="Enter your password again" secureTextEntry={!showPassword}
+                autoCapitalize="none" autoCorrect={false} editable={!busy} onSubmitEditing={submit} returnKeyType="go" /> : null}
               {error ? <ThemedText tone="danger" accessibilityRole="alert" style={styles.note}>{error}</ThemedText> : null}
               <ThemedButton title={signup ? 'Sign Up' : 'Log In'} onPress={submit} loading={busy} />
+              {!signup ? <ThemedView style={{ gap: 10, marginTop: 12 }}>
+                <ThemedButton title="Forgot password?" variant="secondary" disabled={busy}
+                  onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim().toLowerCase() } })} />
+                <ThemedButton title="Verify email / resend code" variant="secondary" disabled={busy}
+                  onPress={() => router.push({ pathname: '/verify-email', params: { email: email.trim().toLowerCase() } })} />
+              </ThemedView> : null}
               <ThemedView style={styles.switchRow}>
                 <ThemedText tone="textSecondary">{signup ? 'Already have an account? ' : "Don't have an account? "}</ThemedText>
                 <TouchableOpacity accessibilityRole="button" onPress={onSwitch} disabled={busy}>

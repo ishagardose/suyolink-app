@@ -52,6 +52,7 @@ for (const confirmation of [true, false]) {
     await page.getByRole('textbox', { name: 'Full Name', exact: true }).fill('New User');
     await page.getByRole('textbox', { name: 'Email Address', exact: true }).fill('new@example.com');
     await page.getByLabel('Password', { exact: true }).fill('new-account-password');
+    await page.getByLabel('Confirm Password', { exact: true }).fill('new-account-password');
     await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
     if (confirmation) {
       await expect(page.getByText('Check your email', { exact: false })).toBeVisible();

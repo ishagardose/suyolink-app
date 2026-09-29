@@ -30,6 +30,7 @@ function AppNavigator() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="verify-email" />
+        <Stack.Screen name="forgot-password" />
         <Stack.Screen
           name="(auth)"
           options={{ animation: 'slide_from_bottom' }}
