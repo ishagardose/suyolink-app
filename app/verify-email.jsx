@@ -14,7 +14,7 @@ import ThemedButton from '../components/themed/ThemedButton';
 
 export default function VerifyEmailScreen() {
   const { colors } = useTheme();
-  const { user, isLoggedIn, resendVerification } = useAuth();
+  const { user, isLoggedIn, resendVerification, verifyEmailCode } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
   // Router params update for both cold-start and already-open native deep links.
@@ -27,6 +27,8 @@ export default function VerifyEmailScreen() {
     : `suyolink-app://verify-email?${callbackParams}#${typeof params['#'] === 'string' ? params['#'] : ''}`;
   const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
   const [checking, setChecking] = useState(false);
+  const [code, setCode] = useState('');
+  const verifyBusy = useRef(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [sending, setSending] = useState(false);
@@ -67,7 +69,7 @@ export default function VerifyEmailScreen() {
   }, [cooldown]);
 
   const resend = async () => {
-    if (resendBusy.current || cooldown) return;
+    if (resendBusy.current || verifyBusy.current || checking || cooldown) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Enter a valid email address.'); return; }
     resendBusy.current = true;
     setSending(true);
@@ -75,10 +77,29 @@ export default function VerifyEmailScreen() {
     setError('');
     try {
       await resendVerification(email);
-      setNotice('If this account still needs verification, a new link is on its way. Check your inbox and spam folder.');
+      setCode('');
+      setNotice('If this account still needs verification, a new code is on its way. Check your inbox and spam folder.');
       setCooldown(60);
     } catch (err) { setError(err.message || 'Unable to send the email. Please try again.'); }
     finally { resendBusy.current = false; setSending(false); }
+  };
+
+  const verify = async () => {
+    if (verifyBusy.current || resendBusy.current || checking) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Enter a valid email address.'); return; }
+    if (!/^\d{6,10}$/.test(code.trim())) { setError('Enter the complete numeric code from your email.'); return; }
+    verifyBusy.current = true;
+    setChecking(true);
+    setError('');
+    setNotice('');
+    try {
+      await verifyEmailCode({ email, token: code });
+      setCode('');
+    } catch (err) {
+      setError(err.code === 'otp_expired'
+        ? 'This code is invalid or has expired. Try the latest code or request a new one.'
+        : err.message || 'Unable to verify your email. Please try again.');
+    } finally { verifyBusy.current = false; setChecking(false); }
   };
 
   return <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
@@ -94,7 +115,7 @@ export default function VerifyEmailScreen() {
         <ThemedText tone="textMuted" style={styles.body}>
           {checking ? 'Finishing verification and signing you in.' : verified
             ? 'Your email is verified and you are now signed in. Welcome to SuyoLink!'
-            : 'Tap Verify email in your inbox. The link will bring you here and sign you in automatically.'}
+            : 'Enter the verification code from your email below to confirm your account and sign in.'}
         </ThemedText>
         {checking ? <ActivityIndicator accessibilityLabel="Verifying email" color={colors.primary} /> : null}
         {verified ? <ThemedButton title="Continue to dashboard" textStyle={{ color: colors.white }} onPress={() => router.replace('/dashboard')} /> : !checking ? <>
@@ -102,8 +123,16 @@ export default function VerifyEmailScreen() {
           <ThemedTextInput accessibilityLabel="Verification email address" value={email} onChangeText={setEmail}
             placeholder="your.email@example.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
             editable={!sending} style={[styles.input, { borderColor: colors.border }]} />
+          <ThemedText style={styles.label}>Verification code</ThemedText>
+          <ThemedTextInput accessibilityLabel="Verification code" value={code}
+            onChangeText={(value) => setCode(value.replace(/\s/g, ''))}
+            placeholder="Enter your code" keyboardType="number-pad" autoCapitalize="none" autoCorrect={false}
+            textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={10}
+            editable={!sending} onSubmitEditing={verify} returnKeyType="done"
+            style={[styles.input, { borderColor: colors.border }]} />
           {error ? <ThemedText tone="danger" accessibilityRole="alert">{error}</ThemedText> : null}
           {notice ? <ThemedText accessibilityRole="alert">{notice}</ThemedText> : null}
+          <ThemedButton title="Verify email" textStyle={{ color: colors.white }} onPress={verify} disabled={sending} />
           <ThemedButton title={cooldown ? `Resend in ${cooldown}s` : 'Resend verification email'} textStyle={{ color: colors.white }}
             onPress={resend} loading={sending} disabled={!!cooldown} />
           <ThemedButton title="Back to login" variant="secondary" textStyle={{ color: colors.text }} disabled={sending}

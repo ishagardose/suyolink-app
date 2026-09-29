@@ -32,7 +32,7 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { requests, notifications, workflowError, error, refresh, isLoading } = useSuyos();
+  const { requests, workflowError, error, refresh, isLoading } = useSuyos();
   const { position } = useDeviceLocation();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
@@ -80,8 +80,7 @@ export default function DashboardScreen() {
       style={[styles.screen, { backgroundColor: colors.hero }]}
     >
       <StatusBar style="light" />
-      <DashboardHeader onOpenSidebar={() => setIsSidebarOpen(true)} onNotifications={() => setActiveTab('notifications')}
-        unreadCount={notifications.filter(item => !item.read_at).length} />
+      <DashboardHeader onOpenSidebar={() => setIsSidebarOpen(true)} />
 
       <ScrollView
         ref={scrollRef}

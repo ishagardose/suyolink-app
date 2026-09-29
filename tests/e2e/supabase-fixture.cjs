@@ -19,6 +19,13 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
     if (path === '/auth/v1/token') {
       if (rejectLogin) return route.fulfill({ status: 400, json: { code: 'invalid_credentials', msg: 'Invalid login credentials' } });
       json = session;
+    } else if (path === '/auth/v1/verify') {
+      if (body.token !== '012345' || body.type !== 'email' || body.email !== user.email) {
+        return route.fulfill({ status: 403, headers: { 'x-supabase-api-version': '2024-01-01',
+          'access-control-expose-headers': 'x-supabase-api-version' },
+          json: { code: 'otp_expired', msg: 'Token has expired or is invalid' } });
+      }
+      json = session;
     } else if (path === '/auth/v1/signup') {
       const registered = { ...user, email: body.email, user_metadata: body.data };
       profile.full_name = body.data.full_name;

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState, Platform } from 'react-native';
-import * as Linking from 'expo-linking';
 import { supabase, authConfigError } from '../lib/supabase';
 
 const AuthContext = createContext(null);
@@ -72,7 +71,7 @@ export function AuthProvider({ children }) {
         if (!supabase) throw new Error(authConfigError);
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(), password,
-          options: { data: { full_name: name.trim() }, emailRedirectTo: Linking.createURL('verify-email') },
+          options: { data: { full_name: name.trim() } },
         });
         if (error) throw error;
         return { needsConfirmation: !data.session };
@@ -81,9 +80,18 @@ export function AuthProvider({ children }) {
         if (!supabase) throw new Error(authConfigError);
         const { error } = await supabase.auth.resend({
           type: 'signup', email: email.trim().toLowerCase(),
-          options: { emailRedirectTo: Linking.createURL('verify-email') },
         });
         if (error) throw error;
+      },
+      verifyEmailCode: async ({ email, token }) => {
+        if (!supabase) throw new Error(authConfigError);
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: email.trim().toLowerCase(), token: token.trim(), type: 'email',
+        });
+        if (error) throw error;
+        if (!data.session || !data.user?.email_confirmed_at) {
+          throw new Error('Your email is not confirmed yet. Request a new code and try again.');
+        }
       },
       logout: async () => {
         const { error } = await supabase.auth.signOut({ scope: 'local' });

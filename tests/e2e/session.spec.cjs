@@ -56,7 +56,7 @@ for (const confirmation of [true, false]) {
     if (confirmation) {
       await expect(page.getByText('Check your email', { exact: false })).toBeVisible();
       await expect(page).toHaveURL(/\/verify-email\?email=/);
-      expect(new URLSearchParams(calls.find(call => call.path === '/auth/v1/signup').query).get('redirect_to')).toBe('http://127.0.0.1:4173/verify-email');
+      expect(new URLSearchParams(calls.find(call => call.path === '/auth/v1/signup').query).has('redirect_to')).toBe(false);
       await page.goto('/dashboard');
       await expect(page).toHaveURL('http://127.0.0.1:4173/');
     } else {
