@@ -105,8 +105,6 @@ export default function AuthSheet({ mode, visible, onClose, onSwitch, onSuccess 
               {!signup ? <ThemedView style={{ gap: 10, marginTop: 12 }}>
                 <ThemedButton title="Forgot password?" variant="secondary" disabled={busy}
                   onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim().toLowerCase() } })} />
-                <ThemedButton title="Verify email / resend code" variant="secondary" disabled={busy}
-                  onPress={() => router.push({ pathname: '/verify-email', params: { email: email.trim().toLowerCase() } })} />
               </ThemedView> : null}
               <ThemedView style={styles.switchRow}>
                 <ThemedText tone="textSecondary">{signup ? 'Already have an account? ' : "Don't have an account? "}</ThemedText>
@@ -136,9 +134,9 @@ function Field({ label, icon, accessory, ...props }) {
 const styles = StyleSheet.create({
   root: { flex: 1 }, flex: { flex: 1 },
   sheet: { flex: 1, borderTopLeftRadius: 36, borderTopRightRadius: 36, overflow: 'hidden', marginTop: 8 },
-  content: { padding: 24, paddingBottom: 40 },
-  illustration: { width: 150, height: 145, alignSelf: 'center', marginBottom: 10 },
-  title: { fontSize: 26, fontWeight: '800', textAlign: 'center', marginBottom: 6 },
+  content: { padding: 24, paddingBottom: 40, width: '100%', maxWidth: 480, alignSelf: 'center' },
+  illustration: { width: 115, height: 110, alignSelf: 'center', marginBottom: 16 },
+  title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.8, textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 22 },
   field: { marginBottom: 16 }, label: { fontSize: 13, fontWeight: '700', marginBottom: 6 },
   inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, minHeight: 50, gap: 10 },

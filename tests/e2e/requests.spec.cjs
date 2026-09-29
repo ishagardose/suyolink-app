@@ -20,8 +20,7 @@ test('post saves a map pin through Supabase and restores it after refresh', asyn
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/post-suyo');
   await fillForm(page);
-  await page.getByRole('button', { name: 'Post request', exact: true }).click();
-  await expect(page.getByText('Choose a task location pin on the map.')).toBeVisible();
+  await expect(page.getByLabel('Selected task coordinates')).toContainText('7.07000, 125.60000');
   await choosePin(page);
   await page.getByRole('button', { name: 'Post request', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);

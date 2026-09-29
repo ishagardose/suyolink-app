@@ -24,7 +24,7 @@ export default function DashboardBottomNav({ activeTab, onTabChange }) {
             accessibilityRole="button"
             accessibilityLabel={tab.label}
             accessibilityState={{ selected: isActive }}
-            style={styles.navItem}
+            style={[styles.navItem, isActive && { backgroundColor: colors.surfaceAlt }]}
             onPress={() => {
               onTabChange(tab.id);
             }}
@@ -51,16 +51,23 @@ const createStyles = (colors) =>
   StyleSheet.create({
     bottomNavContainer: {
       position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: colors.surface,
+      bottom: 12,
+      left: 14,
+      right: 14,
+      height: 68,
+      padding: 6,
+      borderRadius: 24,
+      backgroundColor: colors.card,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-around',
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 5,
       zIndex: 95,
     },
     navItem: {
@@ -68,6 +75,8 @@ const createStyles = (colors) =>
       justifyContent: 'center',
       flex: 1,
       height: '100%',
+      borderRadius: 18,
+      gap: 3,
     },
     navItemText: {
       fontSize: 10.5,

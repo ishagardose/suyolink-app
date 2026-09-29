@@ -15,6 +15,6 @@ export default function ThemedButton({ title, variant = 'primary', loading = fal
   );
 }
 const styles = StyleSheet.create({
-  button: { minHeight: 48, borderRadius: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  text: { fontSize: 16, fontWeight: '700' },
+  button: { minHeight: 48, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+  text: { fontSize: 14, fontWeight: '700', textAlign: 'center', lineHeight: 20 },
 });

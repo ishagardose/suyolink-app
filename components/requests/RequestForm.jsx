@@ -185,8 +185,8 @@ export default function RequestForm({ onPosted }) {
 }
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, gap: 14, paddingBottom: 40 },
-  field: { gap: 6 },
+  content: { padding: 24, gap: 20, paddingBottom: 40, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  field: { gap: 8 },
   label: { fontSize: 14, fontWeight: '700' },
   input: {
     borderWidth: 1,

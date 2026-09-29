@@ -14,6 +14,16 @@ export const light = {
     border: '#D8E5DF',
     danger: '#D32F2F',
     white: '#FFFFFF',
+    brand: PRIMARY,
+    hero: PRIMARY,
+    onPrimary: '#FFFFFF',
+    link: PRIMARY,
+    muted: '#658071',
+    textSecondary: '#658071',
+    surfaceAlt: '#EAF2ED',
+    input: '#FFFFFF',
+    shadow: '#163523',
+    accent: '#6BA17B',
 };
 
 export const dark = {
@@ -29,4 +39,14 @@ export const dark = {
     border: '#2A3B30',
     danger: '#F26B6B',
     white: '#FFFFFF',
+    brand: PRIMARY,
+    hero: PRIMARY,
+    onPrimary: '#FFFFFF',
+    link: '#B5D8BF',
+    muted: '#8FA497',
+    textSecondary: '#8FA497',
+    surfaceAlt: '#263B2E',
+    input: '#16241C',
+    shadow: '#000000',
+    accent: '#8DBE9A',
 };

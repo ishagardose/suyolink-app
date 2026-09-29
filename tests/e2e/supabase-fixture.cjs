@@ -3,10 +3,14 @@ const host = 'suyolink-test.supabase.co';
 const storageKey = `sb-${host.split('.')[0]}-auth-token`;
 const user = { id: '11111111-1111-4111-8111-111111111111', email: 'requester@example.com', email_confirmed_at: '2026-09-26T00:00:00Z', aud: 'authenticated', role: 'authenticated', user_metadata: { full_name: 'Request Tester' } };
 const session = { access_token: 'test-access-token', refresh_token: 'test-refresh-token', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user };
-async function mockSupabase(page, { signedIn = false, confirmation = false, rejectLogin = false, requests = [], workflow = {} } = {}) {
+async function mockSupabase(page, { signedIn = false, confirmation = false, rejectLogin = false, requests = [], workflow = {}, locationSetup = true } = {}) {
   let profile = { full_name: user.user_metadata.full_name };
   let contacts = { phone: '', address: '' };
   const calls = [];
+  if (locationSetup) await page.addInitScript(id => {
+    const key = `@suyolink/location/${id}`;
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ position: { latitude: 7.07, longitude: 125.6 }, source: 'gps' }));
+  }, user.id);
   calls.requests = requests;
   await page.route('https://tile.openstreetmap.org/**', route => route.fulfill({ contentType: 'image/png',
     body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64') }));
