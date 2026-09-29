@@ -1,81 +1,17 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import ThemedText from '../themed/ThemedText';
-
 export default function DashboardStats({ stats, onViewActivity }) {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  return (
-    <View style={styles.statsContainer}>
-      <View style={styles.statCard}>
-        <ThemedText style={styles.statCardLabel}>Completed</ThemedText>
-        <ThemedText style={styles.statCardValue}>{stats.completed}</ThemedText>
-      </View>
-
-      <View style={styles.statCard}>
-        <ThemedText style={styles.statCardLabel}>Completed offers</ThemedText>
-        <ThemedText style={styles.statCardValue}>{stats.earned}</ThemedText>
-      </View>
-
-      <TouchableOpacity
-        style={styles.statCard}
-        activeOpacity={0.8}
-        onPress={onViewActivity}
-      >
-        <ThemedText style={styles.statCardLabel}>Active</ThemedText>
-        <View style={styles.statActiveRow}>
-          <View style={styles.activeIndicatorDot} />
-          <ThemedText style={styles.statCardValue}>{stats.active}</ThemedText>
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
+  const items = [['Completed', stats.completed], ['Completed offers', stats.earned], ['Active', stats.active]];
+  return <TouchableOpacity accessibilityRole="button" accessibilityLabel="View task activity" onPress={onViewActivity} activeOpacity={0.8}
+    style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    {items.map(([label, value], i) => <View key={label} style={[styles.item, i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
+      <ThemedText numberOfLines={1} adjustsFontSizeToFit style={styles.value}>{value}</ThemedText>
+      <ThemedText style={[styles.label, { color: colors.textMuted }]}>{label}</ThemedText>
+    </View>)}
+  </TouchableOpacity>;
 }
-
-const createStyles = (colors) =>
-  StyleSheet.create({
-    statsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 10,
-      marginBottom: 22,
-    },
-    statCard: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.border,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.04,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    statCardLabel: {
-      fontSize: 11.5,
-      fontWeight: '600',
-      color: colors.muted,
-      marginBottom: 4,
-    },
-    statCardValue: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: colors.text,
-    },
-    statActiveRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-    },
-    activeIndicatorDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.accent,
-    },
-  });
+const styles = StyleSheet.create({ row: { flexDirection: 'row', borderWidth: 1, borderRadius: 18, paddingVertical: 16, marginBottom: 20 },
+  item: { flex: 1, alignItems: 'center', paddingHorizontal: 6, gap: 5 }, value: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 }, label: { fontSize: 10, textAlign: 'center' } });

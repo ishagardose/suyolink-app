@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSuyos } from '../../context/SuyoContext';
 import ThemedText from '../themed/ThemedText';
@@ -13,8 +14,13 @@ export default function AvailableSuyos({ suyos }) {
   const { isLoading, error, reload } = useSuyos();
   return (
     <View style={styles.section}>
-      <ThemedText style={styles.heading}>Available suyos</ThemedText>
-      <ThemedButton title="Explore request map" onPress={() => router.push('/map')} textStyle={{ color: colors.white }} style={{ marginBottom: 12 }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <ThemedText tone="textMuted" style={{ fontSize: 12 }}>{suyos.length} {suyos.length === 1 ? 'request' : 'requests'} to explore</ThemedText>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Explore request map" onPress={() => router.push('/map')}
+          style={{ flexDirection: 'row', gap: 6, alignItems: 'center', minHeight: 44 }}>
+          <Ionicons name="map-outline" size={16} color={colors.link} /><ThemedText style={{ color: colors.link, fontSize: 12, fontWeight: '700' }}>View map</ThemedText>
+        </TouchableOpacity>
+      </View>
       {isLoading ? (
         <ThemedText>Loading requests…</ThemedText>
       ) : error ? (
@@ -36,9 +42,12 @@ export default function AvailableSuyos({ suyos }) {
           {suyos.length ? (
             suyos.map((suyo) => <TaskCard key={suyo.id} suyo={suyo} />)
           ) : (
-            <ThemedText style={{ color: colors.textMuted }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 28, alignItems: 'center', gap: 12 }}>
+            <Ionicons name="leaf-outline" size={34} color={colors.textMuted} />
+            <ThemedText style={{ color: colors.textMuted, textAlign: 'center', lineHeight: 22 }}>
               No available suyos match this view. Try other filters or post a request.
             </ThemedText>
+            </View>
           )}
         </View>
       )}
@@ -46,7 +55,7 @@ export default function AvailableSuyos({ suyos }) {
   );
 }
 const styles = StyleSheet.create({
-  section: { marginTop: 20, paddingBottom: 12 },
+  section: { marginTop: 0, paddingBottom: 12 },
   heading: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-  list: { gap: 10 },
+  list: { gap: 14 },
 });

@@ -14,7 +14,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
   }, [position, value, disabled, onChange]);
   return <View style={{ gap: 10 }}>
     <ThemedText style={{ fontWeight: '700' }}>Task location pin</ThemedText>
-    <ThemedText tone="textMuted">Your current location sets the initial pin. Move it by tapping the map if the task starts elsewhere. The task pin will be visible with your request.</ThemedText>
+    <ThemedText tone="textMuted">Your browsing area sets the initial pin. Move it by tapping the map if the task starts elsewhere. The task pin will be visible with your request.</ThemedText>
     <View pointerEvents={disabled ? 'none' : 'auto'}>
       <TaskMap center={value || position} onPick={disabled ? undefined : onChange}
         markers={value ? [{ ...value, id: 'task', title: 'Task location' }] : []} />

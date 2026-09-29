@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import ThemedText from '../themed/ThemedText';
 
 export default function DashboardHeader({ onOpenSidebar }) {
   const { colors } = useTheme();
@@ -19,8 +20,11 @@ export default function DashboardHeader({ onOpenSidebar }) {
         <Ionicons name="menu-outline" size={26} color={colors.onPrimary} />
       </TouchableOpacity>
 
+      <ThemedText style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 15, letterSpacing: 3 }}>SUYOLINK</ThemedText>
       <View style={styles.headerRightActions}>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
           onPress={onOpenSidebar}
           style={styles.topProfileAvatarButton}
           activeOpacity={0.8}
@@ -48,7 +52,7 @@ const createStyles = (colors) =>
     headerIconButton: {
       width: 42,
       height: 42,
-      borderRadius: 21,
+      borderRadius: 14,
       backgroundColor: 'rgba(255, 255, 255, 0.12)',
       alignItems: 'center',
       justifyContent: 'center',

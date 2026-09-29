@@ -30,12 +30,12 @@ export default function MapScreen() {
   const focus = selected || position || pinned[0];
   const markers = useMemo(() => [
     ...nearby.map(request => ({ id: request.id, latitude: request.latitude, longitude: request.longitude, title: request.title })),
-    ...(position ? [{ ...position, id: 'my-location', title: 'Your current location', isMe: true }] : []),
+    ...(position ? [{ ...position, id: 'my-location', title: 'Your browsing location', isMe: true }] : []),
   ], [requests, position, radius]);
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
     <ScreenHeader title="Nearby suyos" subtitle="Find tasks around you" onBack={() => router.canGoBack() ? router.back() : router.replace('/dashboard')} />
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
-      <ThemedText tone="textMuted">Green pins are task locations. Blue is your location. Distances are straight-line estimates, not road distances.</ThemedText>
+      <ThemedText tone="textMuted">Green pins are task locations. Blue is your browsing location. Distances are straight-line estimates, not road distances.</ThemedText>
       <ThemedButton title={position ? 'Refresh my location' : 'Show distance from me'} loading={loading} textStyle={{ color: colors.white }}
         onPress={async () => { setSelectedId(null); await locate(); }} />
       {locationError ? <ThemedText accessibilityRole="alert" tone="danger">{locationError}</ThemedText> : null}

@@ -122,9 +122,10 @@ test('notifications mark read and navigate; search and filters exclude expired t
   await expect(page.getByText('Market delivery', { exact: true })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Search tasks' }).fill('market');
   await expect(page.getByText('Market delivery', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Toggle task filters' }).click();
   await page.getByRole('button', { name: 'Category: Groceries', exact: true }).click();
   await expect(page.getByText('Market delivery', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Open notifications, 1 unread' }).click();
+  await page.getByRole('button', { name: 'Notifications', exact: true }).click();
   await expect(page.getByText('Your task was updated')).toBeVisible();
   await page.getByRole('button', { name: 'View request' }).click();
   await expect(page).toHaveURL(/\/suyo\?id=task-1$/);

@@ -18,14 +18,14 @@ test('login submits password, restores session, saves profile and logs out', asy
   expect(calls.find(call => call.path === '/auth/v1/token').body).toMatchObject({ email: 'requester@example.com', password: 'correct-test-password' });
   await page.reload();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText('Request Tester', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hi, Request Tester.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Open sidebar' }).click();
   await page.getByRole('button', { name: 'Edit profile' }).click();
   await page.getByRole('textbox', { name: 'Full Name', exact: true }).fill('Updated User');
   await page.getByRole('button', { name: 'Save Changes' }).click();
-  await expect(page.getByText('Updated User', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hi, Updated User.', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText('Updated User', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hi, Updated User.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Open sidebar' }).click();
   await page.getByRole('button', { name: 'Log Out', exact: true }).click();
   await expect(page).toHaveURL('http://127.0.0.1:4173/');
@@ -52,6 +52,7 @@ for (const confirmation of [true, false]) {
     await page.getByRole('textbox', { name: 'Full Name', exact: true }).fill('New User');
     await page.getByRole('textbox', { name: 'Email Address', exact: true }).fill('new@example.com');
     await page.getByLabel('Password', { exact: true }).fill('new-account-password');
+    await page.getByLabel('Confirm Password', { exact: true }).fill('new-account-password');
     await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
     if (confirmation) {
       await expect(page.getByText('Check your email', { exact: false })).toBeVisible();

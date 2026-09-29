@@ -3,10 +3,14 @@ const host = 'suyolink-test.supabase.co';
 const storageKey = `sb-${host.split('.')[0]}-auth-token`;
 const user = { id: '11111111-1111-4111-8111-111111111111', email: 'requester@example.com', email_confirmed_at: '2026-09-26T00:00:00Z', aud: 'authenticated', role: 'authenticated', user_metadata: { full_name: 'Request Tester' } };
 const session = { access_token: 'test-access-token', refresh_token: 'test-refresh-token', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user };
-async function mockSupabase(page, { signedIn = false, confirmation = false, rejectLogin = false, requests = [], workflow = {} } = {}) {
+async function mockSupabase(page, { signedIn = false, confirmation = false, rejectLogin = false, requests = [], workflow = {}, locationSetup = true } = {}) {
   let profile = { full_name: user.user_metadata.full_name };
   let contacts = { phone: '', address: '' };
   const calls = [];
+  if (locationSetup) await page.addInitScript(id => {
+    const key = `@suyolink/location/${id}`;
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ position: { latitude: 7.07, longitude: 125.6 }, source: 'gps' }));
+  }, user.id);
   calls.requests = requests;
   await page.route('https://tile.openstreetmap.org/**', route => route.fulfill({ contentType: 'image/png',
     body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64') }));
@@ -20,12 +24,14 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
       if (rejectLogin) return route.fulfill({ status: 400, json: { code: 'invalid_credentials', msg: 'Invalid login credentials' } });
       json = session;
     } else if (path === '/auth/v1/verify') {
-      if (body.token !== '012345' || body.type !== 'email' || body.email !== user.email) {
+      if (body.token !== '012345' || !['email', 'recovery'].includes(body.type) || body.email !== user.email) {
         return route.fulfill({ status: 403, headers: { 'x-supabase-api-version': '2024-01-01',
           'access-control-expose-headers': 'x-supabase-api-version' },
           json: { code: 'otp_expired', msg: 'Token has expired or is invalid' } });
       }
       json = session;
+    } else if (path === '/auth/v1/recover') {
+      json = {};
     } else if (path === '/auth/v1/signup') {
       const registered = { ...user, email: body.email, user_metadata: body.data };
       profile.full_name = body.data.full_name;
