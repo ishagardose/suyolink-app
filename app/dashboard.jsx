@@ -1844,7 +1844,7 @@ export default function DashboardScreen() {
                             : mySuyoNavTab === 'accepted'
                             ? 'bicycle-outline'
                             : mySuyoNavTab === 'completed'
-                            ? 'checkmark-done-circle-outline'
+                            ? 'ribbon-outline'
                             : 'bookmark-outline'
                         }
                         size={40}
@@ -1913,40 +1913,25 @@ export default function DashboardScreen() {
                         <Text style={styles.mySuyoCardRewardText}>{suyo.reward}</Text>
                       </View>
 
-                      {/* Second Row: Status & Date (Image 2 style) */}
+                      {/* Second Row: Status & Date (Image 2 style - clean colored text, no stretched highlight) */}
                       <View style={styles.mySuyoCardSubRow}>
-                        <View
+                        <Text
                           style={[
-                            styles.mySuyoStatusPill,
-                            suyo.status?.includes('Completed')
-                              ? styles.mySuyoStatusCompleted
+                            styles.mySuyoCardStatusText,
+                            suyo.status === 'Cancelled'
+                              ? { color: '#DC2626' }
+                              : suyo.status?.includes('Completed')
+                              ? { color: '#15803D' }
                               : suyo.status?.includes('In Progress')
-                              ? styles.mySuyoStatusInProgress
-                              : suyo.status === 'Cancelled'
-                              ? { backgroundColor: '#FEE2E2' }
+                              ? { color: '#0284C7' }
                               : suyo.status === 'Archived Template'
-                              ? { backgroundColor: '#F1F5F9' }
-                              : styles.mySuyoStatusOpen,
+                              ? { color: '#64748B' }
+                              : { color: '#0369A1' },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.mySuyoStatusPillText,
-                              suyo.status?.includes('Completed')
-                                ? styles.mySuyoStatusCompletedText
-                                : suyo.status?.includes('In Progress')
-                                ? styles.mySuyoStatusInProgressText
-                                : suyo.status === 'Cancelled'
-                                ? { color: '#DC2626' }
-                                : suyo.status === 'Archived Template'
-                                ? { color: '#475569' }
-                                : styles.mySuyoStatusOpenText,
-                            ]}
-                          >
-                            {suyo.status}
-                          </Text>
-                        </View>
-
+                          {suyo.status}
+                        </Text>
+                        <Text style={styles.mySuyoCardDateDot}>·</Text>
                         <Text style={styles.mySuyoCardDateText}>
                           {suyo.formattedDate || 'Recent'}
                         </Text>
@@ -2601,7 +2586,7 @@ export default function DashboardScreen() {
                       ? { backgroundColor: '#E0F2FE' }
                       : selectedSuyoContext === 'archived'
                       ? { backgroundColor: '#F1F5F9' }
-                      : { backgroundColor: '#FEF3C7' },
+                      : { backgroundColor: '#E0F2FE' },
                   ]}
                 >
                   <Text
@@ -2615,18 +2600,18 @@ export default function DashboardScreen() {
                         ? { color: '#0369A1' }
                         : selectedSuyoContext === 'archived'
                         ? { color: '#475569' }
-                        : { color: '#B45309' },
+                        : { color: '#0369A1' },
                     ]}
                   >
                     {selectedSuyo.status === 'Cancelled'
                       ? 'Cancelled'
-                      : selectedSuyoContext === 'completed'
+                      : selectedSuyoContext === 'completed' || selectedSuyo.status?.includes('Completed')
                       ? 'Completed'
-                      : selectedSuyoContext === 'accepted'
+                      : selectedSuyoContext === 'accepted' || selectedSuyo.status?.includes('In Progress')
                       ? 'Accepted'
                       : selectedSuyoContext === 'archived'
                       ? 'Archived'
-                      : selectedSuyo.status || 'Open'}
+                      : 'Open'}
                   </Text>
                 </View>
               </View>
@@ -4903,10 +4888,10 @@ const styles = StyleSheet.create({
   },
   detailTitleAndStatusRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   detailCardTitleInRow: {
     fontSize: 17.5,
@@ -4917,18 +4902,17 @@ const styles = StyleSheet.create({
   },
   detailStatusPillInline: {
     paddingVertical: 4.5,
-    paddingHorizontal: 9.5,
+    paddingHorizontal: 10,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: 140,
   },
   detailStatusPillInlineText: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
   },
   detailTopTagRow: {
     flexDirection: 'row',
@@ -6002,6 +5986,26 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '600',
     color: '#52695C',
+  },
+  mySuyoCardSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  mySuyoCardStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  mySuyoCardDateDot: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '700',
+  },
+  mySuyoCardDateText: {
+    fontSize: 11.5,
+    color: '#658172',
+    fontWeight: '600',
   },
   mySuyoStatusPill: {
     paddingHorizontal: 8,
