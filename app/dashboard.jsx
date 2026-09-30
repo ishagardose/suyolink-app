@@ -474,8 +474,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Atty. Rafael Cruz',
     location: 'Makati CBD, Tower 1',
     earnedAmount: 300,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9842',
   },
   {
@@ -487,8 +487,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Maria Clarissa',
     location: 'SM Tagum Supermarket',
     earnedAmount: 150,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9801',
   },
   {
@@ -500,8 +500,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Lola Remedios',
     location: 'Mercury Drug Legaspi',
     earnedAmount: 180,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9755',
   },
   {
@@ -513,8 +513,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Kenneth Gomez',
     location: 'Bayad Center Ayala',
     earnedAmount: 250,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9510',
   },
   {
@@ -526,8 +526,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Mrs. Angela Santos',
     location: 'Generika Drugstore',
     earnedAmount: 180,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9321',
   },
   {
@@ -539,8 +539,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Dave B. (Student)',
     location: 'Davao Printing Hub',
     earnedAmount: 120,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9120',
   },
   {
@@ -552,8 +552,8 @@ const WALLET_EARNED_SUYOS = [
     requesterName: 'Patricia Mendoza',
     location: 'Greenbelt 5 Concierge',
     earnedAmount: 100,
-    status: 'Credited',
-    paymentMethod: 'Direct Wallet Credit',
+    status: 'Received',
+    paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-8940',
   },
 ];
@@ -2528,11 +2528,11 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.walletVerifiedPill}>
                   <Ionicons name="checkmark-circle" size={13} color="#059669" />
-                  <Text style={styles.walletVerifiedPillText}>Verified Doer</Text>
+                  <Text style={styles.walletVerifiedPillText}>Verified User</Text>
                 </View>
               </View>
 
-              <Text style={styles.walletBalanceLabel}>Total Earned Balance</Text>
+              <Text style={styles.walletBalanceLabel}>Total Tracked Earnings</Text>
               <Text style={styles.walletBalanceAmount}>₱1,280.00</Text>
 
               <View style={styles.walletSummaryRow}>
@@ -2542,14 +2542,22 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>100%</Text>
-                  <Text style={styles.walletSummaryLabel}>Payout Rate</Text>
+                  <Text style={styles.walletSummaryCount}>₱183</Text>
+                  <Text style={styles.walletSummaryLabel}>Avg. per Suyo</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>₱0</Text>
-                  <Text style={styles.walletSummaryLabel}>Deductions</Text>
+                  <Text style={styles.walletSummaryCount}>Direct</Text>
+                  <Text style={styles.walletSummaryLabel}>Cash / P2P</Text>
                 </View>
+              </View>
+
+              {/* Informative Note: Direct Settlement Outside App */}
+              <View style={styles.walletPaymentNoticeRow}>
+                <Ionicons name="call" size={13} color="#059669" />
+                <Text style={styles.walletPaymentNoticeText}>
+                  Payments are received directly via call & conversation with requesters outside the app.
+                </Text>
               </View>
             </View>
 
@@ -2558,7 +2566,7 @@ export default function DashboardScreen() {
               <View>
                 <Text style={styles.walletSectionTitle}>Accepted Suyo Earnings</Text>
                 <Text style={styles.walletSectionSub}>
-                  Rewards earned from each accepted suyo request
+                  Tracked rewards earned from every accepted suyo request
                 </Text>
               </View>
               <View style={styles.walletCountChip}>
@@ -7496,6 +7504,25 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#D7EBE0',
+  },
+  walletPaymentNoticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  walletPaymentNoticeText: {
+    fontSize: 11.5,
+    color: '#15803D',
+    lineHeight: 16,
+    flex: 1,
+    fontWeight: '500',
   },
   walletSectionHeader: {
     flexDirection: 'row',
