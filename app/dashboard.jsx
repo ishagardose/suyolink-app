@@ -210,6 +210,9 @@ const INITIAL_POSTED_SUYOS = [
     rewardAmount: 150,
     tag: 'Waiting for doer',
     status: 'Open - waiting for a doer',
+    urgency: 'Due today',
+    due: 'Due today at 5:00 PM',
+    dueDate: getTodayFormatted(),
     createdAt: Date.now() - 45 * 60 * 1000,
     formattedDate: 'Sep 28 · 11:20 AM',
     waitTime: 'Waiting for 45m',
@@ -228,6 +231,9 @@ const INITIAL_POSTED_SUYOS = [
     rewardAmount: 160,
     tag: 'Waiting for doer',
     status: 'Open - waiting for a doer',
+    urgency: 'Due tomorrow',
+    due: 'Due tomorrow at 2:00 PM',
+    dueDate: getTomorrowFormatted(),
     createdAt: Date.now() - 25 * 60 * 1000,
     formattedDate: 'Today · 5:15 PM',
     waitTime: 'Waiting for 25m',
@@ -246,6 +252,8 @@ const INITIAL_POSTED_SUYOS = [
     rewardAmount: 200,
     tag: 'Cancelled',
     status: 'Cancelled',
+    urgency: 'Normal',
+    due: 'Cancelled',
     createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
     formattedDate: 'Sep 22 · 3:40 PM',
     details: 'Pick up notarized contract copy from law office at 5th floor.',
@@ -1297,7 +1305,22 @@ export default function DashboardScreen() {
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [openedFromFavorites, setOpenedFromFavorites] = useState(false);
 
-  // Overall available suyos in Dashboard: public suyos from different users + account owner's suyos
+  // Helper to ensure every public suyo on the dashboard has a valid urgency tag (Normal, Urgent, Due today, Due tomorrow)
+  const resolveUrgencyTag = (item) => {
+    if (item.urgency && ['Normal', 'Urgent', 'Due today', 'Due tomorrow'].includes(item.urgency)) {
+      return item.urgency;
+    }
+    const dueStr = `${item.due || ''} ${item.dueDate || ''}`.toLowerCase();
+    if (dueStr.includes('urgent') || dueStr.includes('asap')) return 'Urgent';
+    if (dueStr.includes('tomorrow')) return 'Due tomorrow';
+    if (dueStr.includes('today')) return 'Due today';
+    return 'Normal';
+  };
+
+  // Overall available suyos in Dashboard: public suyos from different users + account owner's open posted suyos
+  // Note: 'Waiting for doer' is a lifecycle status ONLY applied and visible to MySuyo nav;
+  // on the main dashboard where public available suyos are listed for all users, the tag turns into
+  // an urgency indicator: 'Normal', 'Urgent', 'Due today', or 'Due tomorrow'.
   const availableSuyosBase = useMemo(() => {
     const fromBackend = (requests || [])
       .filter((r) => r.status === 'open' && (!r.deadline || Date.parse(r.deadline) > Date.now()))
@@ -1306,6 +1329,7 @@ export default function DashboardScreen() {
         const distNum = typeof dist === 'number' ? Number(dist.toFixed(1)) : 0.8;
         const offer = formatOffer(r.offerCentavos || 0);
         const isUrgent = r.deadline && Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
+        const urgency = isUrgent ? 'Urgent' : 'Normal';
         return {
           id: r.id,
           title: r.title,
@@ -1315,7 +1339,8 @@ export default function DashboardScreen() {
           distanceText: distNum + ' km away',
           reward: offer,
           rewardAmount: (r.offerCentavos || 0) / 100,
-          tag: isUrgent ? 'Urgent' : 'Normal',
+          tag: urgency,
+          urgency,
           postedTime: 'Active now',
           createdAt: Date.parse(r.createdAt || r.deadline || Date.now()),
           due: r.deadline ? 'Due ' + new Date(r.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Due today',
@@ -1330,11 +1355,14 @@ export default function DashboardScreen() {
         };
       });
 
-    // Owner's active posted suyos
+    // Owner's active posted suyos that are open and waiting for doers to take
     const ownerPosted = (postedSuyos || [])
-      .filter((p) => p.status !== 'Cancelled')
+      .filter((p) => p.status !== 'Cancelled' && !p.status?.includes('Completed'))
       .map((p) => ({
         ...p,
+        tag: resolveUrgencyTag(p), // Always convert to urgency on Dashboard (Normal, Urgent, Due today, Due tomorrow)
+        mySuyoStatus: p.status || 'Open - waiting for a doer',
+        mySuyoTag: p.tag || 'Waiting for doer',
         isMine: true,
         distance: 0.8,
         distanceText: p.distanceText || '0.8 km away',
@@ -1343,30 +1371,21 @@ export default function DashboardScreen() {
         dueDate: p.dueDate || getTodayFormatted(),
       }));
 
-    // Owner's in-progress accepted suyos
-    const ownerAccepted = (acceptedSuyos || []).map((a) => ({
-      ...a,
-      isMine: true,
-      distance: 0.5,
-      distanceText: a.distanceText || '0.5 km away',
-      postedTime: a.formattedDate || 'In Progress',
-      due: a.due || 'In Progress',
-      dueDate: a.dueDate || getTodayFormatted(),
-    }));
-
     // Public available fallback suyos from different users
     const publicSuyos = INITIAL_AVAILABLE_SUYOS.map((s) => ({
       ...s,
+      tag: resolveUrgencyTag(s),
       isMine: false,
     }));
 
-    // Merge: Owner's posted & accepted first, then backend requests, then public fallback without duplicate IDs
-    const merged = [...ownerPosted, ...ownerAccepted, ...fromBackend];
+    // Merge: Owner's open posted suyos + backend open requests + public fallback without duplicate IDs.
+    // In-progress accepted suyos are excluded from public available board (they belong in MySuyo -> Accepted).
+    const merged = [...ownerPosted, ...fromBackend];
     const seenIds = new Set(merged.map((item) => item.id));
     const uniquePublic = publicSuyos.filter((item) => !seenIds.has(item.id));
 
     return [...merged, ...uniquePublic];
-  }, [requests, position, postedSuyos, acceptedSuyos]);
+  }, [requests, position, postedSuyos]);
 
   // List of suyos favorited by the user
   const favoriteSuyos = useMemo(() => {
@@ -1575,6 +1594,9 @@ export default function DashboardScreen() {
       rewardAmount: record.amount,
       tag: 'Waiting for doer',
       status: 'Open - waiting for a doer',
+      urgency: 'Due today',
+      due: 'Due today',
+      dueDate: getTodayFormatted(),
       createdAt: Date.now(),
       formattedDate: 'Just now',
       waitTime: 'Just posted',
@@ -1639,23 +1661,29 @@ export default function DashboardScreen() {
           const prevIds = new Set(prev.map((p) => p.id));
           const newItems = userBackendRequests
             .filter((r) => !prevIds.has(r.id))
-            .map((r) => ({
-              id: r.id,
-              title: r.title,
-              category: r.category || 'General',
-              location: r.location || 'Nearby',
-              distanceText: '0.8 km away',
-              reward: formatOffer(r.offerCentavos || 0),
-              rewardAmount: (r.offerCentavos || 0) / 100,
-              tag: 'Waiting for doer',
-              status: 'Open - waiting for a doer',
-              createdAt: Date.parse(r.createdAt || Date.now()),
-              formattedDate: 'Just now',
-              waitTime: 'Just posted',
-              needsBoost: false,
-              details: r.details || 'No details provided.',
-              requesterName: r.requesterName || userProfile?.name || 'You',
-            }));
+            .map((r) => {
+              const isUrgent = r.deadline && Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
+              return {
+                id: r.id,
+                title: r.title,
+                category: r.category || 'General',
+                location: r.location || 'Nearby',
+                distanceText: '0.8 km away',
+                reward: formatOffer(r.offerCentavos || 0),
+                rewardAmount: (r.offerCentavos || 0) / 100,
+                tag: 'Waiting for doer',
+                status: 'Open - waiting for a doer',
+                urgency: r.urgency || (isUrgent ? 'Urgent' : 'Due today'),
+                due: r.deadline ? 'Due ' + new Date(r.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Due today',
+                dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
+                createdAt: Date.parse(r.createdAt || Date.now()),
+                formattedDate: 'Just now',
+                waitTime: 'Just posted',
+                needsBoost: false,
+                details: r.details || 'No details provided.',
+                requesterName: r.requesterName || userProfile?.name || 'You',
+              };
+            });
           if (newItems.length === 0) return prev;
           return [...newItems, ...prev];
         });
@@ -1837,6 +1865,9 @@ export default function DashboardScreen() {
       id: `POST-${Date.now().toString().slice(-4)}`,
       status: 'Open - waiting for a doer',
       tag: 'Waiting for doer',
+      urgency: suyo.urgency || (suyo.due?.toLowerCase().includes('tomorrow') ? 'Due tomorrow' : 'Due today'),
+      due: suyo.due || 'Due today',
+      dueDate: suyo.dueDate || getTodayFormatted(),
       formattedDate: 'Just now',
       waitTime: 'Just posted',
       needsBoost: false,
@@ -2305,9 +2336,9 @@ export default function DashboardScreen() {
                           ? styles.suyoTagUrgent
                           : suyo.tag === 'Due today'
                           ? styles.suyoTagToday
-                          : suyo.tag === 'Normal'
-                          ? styles.suyoTagNormal
-                          : styles.suyoTagTomorrow,
+                          : suyo.tag === 'Due tomorrow'
+                          ? styles.suyoTagTomorrow
+                          : styles.suyoTagNormal,
                       ]}
                     >
                       <Text
@@ -2317,9 +2348,9 @@ export default function DashboardScreen() {
                             ? styles.suyoTagUrgentText
                             : suyo.tag === 'Due today'
                             ? styles.suyoTagTodayText
-                            : suyo.tag === 'Normal'
-                            ? styles.suyoTagNormalText
-                            : styles.suyoTagTomorrowText,
+                            : suyo.tag === 'Due tomorrow'
+                            ? styles.suyoTagTomorrowText
+                            : styles.suyoTagNormalText,
                         ]}
                       >
                         {suyo.tag}
