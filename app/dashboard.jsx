@@ -452,7 +452,6 @@ function SwipeableNotificationItem({
                 <Text style={styles.notifCardTitle} numberOfLines={1}>
                   {item.title}
                 </Text>
-                {item.unread && <View style={styles.notifUnreadDot} />}
               </View>
               <Text style={styles.notifCardTime}>{item.time}</Text>
             </View>
