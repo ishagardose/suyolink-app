@@ -4552,31 +4552,53 @@ export default function DashboardScreen() {
             contentContainerStyle={styles.sidebarScrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.sidebarAccountSingleLine}>
-              <View style={styles.verifiedAvatarWrapper}>
-                <View style={styles.verifiedAvatarCircle}>
-                  <Ionicons name="person" size={20} color="#FFFFFF" />
+            {/* Account Card (Matches Suyo Detail Accounts Style) */}
+            <TouchableOpacity
+              style={styles.sidebarAccountCard}
+              activeOpacity={0.75}
+              onPress={() => {
+                closeSidebar();
+                router.push('/profile');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="View profile"
+            >
+              <View style={styles.detailAvatarCircle}>
+                <Text style={styles.detailAvatarInitials}>
+                  {getInitials(userProfile?.name || 'Juan Dela Cruz')}
+                </Text>
+              </View>
+              <View style={styles.detailRequestorTextCol}>
+                <View style={styles.sidebarAccountNameRow}>
+                  <Text style={styles.detailRequestorName} numberOfLines={1}>
+                    {userProfile?.name || 'Juan Dela Cruz'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      setTempProfile({ ...userProfile });
+                      setIsEditModalOpen(true);
+                    }}
+                    style={styles.smallEditIconButton}
+                    activeOpacity={0.75}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit profile"
+                  >
+                    <Ionicons name="pencil" size={13} color="#1E4D2B" />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.verifiedBadgeDot}>
-                  <Ionicons name="checkmark" size={10} color="#FFFFFF" />
+                <Text style={styles.detailRequestorMeta}>
+                  Requestor · 4.9★  -  48 completed
+                </Text>
+                <View style={styles.detailRequestorPhoneRow}>
+                  <Ionicons name="call" size={11} color="#6D8777" />
+                  <Text style={styles.detailRequestorPhoneText}>
+                    {userProfile?.phone || '+63 917 123 4567'}
+                  </Text>
                 </View>
               </View>
-
-              <Text style={styles.sidebarAccountNameText} numberOfLines={1}>
-                {userProfile?.name || 'Juan Dela Cruz'}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setTempProfile({ ...userProfile });
-                  setIsEditModalOpen(true);
-                }}
-                style={styles.smallEditIconButton}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="pencil" size={14} color="#1E4D2B" />
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.sidebarDivider} />
             <Text style={styles.sidebarSectionTitle}>Menu & Preferences</Text>
@@ -4697,22 +4719,23 @@ export default function DashboardScreen() {
                 thumbColor={pushNotifications ? '#4ADE80' : '#FFFFFF'}
               />
             </View>
-
-            <View style={styles.logoutWrapper}>
-              <TouchableOpacity
-                style={styles.logoutButton}
-                activeOpacity={0.8}
-                onPress={async () => {
-                  closeSidebar();
-                  try { await logout(); } catch (_) {}
-                  router.replace('/');
-                }}
-              >
-                <Ionicons name="log-out-outline" size={20} color="#D32F2F" />
-                <Text style={styles.logoutButtonText}>Log Out</Text>
-              </TouchableOpacity>
-            </View>
           </ScrollView>
+
+          {/* Footer Part of Sidebar (Log Out Fixed to Footer) */}
+          <View style={styles.sidebarFooter}>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              activeOpacity={0.8}
+              onPress={async () => {
+                closeSidebar();
+                try { await logout(); } catch (_) {}
+                router.replace('/');
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#D32F2F" />
+              <Text style={styles.logoutButtonText}>Log Out</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Animated.View>
 
@@ -5347,47 +5370,21 @@ const styles = StyleSheet.create({
     padding: 18,
     paddingBottom: 36,
   },
-  sidebarAccountSingleLine: {
+  sidebarAccountCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F8F5',
+    backgroundColor: '#F3FAF5',
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#E2ECE6',
+    borderColor: '#CDE5D6',
+    gap: 12,
   },
-  verifiedAvatarWrapper: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  verifiedAvatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#1E4D2B',
+  sidebarAccountNameRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifiedBadgeDot: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#4ADE80',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  sidebarAccountNameText: {
-    flex: 1,
-    fontSize: 15.5,
-    fontWeight: '700',
-    color: '#163523',
-    marginRight: 8,
+    justifyContent: 'space-between',
   },
   smallEditIconButton: {
     width: 28,
@@ -5490,8 +5487,13 @@ const styles = StyleSheet.create({
     color: '#163523',
     fontWeight: '600',
   },
-  logoutWrapper: {
-    marginTop: 18,
+  sidebarFooter: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF4F0',
+    backgroundColor: '#FFFFFF',
   },
   logoutButton: {
     flexDirection: 'row',

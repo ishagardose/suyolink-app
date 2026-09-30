@@ -205,6 +205,14 @@ export default function AccountScreen() {
           {/* Username / Handle */}
           <Text style={styles.handleText}>{profile.handle}</Text>
 
+          {/* Phone Number Row (Aligned with Suyo Detail Accounts Style) */}
+          <View style={styles.phoneMetaRow}>
+            <Ionicons name="call" size={12} color="#4B6354" />
+            <Text style={styles.phoneMetaText}>
+              {params.phone || '+63 917 123 4567'}
+            </Text>
+          </View>
+
           {/* 3-Column Stats Panel */}
           <View style={styles.statsCard}>
             <View style={styles.statCol}>
@@ -525,7 +533,24 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '500',
     color: '#658071',
+    marginBottom: 8,
+  },
+  phoneMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 16,
+    backgroundColor: '#F3FAF5',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#CDE5D6',
+  },
+  phoneMetaText: {
+    fontSize: 12,
+    color: '#425C4D',
+    fontWeight: '600',
   },
 
   /* 3-COLUMN STATS PANEL */
