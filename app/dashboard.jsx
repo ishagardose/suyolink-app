@@ -1991,23 +1991,7 @@ export default function DashboardScreen() {
                         </View>
                       )}
 
-                      {/* In Archived: 1-Tap Repeat Banner */}
-                      {mySuyoNavTab === 'archived' && (
-                        <View style={styles.mySuyoArchivedStrip}>
-                          <Text style={styles.mySuyoArchivedStripText}>Saved template for repeat errands</Text>
-                          <TouchableOpacity
-                            style={styles.mySuyoRepeatQuickBtn}
-                            activeOpacity={0.8}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              handleRepeatRequest(suyo);
-                            }}
-                          >
-                            <Ionicons name="refresh" size={12} color="#FFFFFF" />
-                            <Text style={styles.mySuyoRepeatQuickBtnText}>Repeat Suyo</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
+
 
                       {/* Footer Row: Location Pin */}
                       <View style={styles.mySuyoCardFooter}>
@@ -2746,15 +2730,7 @@ export default function DashboardScreen() {
                 </View>
               )}
 
-              {/* Context Notice for Archived Templates */}
-              {selectedSuyoContext === 'archived' && (
-                <View style={styles.detailArchivedNoticeBox}>
-                  <Ionicons name="bookmark" size={16} color="#475569" />
-                  <Text style={styles.detailArchivedNoticeText}>
-                    This is a saved template. Tap "Repeat Suyo" to post it again without filling out the form.
-                  </Text>
-                </View>
-              )}
+
 
               {/* Dynamic Action Buttons Row (Context-Specific) */}
               <View style={styles.detailActionButtonsRow}>
