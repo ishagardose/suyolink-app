@@ -15,6 +15,77 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
+// Curated feedbacks from Requesters for Doers
+const REQUESTER_FEEDBACKS_FOR_DOER = [
+  {
+    id: 'FB-1',
+    author: 'Atty. Rafael Cruz',
+    rating: 5.0,
+    date: 'Yesterday · 4:15 PM',
+    rateMarks: ['Punctual Delivery', 'Polite & Professional', 'Careful Handling'],
+    comment:
+      'Super reliable and very swift with document delivery. Handled the notarized papers with utmost care and gave clear updates throughout. Highly recommended!',
+  },
+  {
+    id: 'FB-2',
+    author: 'Maria Clarissa',
+    rating: 5.0,
+    date: 'Sep 27, 2026',
+    rateMarks: ['Clear Communication', 'Followed Instructions', 'Fast Completion'],
+    comment:
+      'Bought all exact grocery items from the list, checked expiration dates as requested, and delivered ahead of schedule. Very polite!',
+  },
+  {
+    id: 'FB-3',
+    author: 'Kenneth Gomez',
+    rating: 5.0,
+    date: 'Sep 21, 2026',
+    rateMarks: ['Trustworthy & Reliable', 'Punctual Delivery'],
+    comment:
+      'Waited patiently in line for utility bill payment and handed over validated receipts promptly. Excellent neighborly service.',
+  },
+  {
+    id: 'FB-4',
+    author: 'Elena Soriano',
+    rating: 4.8,
+    date: 'Sep 15, 2026',
+    rateMarks: ['Careful Handling', 'Responsive Communication'],
+    comment:
+      'Very accommodating courier. Promptly answered my calls when clarifying delivery location. Will hire again!',
+  },
+];
+
+// Curated feedbacks from Doers/Community for Requesters
+const COMMUNITY_FEEDBACKS_FOR_REQUESTER = [
+  {
+    id: 'FBR-1',
+    author: 'Carlos Dalisay',
+    rating: 5.0,
+    date: 'Yesterday · 5:20 PM',
+    rateMarks: ['Prompt Payment', 'Clear Instructions', 'Respectful & Courteous'],
+    comment:
+      'Clear drop-off directions at the 4th floor reception. Payment was released immediately upon proof submission. Very smooth coordination!',
+  },
+  {
+    id: 'FBR-2',
+    author: 'Reynaldo Bautista',
+    rating: 5.0,
+    date: 'Sep 25, 2026',
+    rateMarks: ['Accurate Location Details', 'Prompt Payment', 'Highly Recommended'],
+    comment:
+      'Super responsive client. Exact landmark provided and was waiting at the lobby for the parcel handoff.',
+  },
+  {
+    id: 'FBR-3',
+    author: 'Jenny Morales',
+    rating: 4.9,
+    date: 'Sep 18, 2026',
+    rateMarks: ['Respectful & Courteous', 'Trustworthy Requester'],
+    comment:
+      'Pleasant and professional interaction. Generous tip and fair compensation. 10/10 requester.',
+  },
+];
+
 export default function AccountScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -64,8 +135,12 @@ export default function AccountScreen() {
     }
   }, [params.name, params.rating, params.done, isOtherUser]);
 
+  const isAttyRafael = profile.name?.toLowerCase().includes('rafael');
+  const activeFeedbacks = isAttyRafael
+    ? COMMUNITY_FEEDBACKS_FOR_REQUESTER
+    : REQUESTER_FEEDBACKS_FOR_DOER;
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...profile });
 
   const getInitials = (name) => {
@@ -99,20 +174,7 @@ export default function AccountScreen() {
 
         <Text style={styles.headerTitle}>{isOtherUser ? 'Profile' : 'My Profile'}</Text>
 
-        {isOtherUser ? (
-          <View style={{ width: 40 }} />
-        ) : (
-          <TouchableOpacity
-            style={styles.headerIconButton}
-            onPress={() => setIsSettingsModalOpen(true)}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel="Account settings"
-          >
-            <Ionicons name="settings-sharp" size={21} color="#1E4D2B" />
-          </TouchableOpacity>
-        )}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -220,34 +282,71 @@ export default function AccountScreen() {
           )}
         </View>
 
-        {/* EARNED BADGES SECTION (Matches Image 3) */}
-        <View style={styles.badgesSection}>
-          <Text style={styles.sectionHeading}>Earned Badges</Text>
-
-          <View style={styles.badgesRow}>
-            {/* Badge 1: Super Doer */}
-            <View style={styles.badgeCard}>
-              <View style={styles.badgeIconCircle}>
-                <Ionicons name="ribbon-outline" size={20} color="#1E4D2B" />
-              </View>
-              <Text style={styles.badgeLabel}>Super Doer</Text>
+        {/* REQUESTERS' FEEDBACK & COMMENTS SECTION WITH RATE MARKS */}
+        <View style={styles.feedbackSection}>
+          <View style={styles.feedbackSectionHeader}>
+            <View>
+              <Text style={styles.sectionHeading}>
+                {isAttyRafael ? 'Community Feedback' : "Requesters' Feedback"}
+              </Text>
+              <Text style={styles.feedbackSubheading}>
+                Ratings & reviews from verified task coordinators
+              </Text>
             </View>
-
-            {/* Badge 2: Errand King */}
-            <View style={styles.badgeCard}>
-              <View style={styles.badgeIconCircle}>
-                <Ionicons name="ribbon-outline" size={20} color="#1E4D2B" />
-              </View>
-              <Text style={styles.badgeLabel}>Errand King</Text>
+            <View style={styles.feedbackRatingBadge}>
+              <Ionicons name="star" size={13} color="#D97706" />
+              <Text style={styles.feedbackRatingBadgeText}>{profile.rating}★</Text>
             </View>
+          </View>
 
-            {/* Badge 3: Top Rated */}
-            <View style={styles.badgeCard}>
-              <View style={styles.badgeIconCircle}>
-                <Ionicons name="ribbon-outline" size={20} color="#1E4D2B" />
+          <View style={styles.feedbackList}>
+            {activeFeedbacks.map((item) => (
+              <View key={item.id} style={styles.feedbackCard}>
+                {/* Header: Author + Star Rating */}
+                <View style={styles.feedbackCardHeader}>
+                  <View style={styles.feedbackAuthorRow}>
+                    <View style={styles.feedbackAvatarCircle}>
+                      <Text style={styles.feedbackAvatarInitials}>
+                        {getInitials(item.author)}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={styles.feedbackAuthorName}>{item.author}</Text>
+                      <Text style={styles.feedbackDateText}>{item.date}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.feedbackStarsRow}>
+                    {[...Array(5)].map((_, i) => (
+                      <Ionicons
+                        key={i}
+                        name={i < Math.floor(item.rating) ? 'star' : 'star-half'}
+                        size={12}
+                        color="#F59E0B"
+                        style={{ marginLeft: 1 }}
+                      />
+                    ))}
+                    <Text style={styles.feedbackCardRatingNum}>
+                      {Number(item.rating).toFixed(1)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Optional Rate Marks from Requesters */}
+                {item.rateMarks && item.rateMarks.length > 0 && (
+                  <View style={styles.rateMarksRow}>
+                    {item.rateMarks.map((mark, idx) => (
+                      <View key={idx} style={styles.rateMarkChip}>
+                        <Ionicons name="checkmark-circle" size={11} color="#059669" />
+                        <Text style={styles.rateMarkChipText}>{mark}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Feedback Comment */}
+                <Text style={styles.feedbackCommentText}>"{item.comment}"</Text>
               </View>
-              <Text style={styles.badgeLabel}>Top Rated</Text>
-            </View>
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -325,60 +424,6 @@ export default function AccountScreen() {
                 <Text style={styles.modalSaveText}>Save Changes</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* QUICK SETTINGS MODAL */}
-      <Modal
-        visible={isSettingsModalOpen}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setIsSettingsModalOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.settingsModalCard}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalTitle}>Preferences & Settings</Text>
-              <TouchableOpacity
-                onPress={() => setIsSettingsModalOpen(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={22} color="#163523" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.settingsOptionRow}>
-              <View style={styles.settingsOptionLeft}>
-                <Ionicons name="notifications-outline" size={20} color="#1E4D2B" />
-                <Text style={styles.settingsOptionText}>Task Notifications</Text>
-              </View>
-              <Ionicons name="checkmark-circle" size={22} color="#1E4D2B" />
-            </View>
-
-            <View style={styles.settingsOptionRow}>
-              <View style={styles.settingsOptionLeft}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#1E4D2B" />
-                <Text style={styles.settingsOptionText}>Identity Verification</Text>
-              </View>
-              <Text style={styles.settingsStatusActive}>Active</Text>
-            </View>
-
-            <View style={styles.settingsOptionRow}>
-              <View style={styles.settingsOptionLeft}>
-                <Ionicons name="lock-closed-outline" size={20} color="#1E4D2B" />
-                <Text style={styles.settingsOptionText}>Privacy & Security</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#8EA296" />
-            </View>
-
-            <TouchableOpacity
-              style={styles.settingsDoneButton}
-              onPress={() => setIsSettingsModalOpen(false)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.settingsDoneButtonText}>Done</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -571,45 +616,126 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  /* EARNED BADGES */
-  badgesSection: {
+  /* FEEDBACK & RATINGS SECTION */
+  feedbackSection: {
     marginTop: 22,
+  },
+  feedbackSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
   sectionHeading: {
     fontSize: 16,
     fontWeight: '800',
     color: '#163523',
-    marginBottom: 12,
+    marginBottom: 2,
   },
-  badgesRow: {
+  feedbackSubheading: {
+    fontSize: 12,
+    color: '#658172',
+  },
+  feedbackRatingBadge: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  badgeCard: {
-    flex: 1,
-    backgroundColor: '#EDF5EF',
-    borderRadius: 18,
-    borderWidth: 1.2,
-    borderColor: '#D4E7DC',
-    paddingVertical: 16,
-    paddingHorizontal: 6,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
-  badgeIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#DFEFE5',
+  feedbackRatingBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  feedbackList: {
+    gap: 12,
+  },
+  feedbackCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2EBE5',
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  feedbackCardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  badgeLabel: {
-    fontSize: 11.5,
+  feedbackAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  feedbackAvatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1E4D2B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackAvatarInitials: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  feedbackAuthorName: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#163523',
-    textAlign: 'center',
+  },
+  feedbackDateText: {
+    fontSize: 10.5,
+    color: '#7B9487',
+  },
+  feedbackStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  feedbackCardRatingNum: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B6354',
+    marginLeft: 3,
+  },
+  rateMarksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  rateMarkChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EBF5EE',
+    borderWidth: 1,
+    borderColor: '#C6E4CF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  rateMarkChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  feedbackCommentText: {
+    fontSize: 12.5,
+    color: '#344E3F',
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
 
   /* MODALS */
@@ -623,13 +749,6 @@ const styles = StyleSheet.create({
   editModalCard: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
-  },
-  settingsModalCard: {
-    width: '100%',
-    maxWidth: 380,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 22,
@@ -695,47 +814,6 @@ const styles = StyleSheet.create({
   },
   modalSaveText: {
     fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-
-  settingsOptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F5F2',
-  },
-  settingsOptionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  settingsOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#163523',
-  },
-  settingsStatusActive: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1E4D2B',
-    backgroundColor: '#EAF4EF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  settingsDoneButton: {
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: '#1E4D2B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 18,
-  },
-  settingsDoneButtonText: {
-    fontSize: 14.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
