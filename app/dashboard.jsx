@@ -2542,8 +2542,8 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>₱183</Text>
-                  <Text style={styles.walletSummaryLabel}>Avg. per Suyo</Text>
+                  <Text style={styles.walletSummaryCount}>₱630</Text>
+                  <Text style={styles.walletSummaryLabel}>This Week</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>

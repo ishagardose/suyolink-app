@@ -111,7 +111,7 @@ export default function WalletScreen() {
   const bottomInset = Math.max(insets.bottom, 16);
 
   const totalEarned = WALLET_EARNED_SUYOS.reduce((sum, item) => sum + item.earnedAmount, 0);
-  const avgPerSuyo = Math.round(totalEarned / WALLET_EARNED_SUYOS.length);
+  const thisWeekEarned = WALLET_EARNED_SUYOS.slice(0, 3).reduce((sum, item) => sum + item.earnedAmount, 0);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeContainer}>
@@ -166,8 +166,8 @@ export default function WalletScreen() {
             </View>
             <View style={styles.walletSummaryDivider} />
             <View style={styles.walletSummaryItem}>
-              <Text style={styles.walletSummaryCount}>₱{avgPerSuyo}</Text>
-              <Text style={styles.walletSummaryLabel}>Avg. per Suyo</Text>
+              <Text style={styles.walletSummaryCount}>₱{thisWeekEarned}</Text>
+              <Text style={styles.walletSummaryLabel}>This Week</Text>
             </View>
             <View style={styles.walletSummaryDivider} />
             <View style={styles.walletSummaryItem}>
