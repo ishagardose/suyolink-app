@@ -1303,15 +1303,17 @@ export default function DashboardScreen() {
     );
   };
 
-  // Feature: Increase / Boost Reward
+  // Feature: Increase / Boost Reward (Supports resetting with +0)
   const handleBoostReward = (suyoId, addAmount) => {
     setPostedSuyos((prev) =>
       prev.map((s) => {
         if (s.id === suyoId) {
-          const currentAmt = Number(s.rewardAmount || 150);
-          const newAmt = currentAmt + addAmount;
+          const baseAmt = Number(s.baseRewardAmount ?? s.rewardAmount ?? 150);
+          const newAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
           return {
             ...s,
+            baseRewardAmount: baseAmt,
+            currentBoost: addAmount,
             rewardAmount: newAmt,
             reward: `₱${newAmt}`,
             needsBoost: false,
@@ -1321,16 +1323,24 @@ export default function DashboardScreen() {
       })
     );
     if (selectedSuyo && selectedSuyo.id === suyoId) {
-      const currentAmt = Number(selectedSuyo.rewardAmount || 150);
-      const newAmt = currentAmt + addAmount;
+      const baseAmt = Number(
+        selectedSuyo.baseRewardAmount ?? selectedSuyo.rewardAmount ?? 150
+      );
+      const newAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
       setSelectedSuyo((prev) => ({
         ...prev,
+        baseRewardAmount: baseAmt,
+        currentBoost: addAmount,
         rewardAmount: newAmt,
         reward: `₱${newAmt}`,
         needsBoost: false,
       }));
     }
-    triggerToast(`Reward increased to +₱${addAmount}! Couriers notified.`, 'sparkles');
+    if (addAmount === 0) {
+      triggerToast('Reward boost reset to original amount', 'refresh');
+    } else {
+      triggerToast(`Reward increased by +₱${addAmount}! Couriers notified.`, 'sparkles');
+    }
   };
 
   // Feature: Cancel Suyo
@@ -3163,16 +3173,6 @@ export default function DashboardScreen() {
                 </View>
 
                 <View style={styles.detailTopMetaRight}>
-                  {selectedSuyoContext === 'posted' && selectedSuyo.status !== 'Cancelled' && (
-                    <TouchableOpacity
-                      style={styles.detailEditHeaderBtn}
-                      activeOpacity={0.7}
-                      onPress={() => handleOpenEditSuyo(selectedSuyo)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons name="create-outline" size={18} color="#1E4D2B" />
-                    </TouchableOpacity>
-                  )}
 
                   {selectedSuyoContext === 'available' && (
                     <TouchableOpacity
@@ -3452,25 +3452,75 @@ export default function DashboardScreen() {
                   </View>
                   <View style={styles.detailBoostButtonsRow}>
                     <TouchableOpacity
-                      style={styles.detailBoostChip}
+                      style={[
+                        styles.detailBoostChip,
+                        selectedSuyo.currentBoost === 0 && styles.detailBoostChipGreen,
+                      ]}
+                      activeOpacity={0.75}
+                      onPress={() => handleBoostReward(selectedSuyo.id, 0)}
+                    >
+                      <Text
+                        style={[
+                          styles.detailBoostChipText,
+                          selectedSuyo.currentBoost === 0 && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        +₱0
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.detailBoostChip,
+                        selectedSuyo.currentBoost === 20 && styles.detailBoostChipGreen,
+                      ]}
                       activeOpacity={0.75}
                       onPress={() => handleBoostReward(selectedSuyo.id, 20)}
                     >
-                      <Text style={styles.detailBoostChipText}>+₱20</Text>
+                      <Text
+                        style={[
+                          styles.detailBoostChipText,
+                          selectedSuyo.currentBoost === 20 && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        +₱20
+                      </Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
-                      style={styles.detailBoostChip}
+                      style={[
+                        styles.detailBoostChip,
+                        selectedSuyo.currentBoost === 50 && styles.detailBoostChipGreen,
+                      ]}
                       activeOpacity={0.75}
                       onPress={() => handleBoostReward(selectedSuyo.id, 50)}
                     >
-                      <Text style={styles.detailBoostChipText}>+₱50</Text>
+                      <Text
+                        style={[
+                          styles.detailBoostChipText,
+                          selectedSuyo.currentBoost === 50 && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        +₱50
+                      </Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
-                      style={[styles.detailBoostChip, styles.detailBoostChipGreen]}
+                      style={[
+                        styles.detailBoostChip,
+                        selectedSuyo.currentBoost === 100 && styles.detailBoostChipGreen,
+                      ]}
                       activeOpacity={0.75}
                       onPress={() => handleBoostReward(selectedSuyo.id, 100)}
                     >
-                      <Text style={[styles.detailBoostChipText, { color: '#FFFFFF' }]}>+₱100</Text>
+                      <Text
+                        style={[
+                          styles.detailBoostChipText,
+                          selectedSuyo.currentBoost === 100 && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        +₱100
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
