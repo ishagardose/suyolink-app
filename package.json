@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "test": "node --test tests/suyoRequests.test.cjs tests/geo.test.cjs && node tests/supabase-schema.test.cjs",
+    "test": "node --test tests/suyoRequests.test.cjs tests/geo.test.cjs tests/urgency.test.cjs && node tests/supabase-schema.test.cjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
