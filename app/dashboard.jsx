@@ -470,7 +470,7 @@ const WALLET_EARNED_SUYOS = [
     title: 'Drop off documents - Unit 402',
     category: 'Documents',
     icon: 'document-text',
-    date: 'Today · 4:00 PM',
+    date: 'Today (W4) · 4:00 PM',
     requesterName: 'Atty. Rafael Cruz',
     location: 'Makati CBD, Tower 1',
     earnedAmount: 300,
@@ -480,26 +480,26 @@ const WALLET_EARNED_SUYOS = [
   },
   {
     id: 'WAL-002',
-    title: 'Buy groceries - SM Tagum',
-    category: 'Groceries',
-    icon: 'cart',
-    date: 'Sep 28 · 12:15 PM',
-    requesterName: 'Maria Clarissa',
-    location: 'SM Tagum Supermarket',
-    earnedAmount: 150,
+    title: 'Express parcel delivery to Greenbelt',
+    category: 'Delivery',
+    icon: 'bicycle',
+    date: 'Oct 25 (W4) · 10:00 AM',
+    requesterName: 'Patricia Mendoza',
+    location: 'Greenbelt 5 Concierge',
+    earnedAmount: 90,
     status: 'Received',
     paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9801',
   },
   {
     id: 'WAL-003',
-    title: 'Prescription pickup at Mercury Drug',
-    category: 'Medicine',
-    icon: 'medkit',
-    date: 'Sep 26 · 3:45 PM',
-    requesterName: 'Lola Remedios',
-    location: 'Mercury Drug Legaspi',
-    earnedAmount: 180,
+    title: 'Buy groceries - SM Tagum',
+    category: 'Groceries',
+    icon: 'cart',
+    date: 'Oct 20 (W3) · 12:15 PM',
+    requesterName: 'Maria Clarissa',
+    location: 'SM Tagum Supermarket',
+    earnedAmount: 150,
     status: 'Received',
     paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9755',
@@ -509,49 +509,49 @@ const WALLET_EARNED_SUYOS = [
     title: 'Queue for Meralco bills payment',
     category: 'Queuing & Bills',
     icon: 'time',
-    date: 'Sep 18 · 11:30 AM',
+    date: 'Oct 17 (W3) · 11:30 AM',
     requesterName: 'Kenneth Gomez',
     location: 'Bayad Center Ayala',
-    earnedAmount: 250,
+    earnedAmount: 180,
     status: 'Received',
     paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9510',
   },
   {
     id: 'WAL-005',
-    title: 'Pick up medical supplies & vitamins',
-    category: 'Delivery',
-    icon: 'bag-check-outline',
-    date: 'Sep 12 · 2:30 PM',
-    requesterName: 'Mrs. Angela Santos',
-    location: 'Generika Drugstore',
-    earnedAmount: 180,
+    title: 'Print school project & binding',
+    category: 'Documents',
+    icon: 'print',
+    date: 'Oct 13 (W2) · 4:15 PM',
+    requesterName: 'Dave B. (Student)',
+    location: 'Davao Printing Hub',
+    earnedAmount: 160,
     status: 'Received',
     paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9321',
   },
   {
     id: 'WAL-006',
-    title: 'Print school project & binding',
-    category: 'Documents',
-    icon: 'print',
-    date: 'Sep 05 · 4:15 PM',
-    requesterName: 'Dave B. (Student)',
-    location: 'Davao Printing Hub',
-    earnedAmount: 120,
+    title: 'Prescription pickup at Mercury Drug',
+    category: 'Medicine',
+    icon: 'medkit',
+    date: 'Oct 10 (W2) · 3:45 PM',
+    requesterName: 'Lola Remedios',
+    location: 'Mercury Drug Legaspi',
+    earnedAmount: 180,
     status: 'Received',
     paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-9120',
   },
   {
     id: 'WAL-007',
-    title: 'Express parcel delivery to Greenbelt',
+    title: 'Pick up medical supplies & vitamins',
     category: 'Delivery',
-    icon: 'bicycle',
-    date: 'Aug 29 · 10:00 AM',
-    requesterName: 'Patricia Mendoza',
-    location: 'Greenbelt 5 Concierge',
-    earnedAmount: 100,
+    icon: 'bag-check-outline',
+    date: 'Oct 04 (W1) · 10:00 AM',
+    requesterName: 'Mrs. Angela Santos',
+    location: 'Generika Drugstore',
+    earnedAmount: 220,
     status: 'Received',
     paymentMethod: 'Direct Payment (Cash/P2P)',
     refNo: 'SYL-EARN-8940',
@@ -559,89 +559,60 @@ const WALLET_EARNED_SUYOS = [
 ];
 
 const WALLET_INCOME_CHART_PRESETS = {
-  '1W': {
-    label: 'Past 7 Days',
-    total: '₱630.00',
-    growth: '+12.5% vs prev week',
-    avg: '₱90.00',
-    highest: '₱200.00',
-    count: '4 Suyos',
-    pts: [
-      { x: 55, y: 135, val: '₱50', label: 'Mon' },
-      { x: 120, y: 118, val: '₱120', label: 'Tue' },
-      { x: 185, y: 118, val: '₱120', label: 'Wed' },
-      { x: 250, y: 88, val: '₱260', label: 'Thu' },
-      { x: 315, y: 64, val: '₱390', label: 'Fri' },
-      { x: 380, y: 46, val: '₱500', label: 'Sat' },
-      { x: 445, y: 30, val: '₱630', label: 'Sun', isPeak: true },
-    ],
-    pathD:
-      'M 55,135 C 87,135 87,118 120,118 C 152,118 152,118 185,118 C 217,118 217,88 250,88 C 282,88 282,64 315,64 C 347,64 347,46 380,46 C 412,46 412,30 445,30',
-    areaD:
-      'M 55,135 C 87,135 87,118 120,118 C 152,118 152,118 185,118 C 217,118 217,88 250,88 C 282,88 282,64 315,64 C 347,64 347,46 380,46 C 412,46 412,30 445,30 L 445,145 L 55,145 Z',
-    yLabels: ['₱800', '₱500', '₱200', '₱0'],
-  },
-  '1M': {
-    label: 'October 2026',
+  monthly: {
+    id: 'monthly',
+    tabLabel: 'Monthly',
+    title: 'Monthly Income Trend (Oct 2026)',
+    subtitle: 'Weekly progression across 7 accepted suyos',
     total: '₱1,280.00',
-    growth: '+18.4% vs last mo.',
-    avg: '₱182.85',
-    highest: '₱300.00',
-    count: '7 Suyos',
+    growth: '+18.4% vs Sep',
     pts: [
-      { x: 75, y: 125, val: '₱220', label: 'Oct 1-7 (W1)' },
-      { x: 195, y: 96, val: '₱560', label: 'Oct 8-14 (W2)' },
-      { x: 315, y: 70, val: '₱890', label: 'Oct 15-21 (W3)' },
-      { x: 435, y: 36, val: '₱1,280', label: 'Oct 22-28 (W4)', isPeak: true },
+      { x: 75, y: 125, val: '₱220', label: 'W1: Oct 1-7' },
+      { x: 195, y: 96, val: '₱560', label: 'W2: Oct 8-14' },
+      { x: 315, y: 70, val: '₱890', label: 'W3: Oct 15-21' },
+      { x: 435, y: 36, val: '₱1,280', label: 'W4: This Week', isPeak: true },
     ],
     pathD:
       'M 75,125 C 135,125 135,96 195,96 C 255,96 255,70 315,70 C 375,70 375,36 435,36',
     areaD:
       'M 75,125 C 135,125 135,96 195,96 C 255,96 255,70 315,70 C 375,70 375,36 435,36 L 435,145 L 75,145 Z',
     yLabels: ['₱1.5k', '₱1.0k', '₱500', '₱0'],
+    metrics: [
+      { label: 'This Week (W4)', value: '₱390.00' },
+      { label: 'Avg / Suyo', value: '₱182.86' },
+      { label: 'Month Suyos', value: '7 Suyos' },
+    ],
   },
-  '3M': {
-    label: 'Aug – Oct 2026',
-    total: '₱3,210.00',
-    growth: '+24.1% vs prev qtr',
-    avg: '₱178.33',
-    highest: '₱350.00',
-    count: '18 Suyos',
+  yearly: {
+    id: 'yearly',
+    tabLabel: 'Yearly',
+    title: 'Yearly Income Trend (2026 YTD)',
+    subtitle: 'Quarterly & monthly growth to 84 overall suyos',
+    total: '₱15,360.00',
+    growth: '+34.2% vs 2025',
     pts: [
-      { x: 90, y: 122, val: '₱850', label: 'Aug 2026' },
-      { x: 255, y: 78, val: '₱1,930', label: 'Sep 2026' },
-      { x: 420, y: 34, val: '₱3,210', label: 'Oct 2026', isPeak: true },
+      { x: 65, y: 124, val: '₱3.3k', label: 'Q1 (18 Suyos)' },
+      { x: 160, y: 96, val: '₱7.6k', label: 'Q2 (42 Suyos)' },
+      { x: 260, y: 64, val: '₱12.1k', label: 'Q3 (66 Suyos)' },
+      { x: 360, y: 48, val: '₱14.1k', label: 'Sep YTD' },
+      { x: 435, y: 32, val: '₱15,360', label: 'Oct YTD (Peak)', isPeak: true },
     ],
     pathD:
-      'M 90,122 C 172,122 172,78 255,78 C 337,78 337,34 420,34',
+      'M 65,124 C 112,124 112,96 160,96 C 210,96 210,64 260,64 C 310,64 310,48 360,48 C 397,48 397,32 435,32',
     areaD:
-      'M 90,122 C 172,122 172,78 255,78 C 337,78 337,34 420,34 L 420,145 L 90,145 Z',
-    yLabels: ['₱3.5k', '₱2.5k', '₱1.5k', '₱0'],
-  },
-  'All': {
-    label: 'All Time',
-    total: '₱4,660.00',
-    growth: '+31.0% overall',
-    avg: '₱186.40',
-    highest: '₱350.00',
-    count: '25 Suyos',
-    pts: [
-      { x: 70, y: 128, val: '₱600', label: 'Jul' },
-      { x: 190, y: 104, val: '₱1,450', label: 'Aug' },
-      { x: 310, y: 74, val: '₱2,530', label: 'Sep' },
-      { x: 430, y: 32, val: '₱4,660', label: 'Oct', isPeak: true },
+      'M 65,124 C 112,124 112,96 160,96 C 210,96 210,64 260,64 C 310,64 310,48 360,48 C 397,48 397,32 435,32 L 435,145 L 65,145 Z',
+    yLabels: ['₱16.0k', '₱11.0k', '₱5.5k', '₱0'],
+    metrics: [
+      { label: 'Monthly Avg', value: '₱1,536.00' },
+      { label: 'Avg / Suyo', value: '₱182.85' },
+      { label: 'Overall Suyos', value: '84 Suyos' },
     ],
-    pathD:
-      'M 70,128 C 130,128 130,104 190,104 C 250,104 250,74 310,74 C 370,74 370,32 430,32',
-    areaD:
-      'M 70,128 C 130,128 130,104 190,104 C 250,104 250,74 310,74 C 370,74 370,32 430,32 L 430,145 L 70,145 Z',
-    yLabels: ['₱5.0k', '₱3.5k', '₱2.0k', '₱0'],
   },
 };
 
 function WalletIncomeLineGraph() {
-  const [activeRange, setActiveRange] = useState('1M');
-  const current = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS['1M'];
+  const [activeRange, setActiveRange] = useState('monthly');
+  const current = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS.monthly;
 
   const renderWebSvg = () => {
     return React.createElement(
@@ -750,9 +721,9 @@ function WalletIncomeLineGraph() {
             'g',
             { key: `peak-${idx}` },
             React.createElement('rect', {
-              x: pt.x - 48,
+              x: pt.x - 52,
               y: pt.y - 25,
-              width: 96,
+              width: 104,
               height: 20,
               rx: 5,
               fill: '#064E3B',
@@ -817,8 +788,8 @@ function WalletIncomeLineGraph() {
             <Ionicons name="trending-up" size={17} color="#059669" />
           </View>
           <View>
-            <Text style={styles.walletLineTitle}>Monthly Income Trend</Text>
-            <Text style={styles.walletLineSub}>{current.label} • Tracked Suyo Rewards</Text>
+            <Text style={styles.walletLineTitle}>{current.title}</Text>
+            <Text style={styles.walletLineSub}>{current.subtitle}</Text>
           </View>
         </View>
 
@@ -828,17 +799,20 @@ function WalletIncomeLineGraph() {
         </View>
       </View>
 
-      {/* 2. Value and Timeframe Controls */}
+      {/* 2. Value and Timeframe Controls (Only Monthly & Yearly) */}
       <View style={styles.walletLineAmountRow}>
         <Text style={styles.walletLineBigAmount}>{current.total}</Text>
 
         <View style={styles.walletTimeFilterRow}>
-          {['1W', '1M', '3M', 'All'].map((t) => {
-            const isActive = activeRange === t;
+          {[
+            { id: 'monthly', label: 'Monthly' },
+            { id: 'yearly', label: 'Yearly' },
+          ].map((tab) => {
+            const isActive = activeRange === tab.id;
             return (
               <TouchableOpacity
-                key={t}
-                onPress={() => setActiveRange(t)}
+                key={tab.id}
+                onPress={() => setActiveRange(tab.id)}
                 style={[
                   styles.walletTimeFilterBtn,
                   isActive && styles.walletTimeFilterBtnActive,
@@ -851,7 +825,7 @@ function WalletIncomeLineGraph() {
                     isActive && styles.walletTimeFilterTextActive,
                   ]}
                 >
-                  {t}
+                  {tab.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -864,21 +838,21 @@ function WalletIncomeLineGraph() {
         {Platform.OS === 'web' ? renderWebSvg() : renderNativeFallback()}
       </View>
 
-      {/* 4. Bottom Metrics Highlights */}
+      {/* 4. Bottom Metrics Highlights Correlating with Graph */}
       <View style={styles.walletChartFooterMetrics}>
         <View style={styles.walletFooterMetricItem}>
-          <Text style={styles.walletFooterMetricValue}>{current.avg}</Text>
-          <Text style={styles.walletFooterMetricLabel}>Avg / Suyo</Text>
+          <Text style={styles.walletFooterMetricValue}>{current.metrics[0].value}</Text>
+          <Text style={styles.walletFooterMetricLabel}>{current.metrics[0].label}</Text>
         </View>
         <View style={styles.walletFooterMetricDivider} />
         <View style={styles.walletFooterMetricItem}>
-          <Text style={styles.walletFooterMetricValue}>{current.highest}</Text>
-          <Text style={styles.walletFooterMetricLabel}>Highest Suyo</Text>
+          <Text style={styles.walletFooterMetricValue}>{current.metrics[1].value}</Text>
+          <Text style={styles.walletFooterMetricLabel}>{current.metrics[1].label}</Text>
         </View>
         <View style={styles.walletFooterMetricDivider} />
         <View style={styles.walletFooterMetricItem}>
-          <Text style={styles.walletFooterMetricValue}>{current.count}</Text>
-          <Text style={styles.walletFooterMetricLabel}>Accepted Suyos</Text>
+          <Text style={styles.walletFooterMetricValue}>{current.metrics[2].value}</Text>
+          <Text style={styles.walletFooterMetricLabel}>{current.metrics[2].label}</Text>
         </View>
       </View>
     </View>
@@ -2860,23 +2834,28 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <Text style={styles.walletBalanceLabel}>Total Tracked Earnings</Text>
-              <Text style={styles.walletBalanceAmount}>₱1,280.00</Text>
+              <Text style={styles.walletBalanceLabel}>Total Overall Earnings (2026)</Text>
+              <Text style={styles.walletBalanceAmount}>₱15,360.00</Text>
 
               <View style={styles.walletSummaryRow}>
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>₱1,280.00</Text>
-                  <Text style={styles.walletSummaryLabel}>Monthly Income</Text>
+                  <Text style={styles.walletSummaryLabel}>Monthly (Oct)</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>₱630.00</Text>
-                  <Text style={styles.walletSummaryLabel}>This Week</Text>
+                  <Text style={styles.walletSummaryCount}>₱390.00</Text>
+                  <Text style={styles.walletSummaryLabel}>This Week (W4)</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>{WALLET_EARNED_SUYOS.length} Suyos</Text>
-                  <Text style={styles.walletSummaryLabel}>Accepted</Text>
+                  <Text style={styles.walletSummaryLabel}>Month Suyos</Text>
+                </View>
+                <View style={styles.walletSummaryDivider} />
+                <View style={styles.walletSummaryItem}>
+                  <Text style={styles.walletSummaryCount}>84</Text>
+                  <Text style={styles.walletSummaryLabel}>Overall Suyos</Text>
                 </View>
               </View>
 
@@ -2902,7 +2881,7 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.walletCountChip}>
                 <Text style={styles.walletCountChipText}>
-                  {WALLET_EARNED_SUYOS.length} earned
+                  {WALLET_EARNED_SUYOS.length} earned (₱1,280.00)
                 </Text>
               </View>
             </View>
@@ -7937,24 +7916,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAF9',
     borderRadius: 14,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderWidth: 1,
     borderColor: '#EDF5F0',
   },
   walletSummaryItem: {
     alignItems: 'center',
     flex: 1,
+    paddingHorizontal: 2,
   },
   walletSummaryCount: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800',
     color: '#163523',
     marginBottom: 2,
+    textAlign: 'center',
   },
   walletSummaryLabel: {
-    fontSize: 11,
+    fontSize: 9.5,
     color: '#557261',
     fontWeight: '600',
+    textAlign: 'center',
   },
   walletSummaryDivider: {
     width: 1,
