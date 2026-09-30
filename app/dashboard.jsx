@@ -2819,7 +2819,18 @@ export default function DashboardScreen() {
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
-          onPress={openSidebar}
+          onPress={() => {
+            router.push({
+              pathname: '/account',
+              params: {
+                name: userProfile?.name || 'Juan Dela Cruz',
+                rating: '4.9',
+                done: '48',
+                phone: userProfile?.phone || '+63 917 123 4567',
+                isOtherUser: 'false',
+              },
+            });
+          }}
         >
           <Ionicons
             name={activeTab === 'account' ? 'person' : 'person-outline'}
@@ -4558,10 +4569,19 @@ export default function DashboardScreen() {
               activeOpacity={0.75}
               onPress={() => {
                 closeSidebar();
-                router.push('/profile');
+                router.push({
+                  pathname: '/account',
+                  params: {
+                    name: userProfile?.name || 'Juan Dela Cruz',
+                    rating: '4.9',
+                    done: '48',
+                    phone: userProfile?.phone || '+63 917 123 4567',
+                    isOtherUser: 'false',
+                  },
+                });
               }}
               accessibilityRole="button"
-              accessibilityLabel="View profile"
+              accessibilityLabel="View account"
             >
               <View style={styles.detailAvatarCircle}>
                 <Text style={styles.detailAvatarInitials}>
@@ -4589,7 +4609,7 @@ export default function DashboardScreen() {
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.detailRequestorMeta}>
-                  Requestor · 4.9★  -  48 completed
+                  4.9★  -  48 completed
                 </Text>
                 <View style={styles.detailRequestorPhoneRow}>
                   <Ionicons name="call" size={11} color="#6D8777" />
