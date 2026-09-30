@@ -468,7 +468,7 @@ export default function FulfillTaskScreen() {
                   By You (Verified Doer) • SuyoLink Dispatch
                 </Text>
                 <Text style={styles.timelineItemQuote}>
-                  "Accepted errand task. Reviewing instructions and route."
+                  "Accepted suyo task. Reviewing instructions and route."
                 </Text>
                 <Text style={styles.timelineItemTime}>
                   Today, 10:15 AM

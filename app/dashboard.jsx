@@ -191,7 +191,7 @@ const DEFAULT_DOER = {
   phone: '+63 917 842 1983',
   rating: '4.95★',
   reviewCount: '142 reviews',
-  completedCount: '142 errands',
+  completedCount: '142 suyos',
   vehicle: 'Honda Beat 125cc (Motorcycle)',
   vehiclePlate: 'ND-8821',
   badge: 'Top Rated Courier',
@@ -277,7 +277,7 @@ const INITIAL_ACCEPTED_SUYOS = [
       phone: '+63 917 842 1983',
       rating: '4.95★',
       reviewCount: '142 reviews',
-      completedCount: '142 errands',
+      completedCount: '142 suyos',
       vehicle: 'Honda Beat 125cc (Motorcycle)',
       vehiclePlate: 'ND-8821',
       badge: 'Top Rated Courier',
@@ -307,7 +307,7 @@ const INITIAL_ACCEPTED_SUYOS = [
       phone: '+63 928 341 5520',
       rating: '4.88★',
       reviewCount: '89 reviews',
-      completedCount: '89 errands',
+      completedCount: '89 suyos',
       vehicle: 'Bicycle Courier',
       vehiclePlate: 'BIKE-04',
       badge: 'Verified Suyo Courier',
@@ -341,12 +341,12 @@ const INITIAL_COMPLETED_SUYOS = [
       phone: '+63 919 720 9144',
       rating: '4.9★',
       reviewCount: '210 reviews',
-      completedCount: '210 errands',
+      completedCount: '210 suyos',
       vehicle: 'Yamaha Mio (Motorcycle)',
       vehiclePlate: 'DC-9912',
       badge: 'Community Hero',
       onTimeRate: '99.5%',
-      bio: 'Dependable community courier with over 200+ completed local errands.',
+      bio: 'Dependable community courier with over 200+ completed local suyos.',
     },
   },
   {
@@ -372,7 +372,7 @@ const INITIAL_COMPLETED_SUYOS = [
       phone: '+63 917 842 1983',
       rating: '4.95★',
       reviewCount: '142 reviews',
-      completedCount: '142 errands',
+      completedCount: '142 suyos',
       vehicle: 'Honda Beat 125cc (Motorcycle)',
       vehiclePlate: 'ND-8821',
       badge: 'Top Rated Courier',
@@ -403,7 +403,7 @@ const INITIAL_COMPLETED_SUYOS = [
       phone: '+63 905 188 4390',
       rating: '5.0★',
       reviewCount: '64 reviews',
-      completedCount: '64 errands',
+      completedCount: '64 suyos',
       vehicle: 'Walking / Commute',
       vehiclePlate: 'COMMUTER',
       badge: 'Queuing Specialist',
@@ -557,6 +557,333 @@ const WALLET_EARNED_SUYOS = [
     refNo: 'SYL-EARN-8940',
   },
 ];
+
+const WALLET_INCOME_CHART_PRESETS = {
+  '1W': {
+    label: 'Past 7 Days',
+    total: '₱630.00',
+    growth: '+12.5% vs prev week',
+    avg: '₱90.00',
+    highest: '₱200.00',
+    count: '4 Suyos',
+    pts: [
+      { x: 55, y: 135, val: '₱50', label: 'Mon' },
+      { x: 120, y: 118, val: '₱120', label: 'Tue' },
+      { x: 185, y: 118, val: '₱120', label: 'Wed' },
+      { x: 250, y: 88, val: '₱260', label: 'Thu' },
+      { x: 315, y: 64, val: '₱390', label: 'Fri' },
+      { x: 380, y: 46, val: '₱500', label: 'Sat' },
+      { x: 445, y: 30, val: '₱630', label: 'Sun', isPeak: true },
+    ],
+    pathD:
+      'M 55,135 C 87,135 87,118 120,118 C 152,118 152,118 185,118 C 217,118 217,88 250,88 C 282,88 282,64 315,64 C 347,64 347,46 380,46 C 412,46 412,30 445,30',
+    areaD:
+      'M 55,135 C 87,135 87,118 120,118 C 152,118 152,118 185,118 C 217,118 217,88 250,88 C 282,88 282,64 315,64 C 347,64 347,46 380,46 C 412,46 412,30 445,30 L 445,145 L 55,145 Z',
+    yLabels: ['₱800', '₱500', '₱200', '₱0'],
+  },
+  '1M': {
+    label: 'October 2026',
+    total: '₱1,280.00',
+    growth: '+18.4% vs last mo.',
+    avg: '₱182.85',
+    highest: '₱300.00',
+    count: '7 Suyos',
+    pts: [
+      { x: 75, y: 125, val: '₱220', label: 'Oct 1-7 (W1)' },
+      { x: 195, y: 96, val: '₱560', label: 'Oct 8-14 (W2)' },
+      { x: 315, y: 70, val: '₱890', label: 'Oct 15-21 (W3)' },
+      { x: 435, y: 36, val: '₱1,280', label: 'Oct 22-28 (W4)', isPeak: true },
+    ],
+    pathD:
+      'M 75,125 C 135,125 135,96 195,96 C 255,96 255,70 315,70 C 375,70 375,36 435,36',
+    areaD:
+      'M 75,125 C 135,125 135,96 195,96 C 255,96 255,70 315,70 C 375,70 375,36 435,36 L 435,145 L 75,145 Z',
+    yLabels: ['₱1.5k', '₱1.0k', '₱500', '₱0'],
+  },
+  '3M': {
+    label: 'Aug – Oct 2026',
+    total: '₱3,210.00',
+    growth: '+24.1% vs prev qtr',
+    avg: '₱178.33',
+    highest: '₱350.00',
+    count: '18 Suyos',
+    pts: [
+      { x: 90, y: 122, val: '₱850', label: 'Aug 2026' },
+      { x: 255, y: 78, val: '₱1,930', label: 'Sep 2026' },
+      { x: 420, y: 34, val: '₱3,210', label: 'Oct 2026', isPeak: true },
+    ],
+    pathD:
+      'M 90,122 C 172,122 172,78 255,78 C 337,78 337,34 420,34',
+    areaD:
+      'M 90,122 C 172,122 172,78 255,78 C 337,78 337,34 420,34 L 420,145 L 90,145 Z',
+    yLabels: ['₱3.5k', '₱2.5k', '₱1.5k', '₱0'],
+  },
+  'All': {
+    label: 'All Time',
+    total: '₱4,660.00',
+    growth: '+31.0% overall',
+    avg: '₱186.40',
+    highest: '₱350.00',
+    count: '25 Suyos',
+    pts: [
+      { x: 70, y: 128, val: '₱600', label: 'Jul' },
+      { x: 190, y: 104, val: '₱1,450', label: 'Aug' },
+      { x: 310, y: 74, val: '₱2,530', label: 'Sep' },
+      { x: 430, y: 32, val: '₱4,660', label: 'Oct', isPeak: true },
+    ],
+    pathD:
+      'M 70,128 C 130,128 130,104 190,104 C 250,104 250,74 310,74 C 370,74 370,32 430,32',
+    areaD:
+      'M 70,128 C 130,128 130,104 190,104 C 250,104 250,74 310,74 C 370,74 370,32 430,32 L 430,145 L 70,145 Z',
+    yLabels: ['₱5.0k', '₱3.5k', '₱2.0k', '₱0'],
+  },
+};
+
+function WalletIncomeLineGraph() {
+  const [activeRange, setActiveRange] = useState('1M');
+  const current = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS['1M'];
+
+  const renderWebSvg = () => {
+    return React.createElement(
+      'svg',
+      {
+        viewBox: '0 0 490 175',
+        width: '100%',
+        height: '165',
+        style: { width: '100%', height: 165, overflow: 'visible' },
+      },
+      React.createElement(
+        'defs',
+        null,
+        React.createElement(
+          'linearGradient',
+          { id: 'walletIncomeGrad', x1: '0', y1: '0', x2: '0', y2: '1' },
+          React.createElement('stop', { offset: '0%', stopColor: '#10B981', stopOpacity: '0.40' }),
+          React.createElement('stop', { offset: '65%', stopColor: '#10B981', stopOpacity: '0.10' }),
+          React.createElement('stop', { offset: '100%', stopColor: '#10B981', stopOpacity: '0.0' })
+        )
+      ),
+      // Y Grid Lines & Labels
+      current.yLabels.map((lbl, idx) => {
+        const yPos = 25 + idx * 40;
+        return React.createElement(
+          'g',
+          { key: `y-grid-${idx}` },
+          React.createElement('line', {
+            x1: 45,
+            y1: yPos,
+            x2: 465,
+            y2: yPos,
+            stroke: idx === 3 ? '#CBD5E1' : '#F1F5F9',
+            strokeWidth: idx === 3 ? 1.5 : 1,
+            strokeDasharray: idx === 3 ? undefined : '4,4',
+          }),
+          React.createElement(
+            'text',
+            {
+              x: 38,
+              y: yPos + 3.5,
+              fill: '#94A3B8',
+              fontSize: 10,
+              fontWeight: '600',
+              textAnchor: 'end',
+              fontFamily: 'sans-serif',
+            },
+            lbl
+          )
+        );
+      }),
+      // Vertical Drop Lines
+      current.pts.map((pt, idx) =>
+        React.createElement('line', {
+          key: `drop-${idx}`,
+          x1: pt.x,
+          y1: pt.y,
+          x2: pt.x,
+          y2: 145,
+          stroke: '#E2E8F0',
+          strokeWidth: 1.2,
+          strokeDasharray: '3,3',
+        })
+      ),
+      // Gradient Fill Area Under Curve
+      React.createElement('path', {
+        d: current.areaD,
+        fill: 'url(#walletIncomeGrad)',
+      }),
+      // Solid Modern Line
+      React.createElement('path', {
+        d: current.pathD,
+        fill: 'none',
+        stroke: '#059669',
+        strokeWidth: 3.5,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+      }),
+      // Point Circles
+      current.pts.map((pt, idx) =>
+        React.createElement(
+          'g',
+          { key: `node-${idx}` },
+          React.createElement('circle', {
+            cx: pt.x,
+            cy: pt.y,
+            r: 7.5,
+            fill: '#10B981',
+            opacity: 0.22,
+          }),
+          React.createElement('circle', {
+            cx: pt.x,
+            cy: pt.y,
+            r: pt.isPeak ? 5 : 4,
+            fill: '#FFFFFF',
+            stroke: '#059669',
+            strokeWidth: pt.isPeak ? 2.8 : 2.2,
+          })
+        )
+      ),
+      // Peak Marker Tooltip
+      current.pts
+        .filter((pt) => pt.isPeak)
+        .map((pt, idx) =>
+          React.createElement(
+            'g',
+            { key: `peak-${idx}` },
+            React.createElement('rect', {
+              x: pt.x - 48,
+              y: pt.y - 25,
+              width: 96,
+              height: 20,
+              rx: 5,
+              fill: '#064E3B',
+            }),
+            React.createElement(
+              'text',
+              {
+                x: pt.x,
+                y: pt.y - 11,
+                fill: '#FFFFFF',
+                fontSize: 10,
+                fontWeight: '700',
+                textAnchor: 'middle',
+                fontFamily: 'sans-serif',
+              },
+              `${pt.val} Peak`
+            )
+          )
+        ),
+      // X-Axis Labels
+      current.pts.map((pt, idx) =>
+        React.createElement(
+          'text',
+          {
+            key: `xlbl-${idx}`,
+            x: pt.x,
+            y: 162,
+            fill: '#64748B',
+            fontSize: 9.5,
+            fontWeight: '600',
+            textAnchor: 'middle',
+            fontFamily: 'sans-serif',
+          },
+          pt.label
+        )
+      )
+    );
+  };
+
+  const renderNativeFallback = () => {
+    return (
+      <View style={styles.walletNativeChartContainer}>
+        <View style={styles.walletNativeChartGrid}>
+          {current.pts.map((pt, idx) => (
+            <View key={`n-bar-${idx}`} style={styles.walletNativeBarCol}>
+              <View style={[styles.walletNativeNodeDot, pt.isPeak && styles.walletNativeNodeDotPeak]} />
+              <View style={styles.walletNativeDropLine} />
+              <Text style={styles.walletNativeLabelText}>{pt.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.walletLineGraphCard}>
+      {/* 1. Header Group with Growth Pill */}
+      <View style={styles.walletLineHeaderRow}>
+        <View style={styles.walletLineTitleGroup}>
+          <View style={styles.walletLineIconBox}>
+            <Ionicons name="trending-up" size={17} color="#059669" />
+          </View>
+          <View>
+            <Text style={styles.walletLineTitle}>Monthly Income Trend</Text>
+            <Text style={styles.walletLineSub}>{current.label} • Tracked Suyo Rewards</Text>
+          </View>
+        </View>
+
+        <View style={styles.walletGrowthBadge}>
+          <Ionicons name="arrow-up" size={12} color="#065F46" />
+          <Text style={styles.walletGrowthBadgeText}>{current.growth}</Text>
+        </View>
+      </View>
+
+      {/* 2. Value and Timeframe Controls */}
+      <View style={styles.walletLineAmountRow}>
+        <Text style={styles.walletLineBigAmount}>{current.total}</Text>
+
+        <View style={styles.walletTimeFilterRow}>
+          {['1W', '1M', '3M', 'All'].map((t) => {
+            const isActive = activeRange === t;
+            return (
+              <TouchableOpacity
+                key={t}
+                onPress={() => setActiveRange(t)}
+                style={[
+                  styles.walletTimeFilterBtn,
+                  isActive && styles.walletTimeFilterBtnActive,
+                ]}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.walletTimeFilterText,
+                    isActive && styles.walletTimeFilterTextActive,
+                  ]}
+                >
+                  {t}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* 3. The Literal Modern Graphical Line Graph */}
+      <View style={styles.walletSvgChartContainer}>
+        {Platform.OS === 'web' ? renderWebSvg() : renderNativeFallback()}
+      </View>
+
+      {/* 4. Bottom Metrics Highlights */}
+      <View style={styles.walletChartFooterMetrics}>
+        <View style={styles.walletFooterMetricItem}>
+          <Text style={styles.walletFooterMetricValue}>{current.avg}</Text>
+          <Text style={styles.walletFooterMetricLabel}>Avg / Suyo</Text>
+        </View>
+        <View style={styles.walletFooterMetricDivider} />
+        <View style={styles.walletFooterMetricItem}>
+          <Text style={styles.walletFooterMetricValue}>{current.highest}</Text>
+          <Text style={styles.walletFooterMetricLabel}>Highest Suyo</Text>
+        </View>
+        <View style={styles.walletFooterMetricDivider} />
+        <View style={styles.walletFooterMetricItem}>
+          <Text style={styles.walletFooterMetricValue}>{current.count}</Text>
+          <Text style={styles.walletFooterMetricLabel}>Accepted Suyos</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 const INITIAL_ACTIVITY_RECORDS = [
   {
@@ -1581,7 +1908,7 @@ export default function DashboardScreen() {
     {
       id: 'NOTIF-3',
       title: 'Reward Credited',
-      body: '₱300 has been credited to your account for completing errand #SYL-984.',
+      body: '₱300 has been credited to your account for completing suyo #SYL-984.',
       time: '1h ago',
       category: 'payment',
       icon: 'cash-outline',
@@ -1591,7 +1918,7 @@ export default function DashboardScreen() {
     {
       id: 'NOTIF-4',
       title: 'New Suyo Nearby',
-      body: 'An urgent errand "Prescription pickup at Mercury Drug" was posted 1.1 km away.',
+      body: 'An urgent suyo "Prescription pickup at Mercury Drug" was posted 1.1 km away.',
       time: '3h ago',
       category: 'nearby',
       icon: 'location-outline',
@@ -1667,7 +1994,7 @@ export default function DashboardScreen() {
     trackingNumber: '#SYL-88219',
     status: 'In Progress',
     eta: 'Doer is 5 mins away',
-    detail: 'Errand: Drop off documents at Unit 402',
+    detail: 'Suyo: Drop off documents at Unit 402',
     progress: '75%',
   });
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
@@ -1882,7 +2209,7 @@ export default function DashboardScreen() {
             <Text style={styles.welcomeNameText} numberOfLines={1}>
               {userProfile?.name || 'Juan Dela Cruz'}
             </Text>
-            <Text style={styles.welcomeTagline}>Need an errand done today?</Text>
+            <Text style={styles.welcomeTagline}>Need a suyo done today?</Text>
           </View>
 
           <Image
@@ -1905,11 +2232,11 @@ export default function DashboardScreen() {
               />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search suyos or errands..."
+                placeholder="Search suyos..."
                 placeholderTextColor="#688676"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                accessibilityLabel="Search suyos or errands"
+                accessibilityLabel="Search suyos"
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity
@@ -2056,7 +2383,7 @@ export default function DashboardScreen() {
             <View style={styles.mySuyoHeroSection}>
               <View style={styles.mySuyoHeroTextCol}>
                 <Text style={styles.mySuyoHeroSuper}>MY SUYO HUB</Text>
-                <Text style={styles.mySuyoHeroTitle}>Requested Errands</Text>
+                <Text style={styles.mySuyoHeroTitle}>Requested Suyos</Text>
                 <Text style={styles.mySuyoHeroSub}>
                   Manage, track, boost, and repeat your requested suyos
                 </Text>
@@ -2215,9 +2542,9 @@ export default function DashboardScreen() {
                   {mySuyoNavTab === 'posted'
                     ? 'Awaiting courier acceptance · Boost reward to speed up'
                     : mySuyoNavTab === 'accepted'
-                    ? 'Couriers currently fulfilling these errands'
+                    ? 'Couriers currently fulfilling these suyos'
                     : mySuyoNavTab === 'completed'
-                    ? 'Successfully fulfilled errands from past to present'
+                    ? 'Successfully fulfilled suyos from past to present'
                     : 'Saved templates for quick 1-tap repeating'}
                 </Text>
               </View>
@@ -2319,12 +2646,12 @@ export default function DashboardScreen() {
                       </Text>
                       <Text style={styles.mySuyoEmptySub}>
                         {mySuyoNavTab === 'posted'
-                          ? "All your suyos have been accepted, or you haven't posted any. Tap Post below to request an errand!"
+                          ? "All your suyos have been accepted, or you haven't posted any. Tap Post below to request a suyo!"
                           : mySuyoNavTab === 'accepted'
                           ? "When a courier accepts one of your posted suyos, it will appear here so you can view the doer profile and track live progress."
                           : mySuyoNavTab === 'completed'
-                          ? "Finished errands will appear here with the courier who completed them."
-                          : "Save completed or frequent errands to your archive so you can repeat them with a single tap!"}
+                          ? "Finished suyos will appear here with the courier who completed them."
+                          : "Save completed or frequent suyos to your archive so you can repeat them with a single tap!"}
                       </Text>
                     </View>
                   );
@@ -2553,21 +2880,8 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              {/* Monthly Income Stats Banner */}
-              <View style={styles.walletMonthlyIncomeCard}>
-                <View style={styles.walletMonthlyIncomeLeft}>
-                  <View style={styles.walletMonthlyIconBox}>
-                    <Ionicons name="trending-up" size={16} color="#059669" />
-                  </View>
-                  <View>
-                    <Text style={styles.walletMonthlyTitle}>Monthly Income (Oct 2026)</Text>
-                    <Text style={styles.walletMonthlySub}>Tracked errand rewards earned this month</Text>
-                  </View>
-                </View>
-                <View style={styles.walletMonthlyBadge}>
-                  <Text style={styles.walletMonthlyBadgeText}>+18.4% growth</Text>
-                </View>
-              </View>
+              {/* Literal Modern Graphical Line Graph */}
+              <WalletIncomeLineGraph />
 
               {/* Informative Note: Direct Settlement Outside App */}
               <View style={styles.walletPaymentNoticeRow}>
@@ -4240,7 +4554,7 @@ export default function DashboardScreen() {
                 </Text>
                 <Text style={styles.notifEmptySub}>
                   {notificationFilter === 'Unread'
-                    ? 'You are all caught up with your errand updates and rewards.'
+                    ? 'You are all caught up with your suyo updates and rewards.'
                     : 'Important activity, doer arrivals, and reward credits will appear here.'}
                 </Text>
               </View>
@@ -4304,7 +4618,7 @@ export default function DashboardScreen() {
                 {/* Ticket Body */}
                 <View style={styles.receiptTicketBox}>
                   <Text style={styles.receiptBrandTitle}>SUYOLINK PHILIPPINES</Text>
-                  <Text style={styles.receiptBrandTag}>Community Errand & Courier Platform</Text>
+                  <Text style={styles.receiptBrandTag}>Community Suyo & Courier Platform</Text>
                   <Text style={styles.receiptRefDisplay}>{selectedReceipt.refNo}</Text>
 
                   <View style={styles.receiptDashedLine} />
@@ -4325,7 +4639,7 @@ export default function DashboardScreen() {
                     <Text style={styles.receiptValue}>{selectedReceipt.category}</Text>
                   </View>
                   <View style={styles.receiptRow}>
-                    <Text style={styles.receiptLabel}>Errand / Task:</Text>
+                    <Text style={styles.receiptLabel}>Suyo / Task:</Text>
                     <Text style={[styles.receiptValue, { flex: 1, textAlign: 'right' }]}>
                       {selectedReceipt.title}
                     </Text>
@@ -4365,7 +4679,7 @@ export default function DashboardScreen() {
 
                   {/* Financial Breakdown */}
                   <View style={styles.receiptRow}>
-                    <Text style={styles.receiptLabel}>Base Errand Reward:</Text>
+                    <Text style={styles.receiptLabel}>Base Suyo Reward:</Text>
                     <Text style={styles.receiptValue}>₱{selectedReceipt.amount.toFixed(2)}</Text>
                   </View>
                   {selectedReceipt.platformFee > 0 && (
@@ -4427,7 +4741,7 @@ export default function DashboardScreen() {
       </Modal>
 
       {/* ========================================================== */}
-      {/* 8. STATISTICS MODAL (Errand Performance & Community Stats) */}
+      {/* 8. STATISTICS MODAL (Suyo Performance & Community Stats) */}
       {/* ========================================================== */}
       <Modal
         visible={isStatisticsModalOpen}
@@ -4442,7 +4756,7 @@ export default function DashboardScreen() {
                 <View style={styles.statsIconBadge}>
                   <Ionicons name="stats-chart" size={17} color="#0284C7" />
                 </View>
-                <Text style={styles.modalTitle}>Errand Statistics</Text>
+                <Text style={styles.modalTitle}>Suyo Statistics</Text>
               </View>
               <TouchableOpacity
                 onPress={() => setIsStatisticsModalOpen(false)}
@@ -4481,34 +4795,91 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              {/* Errand Category Breakdown */}
+              {/* Customer Satisfaction Breakdown Graph */}
               <View style={styles.statsCategoryCard}>
-                <Text style={styles.statsSectionHeading}>Errand Types Breakdown</Text>
-                <Text style={styles.statsSectionSubheading}>Distribution of accepted community errands</Text>
-
-                <View style={styles.statsCategoryBar}>
-                  <View style={[styles.statsCategorySegment, { width: '45%', backgroundColor: '#059669' }]} />
-                  <View style={[styles.statsCategorySegment, { width: '30%', backgroundColor: '#0284C7' }]} />
-                  <View style={[styles.statsCategorySegment, { width: '15%', backgroundColor: '#D97706' }]} />
-                  <View style={[styles.statsCategorySegment, { width: '10%', backgroundColor: '#7C3AED' }]} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View>
+                    <Text style={styles.statsSectionHeading}>Customer Satisfaction Breakdown</Text>
+                    <Text style={styles.statsSectionSubheading}>Community ratings across completed suyos (142 reviews)</Text>
+                  </View>
+                  <View style={styles.statsSatisfactionScoreBadge}>
+                    <Ionicons name="star" size={13} color="#F59E0B" />
+                    <Text style={styles.statsSatisfactionScoreText}>4.95 / 5.0</Text>
+                  </View>
                 </View>
 
-                <View style={styles.statsCategoryLegendGrid}>
-                  <View style={styles.statsLegendItem}>
-                    <View style={[styles.statsLegendDot, { backgroundColor: '#059669' }]} />
-                    <Text style={styles.statsLegendText}>Groceries 45% (₱650)</Text>
+                {/* Rating Distribution Bar Graph */}
+                <View style={styles.csatBarsContainer}>
+                  {/* 5 Stars */}
+                  <View style={styles.csatBarRow}>
+                    <View style={styles.csatStarLabelRow}>
+                      <Text style={styles.csatStarText}>5</Text>
+                      <Ionicons name="star" size={11} color="#F59E0B" />
+                    </View>
+                    <View style={styles.csatTrack}>
+                      <View style={[styles.csatFill, { width: '94%', backgroundColor: '#059669' }]} />
+                    </View>
+                    <Text style={styles.csatPctText}>94% (134)</Text>
                   </View>
-                  <View style={styles.statsLegendItem}>
-                    <View style={[styles.statsLegendDot, { backgroundColor: '#0284C7' }]} />
-                    <Text style={styles.statsLegendText}>Delivery 30% (₱430)</Text>
+
+                  {/* 4 Stars */}
+                  <View style={styles.csatBarRow}>
+                    <View style={styles.csatStarLabelRow}>
+                      <Text style={styles.csatStarText}>4</Text>
+                      <Ionicons name="star" size={11} color="#F59E0B" />
+                    </View>
+                    <View style={styles.csatTrack}>
+                      <View style={[styles.csatFill, { width: '5%', backgroundColor: '#0284C7' }]} />
+                    </View>
+                    <Text style={styles.csatPctText}>5% (7)</Text>
                   </View>
-                  <View style={styles.statsLegendItem}>
-                    <View style={[styles.statsLegendDot, { backgroundColor: '#D97706' }]} />
-                    <Text style={styles.statsLegendText}>Documents 15% (₱220)</Text>
+
+                  {/* 3 Stars */}
+                  <View style={styles.csatBarRow}>
+                    <View style={styles.csatStarLabelRow}>
+                      <Text style={styles.csatStarText}>3</Text>
+                      <Ionicons name="star" size={11} color="#F59E0B" />
+                    </View>
+                    <View style={styles.csatTrack}>
+                      <View style={[styles.csatFill, { width: '1%', backgroundColor: '#D97706' }]} />
+                    </View>
+                    <Text style={styles.csatPctText}>1% (1)</Text>
                   </View>
-                  <View style={styles.statsLegendItem}>
-                    <View style={[styles.statsLegendDot, { backgroundColor: '#7C3AED' }]} />
-                    <Text style={styles.statsLegendText}>Queuing 10% (₱150)</Text>
+
+                  {/* 2 Stars */}
+                  <View style={styles.csatBarRow}>
+                    <View style={styles.csatStarLabelRow}>
+                      <Text style={styles.csatStarText}>2</Text>
+                      <Ionicons name="star" size={11} color="#D1D5DB" />
+                    </View>
+                    <View style={styles.csatTrack}>
+                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#9CA3AF' }]} />
+                    </View>
+                    <Text style={styles.csatPctText}>0% (0)</Text>
+                  </View>
+
+                  {/* 1 Star */}
+                  <View style={styles.csatBarRow}>
+                    <View style={styles.csatStarLabelRow}>
+                      <Text style={styles.csatStarText}>1</Text>
+                      <Ionicons name="star" size={11} color="#D1D5DB" />
+                    </View>
+                    <View style={styles.csatTrack}>
+                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#9CA3AF' }]} />
+                    </View>
+                    <Text style={styles.csatPctText}>0% (0)</Text>
+                  </View>
+                </View>
+
+                {/* Key Satisfaction Metric Badges */}
+                <View style={styles.csatHighlightsRow}>
+                  <View style={styles.csatHighlightChip}>
+                    <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                    <Text style={styles.csatHighlightText}>Punctual & Polite (98%)</Text>
+                  </View>
+                  <View style={styles.csatHighlightChip}>
+                    <Ionicons name="shield-checkmark" size={13} color="#0284C7" />
+                    <Text style={styles.csatHighlightText}>Careful Handling (99%)</Text>
                   </View>
                 </View>
               </View>
@@ -4664,7 +5035,7 @@ export default function DashboardScreen() {
                 <View style={styles.menuItemTextCol}>
                   <Text style={styles.menuItemTitle}>Statistics</Text>
                   <Text style={styles.menuItemSub}>
-                    Errand analytics & performance
+                    Suyo analytics & performance
                   </Text>
                 </View>
               </View>
@@ -4693,7 +5064,7 @@ export default function DashboardScreen() {
                 <View style={styles.menuItemTextCol}>
                   <Text style={styles.menuItemTitle}>About SuyoLink</Text>
                   <Text style={styles.menuItemSub}>
-                    v1.0.0 • Hyperlocal Errands
+                    v1.0.0 • Hyperlocal Suyos
                   </Text>
                 </View>
               </View>
@@ -4710,7 +5081,7 @@ export default function DashboardScreen() {
               <View style={styles.expandedSubCard}>
                 <Text style={styles.aboutParagraph}>
                   SuyoLink connects you with reliable local doers to handle
-                  favors, document errands, and express deliveries securely in
+                  favors, document suyos, and express deliveries securely in
                   your community.
                 </Text>
                 <View style={styles.aboutMetaRow}>
@@ -4737,7 +5108,7 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.menuItemTextCol}>
                   <Text style={styles.menuItemTitle}>Push Notifications</Text>
-                  <Text style={styles.menuItemSub}>Suyo and errand alerts</Text>
+                  <Text style={styles.menuItemSub}>Suyo alerts & updates</Text>
                 </View>
               </View>
               <Switch
@@ -8489,4 +8860,270 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  // Customer Satisfaction Graph Styles
+  statsSatisfactionScoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  statsSatisfactionScoreText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  csatBarsContainer: {
+    marginTop: 10,
+    marginBottom: 12,
+    gap: 7,
+  },
+  csatBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  csatStarLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 24,
+    justifyContent: 'flex-end',
+    gap: 2,
+  },
+  csatStarText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  csatTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  csatFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  csatPctText: {
+    width: 60,
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#475569',
+    textAlign: 'right',
+  },
+  csatHighlightsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  csatHighlightChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  csatHighlightText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  // Wallet Graphical Line Chart Styles
+  walletLineGraphCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E6F0EB',
+    marginTop: 12,
+    marginBottom: 4,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  walletLineHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  walletLineTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  walletLineIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  walletLineTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#064E3B',
+  },
+  walletLineSub: {
+    fontSize: 10.5,
+    color: '#059669',
+    fontWeight: '500',
+  },
+  walletGrowthBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  walletGrowthBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  walletLineAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0FDF4',
+  },
+  walletLineBigAmount: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#064E3B',
+    letterSpacing: -0.5,
+  },
+  walletTimeFilterRow: {
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: '#F3F4F6',
+    padding: 3,
+    borderRadius: 9,
+  },
+  walletTimeFilterBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+  },
+  walletTimeFilterBtnActive: {
+    backgroundColor: '#059669',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  walletTimeFilterText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  walletTimeFilterTextActive: {
+    color: '#FFFFFF',
+  },
+  walletSvgChartContainer: {
+    width: '100%',
+    height: 165,
+    marginVertical: 4,
+  },
+  walletNativeChartContainer: {
+    width: '100%',
+    height: 155,
+    marginVertical: 6,
+    justifyContent: 'flex-end',
+  },
+  walletNativeChartGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    height: 120,
+    borderBottomWidth: 1,
+    borderBottomColor: '#CBD5E1',
+    paddingBottom: 4,
+  },
+  walletNativeBarCol: {
+    alignItems: 'center',
+  },
+  walletNativeNodeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#059669',
+    marginBottom: 4,
+  },
+  walletNativeNodeDotPeak: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#047857',
+    borderWidth: 2,
+    borderColor: '#A7F3D0',
+  },
+  walletNativeDropLine: {
+    width: 1,
+    height: 35,
+    backgroundColor: '#E2E8F0',
+  },
+  walletNativeLabelText: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 4,
+  },
+  walletChartFooterMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAF9',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#EDF5F1',
+  },
+  walletFooterMetricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  walletFooterMetricDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: '#E2E8F0',
+  },
+  walletFooterMetricValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  walletFooterMetricLabel: {
+    fontSize: 9.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 1,
+  },
 });
+

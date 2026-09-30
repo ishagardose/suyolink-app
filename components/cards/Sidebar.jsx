@@ -200,7 +200,7 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                     </View>
                     <View style={styles.menuItemTextCol}>
                       <ThemedText style={styles.menuItemTitle}>About SuyoLink</ThemedText>
-                      <ThemedText style={styles.menuItemSub}>v1.0.0 • Hyperlocal Errands</ThemedText>
+                      <ThemedText style={styles.menuItemSub}>v1.0.0 • Hyperlocal Suyos</ThemedText>
                     </View>
                   </View>
                   <Ionicons
@@ -213,7 +213,7 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                 {expandedSection === 'about' && (
                   <View style={styles.expandedSubCard}>
                     <ThemedText style={styles.aboutParagraph}>
-                      SuyoLink connects you with reliable local doers to handle favors, document errands, and express deliveries securely in your community.
+                      SuyoLink connects you with reliable local doers to handle favors, document suyos, and express deliveries securely in your community.
                     </ThemedText>
                     <View style={styles.aboutMetaRow}>
                       <ThemedText style={styles.aboutMetaLabel}>App Version:</ThemedText>

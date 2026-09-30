@@ -17,8 +17,8 @@ export default function DashboardSearch({ value, onChangeText }) {
       />
       <ThemedTextInput
         style={styles.searchInput}
-        placeholder="Search suyos or errands..."
-        accessibilityLabel="Search suyos or errands"
+        placeholder="Search suyos..."
+        accessibilityLabel="Search suyos"
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={colors.textMuted || '#688676'}

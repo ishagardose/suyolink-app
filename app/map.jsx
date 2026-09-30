@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import {
   StyleSheet,
   Text,
@@ -45,7 +45,7 @@ export default function MapScreen() {
             <Text style={styles.liveText}>LIVE TRACKING</Text>
           </View>
           <Text style={styles.trackingLabel}>Doer is 5 mins away</Text>
-          <Text style={styles.trackingSub}>Errand: Drop off documents at Unit 402</Text>
+          <Text style={styles.trackingSub}>Suyo: Drop off documents at Unit 402</Text>
         </View>
       </View>
 
@@ -56,7 +56,7 @@ export default function MapScreen() {
           </View>
           <View style={styles.doerMeta}>
             <Text style={styles.doerName}>Alex M.</Text>
-            <Text style={styles.doerRating}>4.9 - 231 errands done</Text>
+            <Text style={styles.doerRating}>4.9 - 231 suyos done</Text>
           </View>
           <TouchableOpacity style={styles.callButton} activeOpacity={0.7}>
             <Ionicons name="call" size={18} color="#FFFFFF" />

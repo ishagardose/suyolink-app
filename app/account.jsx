@@ -99,13 +99,13 @@ export default function AccountScreen() {
     params.handle ||
     `@${initialName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
   const initialRating = (params.rating || '4.9').replace(/[★*]/g, '').trim();
-  const initialDone = params.errandsDone || params.done || '48';
+  const initialDone = params.suyosDone || params.errandsDone || params.done || '48';
   const initialPoints = params.points || (isOtherUser ? '1,120' : '1,250');
   const initialBio =
     params.bio ||
     (isOtherUser
       ? 'Verified SuyoLink community member. Active requester and helper around the area.'
-      : 'Just a helpful neighbor. Ready to run grocery errands, assist with light moving, or pet-sit in Quezon City. 🇵🇭');
+      : 'Just a helpful neighbor. Ready to run grocery suyos, assist with light moving, or pet-sit in Quezon City. 🇵🇭');
 
   const [profile, setProfile] = useState({
     name: initialName,
@@ -124,13 +124,13 @@ export default function AccountScreen() {
           params.handle ||
           `@${params.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         rating: (params.rating || '4.9').replace(/[★*]/g, '').trim(),
-        done: params.errandsDone || params.done || (isOtherUser ? '34' : '48'),
+        done: params.suyosDone || params.errandsDone || params.done || (isOtherUser ? '34' : '48'),
         points: params.points || (isOtherUser ? '1,120' : '1,250'),
         bio:
           params.bio ||
           (isOtherUser
             ? 'Verified SuyoLink community member. Active requester and helper around the area.'
-            : 'Just a helpful neighbor. Ready to run grocery errands, assist with light moving, or pet-sit in Quezon City. 🇵🇭'),
+            : 'Just a helpful neighbor. Ready to run grocery suyos, assist with light moving, or pet-sit in Quezon City. 🇵🇭'),
       });
     }
   }, [params.name, params.rating, params.done, isOtherUser]);

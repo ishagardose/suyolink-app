@@ -836,7 +836,7 @@ export default function RequestForm({ onPosted }) {
 
             <Text style={styles.successModalTitle}>Suyo Posted Successfully!</Text>
             <Text style={styles.successModalSub}>
-              Your errand request "{draft.title}" is now live. Nearby verified doers have been alerted.
+              Your suyo request "{draft.title}" is now live. Nearby verified doers have been alerted.
             </Text>
 
             <View style={styles.successSummaryBox}>

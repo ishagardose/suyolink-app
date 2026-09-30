@@ -29,7 +29,7 @@ export default function RequesterFulfillScreen() {
     reward: params.reward || '₱300',
     doerName: params.doerName || 'Alex M.',
     doerRating: (params.doerRating || '4.9').replace(/[★*]/g, '').trim(),
-    doerErrandsCount: params.doerErrandsCount || '231 errands done',
+    doerSuyosCount: params.doerSuyosCount || params.doerErrandsCount || '231 suyos done',
     doerPhone: params.doerPhone || '0917 552 8910',
     details:
       params.details ||
@@ -407,7 +407,7 @@ export default function RequesterFulfillScreen() {
                   Assigned: {task.doerName} • SuyoLink Dispatch
                 </Text>
                 <Text style={styles.timelineItemQuote}>
-                  "Doer accepted your document drop-off errand. Preparing route."
+                  "Doer accepted your document drop-off suyo. Preparing route."
                 </Text>
                 <Text style={styles.timelineItemTime}>
                   Today, 10:15 AM
@@ -432,7 +432,7 @@ export default function RequesterFulfillScreen() {
                 location: task.location,
                 doerName: task.doerName,
                 doerRating: task.doerRating,
-                doerErrandsCount: task.doerErrandsCount,
+                doerSuyosCount: task.doerSuyosCount || task.doerErrandsCount,
                 doerPhone: task.doerPhone,
               },
             });

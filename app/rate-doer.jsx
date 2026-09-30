@@ -156,11 +156,11 @@ export default function RateDoerScreen({ forcedTarget }) {
                 name: subjectName,
                 rating: subjectRating,
                 role: isRatingRequester ? 'requester' : 'doer',
-                errandsDone: isRatingRequester ? '34' : '48',
+                suyosDone: isRatingRequester ? '34' : '48',
                 points: isRatingRequester ? '850' : '1,250',
                 bio: isRatingRequester
                   ? 'Legal professional in Makati CBD. Regularly requests prompt document handoffs and express parcel delivery.'
-                  : 'Just a helpful neighbor. Ready to run grocery errands, assist with light moving, or pet-sit in Quezon City. 🇵🇭',
+                  : 'Just a helpful neighbor. Ready to run grocery suyos, assist with light moving, or pet-sit in Quezon City. 🇵🇭',
               },
             });
           }}
@@ -188,7 +188,7 @@ export default function RateDoerScreen({ forcedTarget }) {
               <Text style={styles.statsText}>{subjectRating} Rating</Text>
               <Text style={styles.statsDot}>•</Text>
               <Text style={styles.statsText}>
-                {isRatingRequester ? '34 completed requests' : '231 errands completed'}
+                {isRatingRequester ? '34 completed requests' : '231 suyos completed'}
               </Text>
             </View>
 
