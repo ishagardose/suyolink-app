@@ -172,6 +172,123 @@ const INITIAL_AVAILABLE_SUYOS = [
   },
 ];
 
+const INITIAL_MY_REQUESTED_SUYOS = [
+  {
+    id: 'MY-REQ-001',
+    title: 'Pick up medical supplies from Mercury Drug',
+    category: 'Delivery',
+    location: 'Mercury Drug Legaspi',
+    distanceText: '1.1 km away',
+    reward: '₱180',
+    rewardAmount: 180,
+    tag: 'Completed',
+    status: 'Completed',
+    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Sep 23, 2026',
+    details: 'Pick up prescribed maintenance asthma medication and vitamins.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doerName: 'Alex M.',
+  },
+  {
+    id: 'MY-REQ-002',
+    title: 'Deliver notarized lease documents to lawyer',
+    category: 'Documents',
+    location: 'Ayala Tower 1, Makati',
+    distanceText: '0.9 km away',
+    reward: '₱250',
+    rewardAmount: 250,
+    tag: 'Completed',
+    status: 'Completed',
+    createdAt: Date.now() - 4 * 24 * 60 * 1000,
+    formattedDate: 'Sep 26, 2026',
+    details: 'Urgent delivery of 3 notarized lease agreements.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doerName: 'Carlos D.',
+  },
+  {
+    id: 'MY-REQ-003',
+    title: 'Queue for Meralco electric bill payment',
+    category: 'Queuing & Bills',
+    location: 'Bayad Center Ayala',
+    distanceText: '1.4 km away',
+    reward: '₱150',
+    rewardAmount: 150,
+    tag: 'Completed',
+    status: 'Completed',
+    createdAt: Date.now() - 2 * 24 * 60 * 1000,
+    formattedDate: 'Sep 28, 2026',
+    details: 'Pay monthly electricity bill before 4 PM counter cut-off.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doerName: 'Maria C.',
+  },
+  {
+    id: 'MY-REQ-004',
+    title: 'Buy fresh groceries and bread at Landmark',
+    category: 'Groceries',
+    location: 'Landmark Supermarket',
+    distanceText: '0.8 km away',
+    reward: '₱200',
+    rewardAmount: 200,
+    tag: 'In Progress',
+    status: 'In Progress',
+    createdAt: Date.now() - 3 * 60 * 60 * 1000,
+    formattedDate: 'Today, 2:30 PM',
+    details: '2 cartons oat milk, 1 loaf whole wheat bread, 1 tray fresh eggs.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doerName: 'Alex M.',
+  },
+  {
+    id: 'MY-REQ-005',
+    title: 'Package pickup and drop-off at LBC Glorietta',
+    category: 'Delivery',
+    location: 'LBC Express - Glorietta',
+    distanceText: '1.6 km away',
+    reward: '₱160',
+    rewardAmount: 160,
+    tag: 'Looking for Doer',
+    status: 'Open',
+    createdAt: Date.now() - 30 * 60 * 1000,
+    formattedDate: 'Today, 5:15 PM',
+    details: 'Drop off pre-packed box with return barcode sticker.',
+    requesterName: 'Juan Dela Cruz (You)',
+  },
+];
+
+const INITIAL_ACCEPTED_SUYOS = [
+  {
+    id: 'ACC-001',
+    title: 'Drop off documents - Unit 402',
+    category: 'Documents',
+    location: 'Makati CBD',
+    distanceText: '0.5 km away',
+    reward: '₱300',
+    rewardAmount: 300,
+    tag: 'In Progress',
+    status: 'In Progress',
+    createdAt: Date.now() - 45 * 60 * 1000,
+    formattedDate: 'Today, 4:00 PM',
+    details: 'Drop off notarized lease agreements and corporate papers at 4th floor reception.',
+    requesterName: 'Atty. Rafael Cruz',
+    requesterPhone: '0917 842 1983',
+  },
+  {
+    id: 'ACC-002',
+    title: 'Buy groceries - SM Tagum',
+    category: 'Groceries',
+    location: 'SM Tagum',
+    distanceText: '0.8 km away',
+    reward: '₱150',
+    rewardAmount: 150,
+    tag: 'Completed',
+    status: 'Completed',
+    createdAt: Date.now() - 24 * 60 * 60 * 1000,
+    formattedDate: 'Yesterday, 1:15 PM',
+    details: '2 cartons of milk, 1 loaf of wheat bread, and 1 pack of eggs from supermarket.',
+    requesterName: 'Maria Clarissa',
+    requesterPhone: '0928 341 5520',
+  },
+];
+
 const CATEGORY_OPTIONS = ['All', 'Delivery', 'Groceries', 'Documents', 'Queuing & Bills', 'Household'];
 const URGENCY_OPTIONS = ['All', 'Normal', 'Urgent', 'Due today', 'Due tomorrow'];
 
@@ -570,6 +687,77 @@ export default function DashboardScreen() {
     );
   };
 
+  // MySuyo Tab Navigation & Management state
+  const [myRequestedSuyos, setMyRequestedSuyos] = useState(() => INITIAL_MY_REQUESTED_SUYOS);
+  const [acceptedSuyos, setAcceptedSuyos] = useState(() => INITIAL_ACCEPTED_SUYOS);
+  const [mySuyoNavTab, setMySuyoNavTab] = useState('my_suyo'); // 'my_suyo' or 'accepted'
+  const [isMySuyoEditMode, setIsMySuyoEditMode] = useState(false);
+  const [selectedMySuyoIdsToDelete, setSelectedMySuyoIdsToDelete] = useState([]);
+
+  // Sync any newly posted backend requests into myRequestedSuyos (maintaining oldest to newest)
+  useEffect(() => {
+    if (requests && requests.length > 0) {
+      const userBackendRequests = requests.filter(
+        (r) =>
+          r.scope === 'posted' ||
+          r.requesterEmail === user?.email ||
+          r.requesterName === userProfile?.name
+      );
+      if (userBackendRequests.length > 0) {
+        setMyRequestedSuyos((prev) => {
+          const prevIds = new Set(prev.map((p) => p.id));
+          const newItems = userBackendRequests
+            .filter((r) => !prevIds.has(r.id))
+            .map((r) => ({
+              id: r.id,
+              title: r.title,
+              category: r.category || 'General',
+              location: r.location || 'Nearby',
+              distanceText: '0.8 km away',
+              reward: formatOffer(r.offerCentavos || 0),
+              rewardAmount: (r.offerCentavos || 0) / 100,
+              tag: 'Looking for Doer',
+              status: r.status === 'open' ? 'Looking for Doer' : r.status,
+              createdAt: Date.parse(r.createdAt || Date.now()),
+              formattedDate: 'Recently posted',
+              details: r.details || 'No details provided.',
+              requesterName: r.requesterName || userProfile?.name || 'You',
+            }));
+          if (newItems.length === 0) return prev;
+          return [...prev, ...newItems].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        });
+      }
+    }
+  }, [requests, user?.email, userProfile?.name]);
+
+  const handleToggleMySuyoSelect = (id) => {
+    setSelectedMySuyoIdsToDelete((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmDeleteMySuyo = () => {
+    if (selectedMySuyoIdsToDelete.length === 0) return;
+    const count = selectedMySuyoIdsToDelete.length;
+    if (mySuyoNavTab === 'my_suyo') {
+      setMyRequestedSuyos((prev) =>
+        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+      );
+    } else {
+      setAcceptedSuyos((prev) =>
+        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+      );
+    }
+    setSelectedMySuyoIdsToDelete([]);
+    setIsMySuyoEditMode(false);
+    triggerToast(
+      count === 1
+        ? '1 suyo removed from history'
+        : `${count} suyos removed from history`,
+      'trash'
+    );
+  };
+
   // Functional Notifications state
   const [notifications, setNotifications] = useState([
     {
@@ -891,7 +1079,9 @@ export default function DashboardScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* === HERO SECTION WITH MATCHING SCOOTER COURIER STICKER === */}
+        {activeTab === 'home' && (
+          <>
+            {/* === HERO SECTION WITH MATCHING SCOOTER COURIER STICKER === */}
         <View style={styles.headerHeroSection}>
           <View style={styles.heroTextBlock}>
             <View style={styles.locationPill}>
@@ -1066,6 +1256,292 @@ export default function DashboardScreen() {
             )}
           </View>
         </View>
+          </>
+        )}
+
+        {/* === MYSUYO HUB SCREEN === */}
+        {activeTab === 'mysuyo' && (
+          <View style={styles.mySuyoMainWrapper}>
+            {/* MySuyo Hero Banner */}
+            <View style={styles.mySuyoHeroSection}>
+              <View style={styles.mySuyoHeroTextCol}>
+                <Text style={styles.mySuyoHeroSuper}>MY SUYO HUB</Text>
+                <Text style={styles.mySuyoHeroTitle}>Errand History</Text>
+                <Text style={styles.mySuyoHeroSub}>
+                  Chronological list of your requested and fulfilled errands
+                </Text>
+              </View>
+              <View style={styles.mySuyoHeroBadge}>
+                <Ionicons name="time-outline" size={24} color="#1E4D2B" />
+              </View>
+            </View>
+
+            {/* Modern Text Navigation ("MySuyo" vs "Accepted" - Zero chunky button styles) */}
+            <View style={styles.mySuyoTextNavWrapper}>
+              <View style={styles.mySuyoTextNavRow}>
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setMySuyoNavTab('my_suyo');
+                    setIsMySuyoEditMode(false);
+                    setSelectedMySuyoIdsToDelete([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      mySuyoNavTab === 'my_suyo' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    MySuyo
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      mySuyoNavTab === 'my_suyo' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({myRequestedSuyos.length})
+                  </Text>
+                  {mySuyoNavTab === 'my_suyo' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setMySuyoNavTab('accepted');
+                    setIsMySuyoEditMode(false);
+                    setSelectedMySuyoIdsToDelete([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      mySuyoNavTab === 'accepted' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Accepted
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      mySuyoNavTab === 'accepted' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({acceptedSuyos.length})
+                  </Text>
+                  {mySuyoNavTab === 'accepted' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Sub-bar with title, chronological notice, and fading text 'Edit' */}
+            <View style={styles.mySuyoSubBar}>
+              <View>
+                <Text style={styles.mySuyoSubBarTitle}>
+                  {mySuyoNavTab === 'my_suyo'
+                    ? 'Requested Suyos'
+                    : 'Accepted Suyos'}
+                </Text>
+                <Text style={styles.mySuyoSubBarSubtitle}>
+                  Ordered oldest to newest (past to present)
+                </Text>
+              </View>
+
+              {(mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).length > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  {isMySuyoEditMode && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const currentList =
+                          mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos;
+                        if (selectedMySuyoIdsToDelete.length === currentList.length) {
+                          setSelectedMySuyoIdsToDelete([]);
+                        } else {
+                          setSelectedMySuyoIdsToDelete(currentList.map((item) => item.id));
+                        }
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.mySuyoSelectAllText}>
+                        {selectedMySuyoIdsToDelete.length ===
+                        (mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).length
+                          ? 'Deselect all'
+                          : 'Select all'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsMySuyoEditMode((prev) => !prev);
+                      setSelectedMySuyoIdsToDelete([]);
+                    }}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.mySuyoFadingEditText}>
+                      {isMySuyoEditMode ? 'Cancel' : 'Edit'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* List of Details of Suyos from Past to Present (Oldest to Newest) */}
+            <View style={styles.mySuyoCardsList}>
+              {(mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).length > 0 ? (
+                (mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).map((suyo) => {
+                  const isSelected = selectedMySuyoIdsToDelete.includes(suyo.id);
+                  return (
+                    <TouchableOpacity
+                      key={suyo.id}
+                      style={[
+                        styles.mySuyoCardItem,
+                        isMySuyoEditMode && isSelected && styles.mySuyoCardItemSelected,
+                      ]}
+                      activeOpacity={0.88}
+                      onPress={() => {
+                        if (isMySuyoEditMode) {
+                          handleToggleMySuyoSelect(suyo.id);
+                        } else {
+                          setSelectedSuyo({
+                            ...suyo,
+                            requesterPhone: suyo.requesterPhone || '+63 917 123 4567',
+                            requesterRating: '4.9★',
+                            completedCount: '15 completed',
+                          });
+                        }
+                      }}
+                    >
+                      <View style={styles.mySuyoCardHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          {isMySuyoEditMode && (
+                            <View
+                              style={[
+                                styles.mySuyoSelectionCircle,
+                                isSelected && styles.mySuyoSelectionCircleSelected,
+                              ]}
+                            >
+                              {isSelected && (
+                                <Ionicons name="checkmark" size={11} color="#FFFFFF" />
+                              )}
+                            </View>
+                          )}
+                          <View style={styles.mySuyoDatePill}>
+                            <Ionicons name="calendar-outline" size={11.5} color="#52695C" />
+                            <Text style={styles.mySuyoDateText}>{suyo.formattedDate}</Text>
+                          </View>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.mySuyoStatusPill,
+                            suyo.status === 'Completed'
+                              ? styles.mySuyoStatusCompleted
+                              : suyo.status === 'In Progress'
+                              ? styles.mySuyoStatusInProgress
+                              : styles.mySuyoStatusOpen,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              suyo.status === 'Completed'
+                                ? styles.mySuyoStatusCompletedText
+                                : suyo.status === 'In Progress'
+                                ? styles.mySuyoStatusInProgressText
+                                : styles.mySuyoStatusOpenText,
+                            ]}
+                          >
+                            {suyo.status}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.mySuyoCardTitle}>{suyo.title}</Text>
+                      <Text style={styles.mySuyoCardDetails} numberOfLines={2}>
+                        {suyo.details}
+                      </Text>
+
+                      <View style={styles.mySuyoCardFooter}>
+                        <View style={styles.mySuyoCardLocationRow}>
+                          <Ionicons name="location-sharp" size={13} color="#0D9488" />
+                          <Text style={styles.mySuyoCardLocationText} numberOfLines={1}>
+                            {suyo.location}
+                          </Text>
+                        </View>
+
+                        <Text style={styles.mySuyoCardRewardText}>{suyo.reward}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
+                <View style={styles.mySuyoEmptyBox}>
+                  <Ionicons name="receipt-outline" size={38} color="#A3B8AC" />
+                  <Text style={styles.mySuyoEmptyTitle}>No suyos found</Text>
+                  <Text style={styles.mySuyoEmptySub}>
+                    {mySuyoNavTab === 'my_suyo'
+                      ? "You haven't posted any suyos yet. Tap Post below to request your first errand!"
+                      : "You haven't accepted any suyos yet. Browse Available Suyo on Home to pick up a task!"}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Bottom Edit Action Bar when in Edit Mode */}
+            {isMySuyoEditMode && (
+              <View style={styles.mySuyoEditFloatingBar}>
+                <TouchableOpacity
+                  style={styles.mySuyoCancelEditBtn}
+                  onPress={() => {
+                    setIsMySuyoEditMode(false);
+                    setSelectedMySuyoIdsToDelete([]);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.mySuyoCancelEditText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.mySuyoConfirmDeleteBtn,
+                    selectedMySuyoIdsToDelete.length === 0 &&
+                      styles.mySuyoConfirmDeleteBtnDisabled,
+                  ]}
+                  onPress={handleConfirmDeleteMySuyo}
+                  disabled={selectedMySuyoIdsToDelete.length === 0}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={14}
+                    color={
+                      selectedMySuyoIdsToDelete.length > 0 ? '#FFFFFF' : '#8CA395'
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.mySuyoConfirmDeleteBtnText,
+                      selectedMySuyoIdsToDelete.length === 0 &&
+                        styles.mySuyoConfirmDeleteBtnTextDisabled,
+                    ]}
+                  >
+                    {selectedMySuyoIdsToDelete.length > 0
+                      ? `Remove Selected (${selectedMySuyoIdsToDelete.length})`
+                      : 'Select items to remove'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
 
       {/* ========================================================== */}
@@ -1677,68 +2153,56 @@ export default function DashboardScreen() {
                 )}
               </View>
 
-              <View style={styles.favoritesHeaderActions}>
-                {favoriteSuyos.length > 0 && !isFavDeleteMode && (
-                  <TouchableOpacity
-                    onPress={handleToggleFavDeleteMode}
-                    style={styles.favHeaderTrashBtn}
-                    activeOpacity={0.7}
-                    accessibilityLabel="Select favorites to remove"
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                  </TouchableOpacity>
-                )}
-
-                {isFavDeleteMode && (
-                  <TouchableOpacity
-                    onPress={handleToggleFavDeleteMode}
-                    style={styles.favCancelDeleteBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.favCancelDeleteText}>Cancel</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  onPress={handleCloseFavoritesModal}
-                  style={styles.modalCloseButton}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close" size={18} color="#163523" />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                onPress={handleCloseFavoritesModal}
+                style={styles.modalCloseButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={18} color="#163523" />
+              </TouchableOpacity>
             </View>
 
-            {isFavDeleteMode ? (
-              <View style={styles.favSelectAllRow}>
-                <Text style={styles.favoritesModalSub}>
-                  Tap items to select what to remove:
-                </Text>
-                {favoriteSuyos.length > 1 && (
+            {/* Sub-header row with fading text 'Edit' */}
+            <View style={styles.favSubHeaderRow}>
+              <Text style={styles.favoritesModalSub}>
+                {isFavDeleteMode
+                  ? 'Tap items to select what to remove:'
+                  : "Suyos you've saved to review or fulfill later"}
+              </Text>
+
+              {favoriteSuyos.length > 0 && (
+                <View style={styles.favSubHeaderActions}>
+                  {isFavDeleteMode && favoriteSuyos.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (selectedFavIdsToDelete.length === favoriteSuyos.length) {
+                          setSelectedFavIdsToDelete([]);
+                        } else {
+                          setSelectedFavIdsToDelete(favoriteSuyos.map((s) => s.id));
+                        }
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.favSelectAllText}>
+                        {selectedFavIdsToDelete.length === favoriteSuyos.length
+                          ? 'Deselect all'
+                          : 'Select all'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
-                    onPress={() => {
-                      if (selectedFavIdsToDelete.length === favoriteSuyos.length) {
-                        setSelectedFavIdsToDelete([]);
-                      } else {
-                        setSelectedFavIdsToDelete(favoriteSuyos.map((s) => s.id));
-                      }
-                    }}
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    onPress={handleToggleFavDeleteMode}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={styles.favSelectAllText}>
-                      {selectedFavIdsToDelete.length === favoriteSuyos.length
-                        ? 'Deselect all'
-                        : 'Select all'}
+                    <Text style={styles.favFadingEditText}>
+                      {isFavDeleteMode ? 'Cancel' : 'Edit'}
                     </Text>
                   </TouchableOpacity>
-                )}
-              </View>
-            ) : (
-              <Text style={styles.favoritesModalSub}>
-                Suyos you've saved to review or fulfill later
-              </Text>
-            )}
+                </View>
+              )}
+            </View>
 
             {toastConfig && (
               <View style={styles.favModalToast}>
@@ -3564,32 +4028,24 @@ const styles = StyleSheet.create({
   favoritesHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  favHeaderTrashBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  favCancelDeleteBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#F0F5F2',
-  },
-  favCancelDeleteText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#52695C',
-  },
-  favSelectAllRow: {
+  favSubHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  favSubHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  favFadingEditText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(22, 53, 35, 0.45)',
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(22, 53, 35, 0.25)',
   },
   favSelectAllText: {
     fontSize: 11,
@@ -3745,6 +4201,320 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#ECF4EF',
+  },
+
+  /* MySuyo Hub Screen Styles */
+  mySuyoMainWrapper: {
+    flex: 1,
+    backgroundColor: '#FAFCFA',
+  },
+  mySuyoHeroSection: {
+    backgroundColor: '#1E4D2B',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mySuyoHeroTextCol: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  mySuyoHeroSuper: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#86EFAC',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  mySuyoHeroTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  mySuyoHeroSub: {
+    fontSize: 12,
+    color: '#C2DEC9',
+    lineHeight: 16,
+  },
+  mySuyoHeroBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E8F5EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Modern Text Navigation (Zero button boxes, pure modern typography) */
+  mySuyoTextNavWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECF4EF',
+  },
+  mySuyoTextNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 32,
+  },
+  mySuyoTextNavItem: {
+    paddingVertical: 8,
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  mySuyoTextNavTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#7E9789',
+    letterSpacing: -0.2,
+  },
+  mySuyoTextNavTitleActive: {
+    fontWeight: '800',
+    color: '#163523',
+  },
+  mySuyoTextNavCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8FA497',
+  },
+  mySuyoTextNavCountActive: {
+    color: '#1E4D2B',
+  },
+  mySuyoTextNavUnderline: {
+    position: 'absolute',
+    bottom: -2,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    borderRadius: 1.5,
+    backgroundColor: '#1E4D2B',
+  },
+
+  /* MySuyo Sub Bar with Fading Text Edit */
+  mySuyoSubBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 10,
+    backgroundColor: '#FAFCFA',
+  },
+  mySuyoSubBarTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  mySuyoSubBarSubtitle: {
+    fontSize: 11,
+    color: '#658172',
+  },
+  mySuyoFadingEditText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: 'rgba(22, 53, 35, 0.45)',
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(22, 53, 35, 0.25)',
+  },
+  mySuyoSelectAllText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+
+  /* Cards List for MySuyo */
+  mySuyoCardsList: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 24,
+    backgroundColor: '#FAFCFA',
+  },
+  mySuyoCardItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1.2,
+    borderColor: '#E2ECE6',
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  mySuyoCardItemSelected: {
+    borderColor: '#F87171',
+    backgroundColor: '#FFF9F9',
+  },
+  mySuyoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  mySuyoSelectionCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: '#B0C7B9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  mySuyoSelectionCircleSelected: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  mySuyoDatePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F5F2',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  mySuyoDateText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#52695C',
+  },
+  mySuyoStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  mySuyoStatusCompleted: {
+    backgroundColor: '#E8F5EE',
+  },
+  mySuyoStatusCompletedText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#1E4D2B',
+  },
+  mySuyoStatusInProgress: {
+    backgroundColor: '#FEF3C7',
+  },
+  mySuyoStatusInProgressText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  mySuyoStatusOpen: {
+    backgroundColor: '#E0F2FE',
+  },
+  mySuyoStatusOpenText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  mySuyoCardTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#163523',
+    lineHeight: 19,
+    marginBottom: 4,
+  },
+  mySuyoCardDetails: {
+    fontSize: 12,
+    color: '#52695C',
+    lineHeight: 16,
+    marginBottom: 10,
+  },
+  mySuyoCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F5F2',
+  },
+  mySuyoCardLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  mySuyoCardLocationText: {
+    fontSize: 11,
+    color: '#658172',
+    fontWeight: '500',
+  },
+  mySuyoCardRewardText: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#1E4D2B',
+  },
+  mySuyoEmptyBox: {
+    paddingVertical: 44,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  mySuyoEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  mySuyoEmptySub: {
+    fontSize: 12,
+    color: '#718C7D',
+    textAlign: 'center',
+    lineHeight: 17,
+  },
+  mySuyoEditFloatingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  mySuyoCancelEditBtn: {
+    flex: 1,
+    backgroundColor: '#F0F5F2',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  mySuyoCancelEditText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#52695C',
+  },
+  mySuyoConfirmDeleteBtn: {
+    flex: 2,
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  mySuyoConfirmDeleteBtnDisabled: {
+    backgroundColor: '#E5ECE8',
+  },
+  mySuyoConfirmDeleteBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  mySuyoConfirmDeleteBtnTextDisabled: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#8CA395',
   },
   favCardRequestorRow: {
     flexDirection: 'row',
