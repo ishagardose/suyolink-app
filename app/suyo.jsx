@@ -13,13 +13,30 @@ import ThemedText from '../components/themed/ThemedText';
 import ThemedButton from '../components/themed/ThemedButton';
 import ThemedTextInput from '../components/themed/ThemedTextInput';
 import ProofImage from '../components/requests/ProofImage';
+import SuyoSummary from '../components/suyo/SuyoSummary';
+import PrivateTaskDetails from '../components/suyo/PrivateTaskDetails';
 
 export default function SuyoScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { requests, applications, proofs, ratings, events, isLoading, error: loadError, workflowError, workflowLoading, refresh, mutate } = useSuyos();
+  const {
+    requests,
+    applications,
+    proofs,
+    ratings,
+    events,
+    isLoading,
+    error: loadError,
+    workflowError,
+    workflowLoading,
+    refresh,
+    mutate,
+    detailsById,
+    loadDetails,
+    detailsLoading,
+  } = useSuyos();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
@@ -30,11 +47,19 @@ export default function SuyoScreen() {
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const request = requests.find(item => item.id === id);
+
+  React.useEffect(() => {
+    if (id) loadDetails(id);
+  }, [id, loadDetails]);
+
+  const request = detailsById[id] || requests.find(item => item.id === id);
   const act = async action => {
     if (lock.current) return;
     lock.current = true; setBusy(true); setError('');
-    try { await action(); } catch (err) { setError(err.message || 'Something went wrong. Please retry.'); }
+    try {
+      await action();
+      if (id) await loadDetails(id, { force: true });
+    } catch (err) { setError(err.message || 'Something went wrong. Please retry.'); }
     finally { lock.current = false; setBusy(false); }
   };
   const button = (title, action, disabled = false) => <ThemedButton title={title} disabled={busy || disabled || workflowLoading || !!workflowError || !!loadError} onPress={() => act(action)} />;
@@ -53,14 +78,9 @@ export default function SuyoScreen() {
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 50 }}>
       <ThemedButton title="Refresh task" variant="secondary" disabled={busy} onPress={() => act(refresh)} />
       {loadError || workflowError || error ? <ThemedText accessibilityRole="alert" tone="danger">{error || loadError || workflowError}</ThemedText> : null}
-      {!request ? <ThemedText>{isLoading ? 'Loading task…' : 'This task is unavailable or you no longer have access.'}</ThemedText> : <>
-        <ThemedText style={{ fontSize: 24, fontWeight: '800' }}>{request.title}</ThemedText>
-        <ThemedText>{STATUS_LABELS[request.status]} · {formatOffer(request.offerCentavos)}</ThemedText>
-        <ThemedText>{request.details}</ThemedText>
-        <ThemedText>{request.category} · {request.location}</ThemedText>
-        <ThemedText>Deadline: {new Date(request.deadline).toLocaleString()}</ThemedText>
-        <ThemedText>Requested by {request.requesterName}</ThemedText>
-        {request.notes ? <ThemedText>Instructions: {request.notes}</ThemedText> : null}
+      {!request ? <ThemedText>{isLoading || detailsLoading ? 'Loading task…' : 'This task is unavailable or you no longer have access.'}</ThemedText> : <>
+        <SuyoSummary details={request} />
+        <PrivateTaskDetails details={request} />
         {request.providerId ? <ThemedText>Provider rating: {providerRatings.length ? `${(providerRatings.reduce((total, item) => total + item.score, 0) / providerRatings.length).toFixed(1)} / 5 (${providerRatings.length} reviews)` : 'No ratings yet'}</ThemedText> : null}
         {request.latitude != null ? <ThemedButton title="View task location" variant="secondary" onPress={() => router.push({ pathname: '/map', params: { requestId: id } })} /> : null}
         {request.status === 'open' && !eligible ? <ThemedText tone="danger">Deadline passed. This task is no longer accepting applications.</ThemedText> : null}

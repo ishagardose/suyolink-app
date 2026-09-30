@@ -59,6 +59,53 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
           exact_address: body.p_exact_address, contact_phone: body.p_contact_phone };
         requests.unshift(json);
       }
+    } else if (path === '/rest/v1/rpc/list_suyo_requests') {
+      const now = Date.now();
+      let filtered = [...requests];
+      if (body.p_scope === 'browse') {
+        filtered = filtered.filter(r => r.status === 'open' && Date.parse(r.deadline) > now);
+      } else if (body.p_scope === 'posted') {
+        filtered = filtered.filter(r => r.requester_id === user.id);
+      } else if (body.p_scope === 'assigned') {
+        filtered = filtered.filter(r => r.provider_id === user.id);
+      }
+      if (body.p_category) filtered = filtered.filter(r => r.category === body.p_category);
+      if (body.p_query) {
+        const q = body.p_query.toLowerCase();
+        filtered = filtered.filter(r => (r.title + ' ' + r.details + ' ' + r.location).toLowerCase().includes(q));
+      }
+      json = filtered.map(r => ({
+        id: r.id, requester_id: r.requester_id, provider_id: r.provider_id,
+        requester_name: r.requester?.full_name || 'Requester',
+        title: r.title, details: r.details, category: r.category,
+        offer_centavos: r.offer_centavos, deadline: r.deadline,
+        location: r.location, notes: r.notes, status: r.status,
+        latitude: r.latitude, longitude: r.longitude,
+        created_at: r.created_at, updated_at: r.updated_at,
+        distance_km: null,
+      }));
+    } else if (path === '/rest/v1/rpc/get_suyo_details') {
+      const r = requests.find(item => item.id === body.p_request_id);
+      if (!r) json = null;
+      else {
+        const isReq = r.requester_id === user.id;
+        const isProv = r.provider_id === user.id;
+        const role = isReq ? 'requester' : (isProv ? 'provider' : 'unrelated');
+        json = {
+          id: r.id, requester_id: r.requester_id, provider_id: r.provider_id,
+          requester_name: r.requester?.full_name || 'Requester',
+          title: r.title, details: r.details, category: r.category,
+          offer_centavos: r.offer_centavos, currency: 'PHP', deadline: r.deadline,
+          location: r.location, notes: r.notes, status: r.status,
+          latitude: r.latitude, longitude: r.longitude,
+          created_at: r.created_at, updated_at: r.updated_at,
+          viewer_role: role,
+          exact_address: (isReq || isProv) ? (r.exact_address || '123 Private Street, Gate 2') : null,
+          exact_latitude: (isReq || isProv) ? r.latitude : null,
+          exact_longitude: (isReq || isProv) ? r.longitude : null,
+          contact_phone: (isReq || isProv) ? (r.contact_phone || '+639171234567') : null,
+        };
+      }
     } else if (path === '/rest/v1/rpc/save_last_location') {
       json = { user_id: user.id, latitude: body.p_latitude, longitude: body.p_longitude, source: body.p_source, updated_at: new Date().toISOString() };
     } else if (path === '/rest/v1/rpc/get_my_last_location') {
