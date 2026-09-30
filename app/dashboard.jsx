@@ -439,6 +439,7 @@ export default function DashboardScreen() {
   // Favorites / Saved Suyos state
   const [favoriteSuyoIds, setFavoriteSuyoIds] = useState(['SYL-102']);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
+  const [openedFromFavorites, setOpenedFromFavorites] = useState(false);
 
   // Backend requests mapped to available suyos
   const availableSuyosBase = useMemo(() => {
@@ -521,6 +522,14 @@ export default function DashboardScreen() {
     } else {
       setFavoriteSuyoIds((prev) => [...prev, suyo.id]);
       triggerToast('Suyo saved to favorites', 'heart');
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setSelectedSuyo(null);
+    if (openedFromFavorites) {
+      setIsFavoritesModalOpen(true);
+      setOpenedFromFavorites(false);
     }
   };
 
@@ -1431,7 +1440,7 @@ export default function DashboardScreen() {
           visible={!!selectedSuyo}
           animationType="slide"
           transparent={true}
-          onRequestClose={() => setSelectedSuyo(null)}
+          onRequestClose={handleCloseDetailModal}
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.suyoDetailModalCard}>
@@ -1484,7 +1493,7 @@ export default function DashboardScreen() {
                     size={24}
                     color={
                       favoriteSuyoIds.includes(selectedSuyo.id)
-                        ? '#27854D'
+                        ? '#DC2626'
                         : '#6B8576'
                     }
                   />
@@ -1555,7 +1564,7 @@ export default function DashboardScreen() {
               <View style={styles.detailActionButtonsRow}>
                 <TouchableOpacity
                   style={styles.detailCloseBtn}
-                  onPress={() => setSelectedSuyo(null)}
+                  onPress={handleCloseDetailModal}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.detailCloseBtnText}>Close</Text>
@@ -1567,6 +1576,7 @@ export default function DashboardScreen() {
                   onPress={() => {
                     const taskToFulfill = selectedSuyo;
                     setSelectedSuyo(null);
+                    setOpenedFromFavorites(false);
                     router.push({
                       pathname: '/fulfill',
                       params: {
@@ -1616,18 +1626,44 @@ export default function DashboardScreen() {
                 )}
               </View>
 
-              <TouchableOpacity
-                onPress={() => setIsFavoritesModalOpen(false)}
-                style={styles.modalCloseButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={18} color="#163523" />
-              </TouchableOpacity>
+              <View style={styles.favoritesHeaderActions}>
+                {favoriteSuyos.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFavoriteSuyoIds([]);
+                      triggerToast('All favorites removed', 'heart-dislike');
+                    }}
+                    style={styles.favClearAllBtn}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Text style={styles.favClearAllText}>Clear all</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => setIsFavoritesModalOpen(false)}
+                  style={styles.modalCloseButton}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={18} color="#163523" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text style={styles.favoritesModalSub}>
               Suyos you've saved to review or fulfill later
             </Text>
+
+            {toastConfig && (
+              <View style={styles.favModalToast}>
+                <Ionicons
+                  name={toastConfig.icon === 'heart-dislike' ? 'trash' : 'heart'}
+                  size={12}
+                  color="#DC2626"
+                />
+                <Text style={styles.favModalToastText}>{toastConfig.message}</Text>
+              </View>
+            )}
 
             {favoriteSuyos.length > 0 ? (
               <ScrollView
@@ -1641,6 +1677,7 @@ export default function DashboardScreen() {
                     style={styles.favCardItem}
                     activeOpacity={0.85}
                     onPress={() => {
+                      setOpenedFromFavorites(true);
                       setIsFavoritesModalOpen(false);
                       setSelectedSuyo(suyo);
                     }}
@@ -1656,8 +1693,20 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
 
-                      <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                      <View style={styles.favCardRightCol}>
                         <Text style={styles.favCardReward}>{suyo.reward}</Text>
+                        <TouchableOpacity
+                          style={styles.favCardRemoveBtn}
+                          onPress={(e) => {
+                            if (e?.stopPropagation) e.stopPropagation();
+                            toggleFavoriteSuyo(suyo);
+                          }}
+                          activeOpacity={0.7}
+                          accessibilityLabel={`Remove ${suyo.title} from favorites`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="trash-outline" size={12.5} color="#DC2626" />
+                        </TouchableOpacity>
                       </View>
                     </View>
 
@@ -3368,6 +3417,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 2,
   },
+  favoritesHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  favClearAllBtn: {
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    backgroundColor: '#FEE2E2',
+  },
+  favClearAllText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  favModalToast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 7,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  favModalToastText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B91C1C',
+  },
   favoritesTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3426,6 +3509,19 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: '#62806E',
     fontWeight: '500',
+  },
+  favCardRightCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  favCardRemoveBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   favCardReward: {
     fontSize: 13.5,
