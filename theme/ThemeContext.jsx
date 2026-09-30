@@ -9,7 +9,7 @@ const MODES = ['light', 'dark', 'system'];
 
 export function ThemeProvider({ children }) {
   const deviceScheme = useColorScheme();
-  const [themeMode, setMode] = useState('system');
+  const [themeMode, setMode] = useState('light');
   const [isLoading, setIsLoading] = useState(true);
   const writes = useRef(Promise.resolve());
 
@@ -23,7 +23,7 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const value = useMemo(() => {
-    const scheme = themeMode === 'system' ? (deviceScheme ?? 'light') : themeMode;
+    const scheme = themeMode === 'system' ? 'light' : themeMode;
     return {
       themeMode, isLoading, isDark: scheme === 'dark',
       colors: scheme === 'dark' ? dark : light,

@@ -4,7 +4,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../themed/ThemedText';
 
-export default function DashboardHeader({ onOpenSidebar }) {
+export default function DashboardHeader({ onOpenSidebar, onNotifications, unreadCount = 0 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
@@ -22,6 +22,22 @@ export default function DashboardHeader({ onOpenSidebar }) {
 
       <ThemedText style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 15, letterSpacing: 3 }}>SUYOLINK</ThemedText>
       <View style={styles.headerRightActions}>
+        {onNotifications && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Open notifications, ${unreadCount} unread`}
+            onPress={onNotifications}
+            style={styles.headerIconButton}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.onPrimary} />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadgeDot} />
+            )}
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Open profile"
@@ -57,6 +73,17 @@ const createStyles = (colors) =>
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
+    },
+    unreadBadgeDot: {
+      position: 'absolute',
+      top: 9,
+      right: 9,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#DC2626',
+      borderWidth: 1.5,
+      borderColor: colors.hero,
     },
     headerRightActions: {
       flexDirection: 'row',
