@@ -923,7 +923,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EBF5EF',
     borderRadius: 18,
     padding: 16,
->>>>>>> suyobranch1
     borderWidth: 1,
     borderColor: '#D4E8DC',
     gap: 14,
