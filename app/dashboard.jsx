@@ -13,6 +13,8 @@ import {
   Image,
   PanResponder,
   Platform,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -722,6 +724,26 @@ export default function DashboardScreen() {
   const [selectedUrgency, setSelectedUrgency] = useState('All');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
+  // MySuyo Tab Navigation & Management state (Posted, Accepted, Completed, Archived)
+  const [postedSuyos, setPostedSuyos] = useState(() => INITIAL_POSTED_SUYOS);
+  const [acceptedSuyos, setAcceptedSuyos] = useState(() => INITIAL_ACCEPTED_SUYOS);
+  const [completedSuyos, setCompletedSuyos] = useState(() => INITIAL_COMPLETED_SUYOS);
+  const [archivedSuyos, setArchivedSuyos] = useState(() => INITIAL_ARCHIVED_SUYOS);
+  const [mySuyoNavTab, setMySuyoNavTab] = useState('posted'); // 'posted' | 'accepted' | 'completed' | 'archived'
+  const [isMySuyoEditMode, setIsMySuyoEditMode] = useState(false);
+  const [selectedMySuyoIdsToDelete, setSelectedMySuyoIdsToDelete] = useState([]);
+  const [selectedSuyoContext, setSelectedSuyoContext] = useState('available'); // 'available' | 'posted' | 'accepted' | 'completed' | 'archived'
+  const [selectedDoerProfile, setSelectedDoerProfile] = useState(null);
+  const [isEditingSuyoModalOpen, setIsEditingSuyoModalOpen] = useState(false);
+  const [editingSuyoData, setEditingSuyoData] = useState({
+    id: '',
+    title: '',
+    details: '',
+    notes: '',
+    rewardAmount: 150,
+    context: 'posted',
+  });
+
   // Selected Suyo Details Modal
   const [selectedSuyo, setSelectedSuyo] = useState(null);
 
@@ -730,10 +752,9 @@ export default function DashboardScreen() {
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [openedFromFavorites, setOpenedFromFavorites] = useState(false);
 
-  // Backend requests mapped to available suyos
+  // Overall available suyos in Dashboard: public suyos from different users + account owner's suyos
   const availableSuyosBase = useMemo(() => {
-    if (!requests || requests.length === 0) return INITIAL_AVAILABLE_SUYOS;
-    const fromBackend = requests
+    const fromBackend = (requests || [])
       .filter((r) => r.status === 'open' && (!r.deadline || Date.parse(r.deadline) > Date.now()))
       .map((r) => {
         const dist = position && r.latitude && r.longitude ? distanceKm(position, r) : 0.8;
@@ -763,9 +784,44 @@ export default function DashboardScreen() {
           rawRequest: r,
         };
       });
-    const fallbackItems = INITIAL_AVAILABLE_SUYOS.filter((init) => !fromBackend.some((b) => b.id === init.id));
-    return [...fromBackend, ...fallbackItems];
-  }, [requests, position]);
+
+    // Owner's active posted suyos
+    const ownerPosted = (postedSuyos || [])
+      .filter((p) => p.status !== 'Cancelled')
+      .map((p) => ({
+        ...p,
+        isMine: true,
+        distance: 0.8,
+        distanceText: p.distanceText || '0.8 km away',
+        postedTime: p.formattedDate || 'Active now',
+        due: p.due || 'Due today',
+        dueDate: p.dueDate || getTodayFormatted(),
+      }));
+
+    // Owner's in-progress accepted suyos
+    const ownerAccepted = (acceptedSuyos || []).map((a) => ({
+      ...a,
+      isMine: true,
+      distance: 0.5,
+      distanceText: a.distanceText || '0.5 km away',
+      postedTime: a.formattedDate || 'In Progress',
+      due: a.due || 'In Progress',
+      dueDate: a.dueDate || getTodayFormatted(),
+    }));
+
+    // Public available fallback suyos from different users
+    const publicSuyos = INITIAL_AVAILABLE_SUYOS.map((s) => ({
+      ...s,
+      isMine: false,
+    }));
+
+    // Merge: Owner's posted & accepted first, then backend requests, then public fallback without duplicate IDs
+    const merged = [...ownerPosted, ...ownerAccepted, ...fromBackend];
+    const seenIds = new Set(merged.map((item) => item.id));
+    const uniquePublic = publicSuyos.filter((item) => !seenIds.has(item.id));
+
+    return [...merged, ...uniquePublic];
+  }, [requests, position, postedSuyos, acceptedSuyos]);
 
   // List of suyos favorited by the user
   const favoriteSuyos = useMemo(() => {
@@ -816,10 +872,94 @@ export default function DashboardScreen() {
 
   const handleCloseDetailModal = () => {
     setSelectedSuyo(null);
+    setSelectedSuyoContext('available');
     if (openedFromFavorites) {
       setIsFavoritesModalOpen(true);
       setOpenedFromFavorites(false);
     }
+  };
+
+  // Open Suyo detail with dynamic context resolution (separating public available suyos vs owner's suyos)
+  const handleOpenSuyoDetail = (suyo, explicitContext = null) => {
+    if (!suyo) return;
+
+    if (explicitContext) {
+      setSelectedSuyoContext(explicitContext);
+      setSelectedSuyo(suyo);
+      return;
+    }
+
+    // Dynamic context resolution for Dashboard / Urgent / Favorites
+    const isPosted =
+      postedSuyos.some((p) => p.id === suyo.id) ||
+      (suyo.requesterName && (suyo.requesterName.includes('(You)') || suyo.requesterName === userProfile?.name));
+
+    const isAccepted =
+      acceptedSuyos.some((a) => a.id === suyo.id) ||
+      Boolean(suyo.doer && (suyo.requesterName?.includes('(You)') || suyo.isAcceptedByMe));
+
+    const isCompleted = completedSuyos.some((c) => c.id === suyo.id);
+    const isArchived = archivedSuyos.some((ar) => ar.id === suyo.id);
+
+    if (isPosted) {
+      const matched = postedSuyos.find((p) => p.id === suyo.id) || suyo;
+      setSelectedSuyoContext('posted');
+      setSelectedSuyo(matched);
+    } else if (isAccepted) {
+      const matched = acceptedSuyos.find((a) => a.id === suyo.id) || suyo;
+      setSelectedSuyoContext('accepted');
+      setSelectedSuyo(matched);
+    } else if (isCompleted) {
+      const matched = completedSuyos.find((c) => c.id === suyo.id) || suyo;
+      setSelectedSuyoContext('completed');
+      setSelectedSuyo(matched);
+    } else if (isArchived) {
+      const matched = archivedSuyos.find((ar) => ar.id === suyo.id) || suyo;
+      setSelectedSuyoContext('archived');
+      setSelectedSuyo(matched);
+    } else {
+      setSelectedSuyoContext('available');
+      setSelectedSuyo(suyo);
+    }
+  };
+
+  // Call Doer Action
+  const handleCallDoer = (phone) => {
+    const rawPhone = phone || selectedSuyo?.doer?.phone || DEFAULT_DOER.phone;
+    const cleanNumber = (rawPhone || '').replace(/[^0-9+]/g, '');
+    const telUrl = `tel:${cleanNumber}`;
+
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof window !== 'undefined' && window.open) {
+          window.open(telUrl, '_self');
+        } else {
+          Linking.openURL(telUrl).catch(() => {});
+        }
+      } catch (e) {
+        // Fallback for browsers blocking tel protocol
+      }
+      triggerToast(`Calling ${selectedSuyo?.doer?.name || DEFAULT_DOER.name} (${rawPhone})...`, 'call');
+      return;
+    }
+
+    Linking.canOpenURL(telUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(telUrl);
+        } else {
+          Alert.alert(
+            'Call Doer',
+            `Calling ${selectedSuyo?.doer?.name || DEFAULT_DOER.name} at ${rawPhone}`
+          );
+        }
+      })
+      .catch(() => {
+        Alert.alert(
+          'Call Doer',
+          `Calling ${selectedSuyo?.doer?.name || DEFAULT_DOER.name} at ${rawPhone}`
+        );
+      });
   };
 
   // Favorites Selection/Delete Mode state
@@ -858,26 +998,6 @@ export default function DashboardScreen() {
       'heart-dislike'
     );
   };
-
-  // MySuyo Tab Navigation & Management state (Posted, Accepted, Completed, Archived)
-  const [postedSuyos, setPostedSuyos] = useState(() => INITIAL_POSTED_SUYOS);
-  const [acceptedSuyos, setAcceptedSuyos] = useState(() => INITIAL_ACCEPTED_SUYOS);
-  const [completedSuyos, setCompletedSuyos] = useState(() => INITIAL_COMPLETED_SUYOS);
-  const [archivedSuyos, setArchivedSuyos] = useState(() => INITIAL_ARCHIVED_SUYOS);
-  const [mySuyoNavTab, setMySuyoNavTab] = useState('posted'); // 'posted' | 'accepted' | 'completed' | 'archived'
-  const [isMySuyoEditMode, setIsMySuyoEditMode] = useState(false);
-  const [selectedMySuyoIdsToDelete, setSelectedMySuyoIdsToDelete] = useState([]);
-  const [selectedSuyoContext, setSelectedSuyoContext] = useState('available'); // 'available' | 'posted' | 'accepted' | 'completed' | 'archived'
-  const [selectedDoerProfile, setSelectedDoerProfile] = useState(null);
-  const [isEditingSuyoModalOpen, setIsEditingSuyoModalOpen] = useState(false);
-  const [editingSuyoData, setEditingSuyoData] = useState({
-    id: '',
-    title: '',
-    details: '',
-    notes: '',
-    rewardAmount: 150,
-    context: 'posted',
-  });
 
   // Sync any newly posted backend requests into postedSuyos
   useEffect(() => {
@@ -1197,7 +1317,7 @@ export default function DashboardScreen() {
     } else if (notif.category === 'nearby') {
       const urgentSuyo = filteredSuyos.find((s) => s.tag === 'Urgent') || filteredSuyos[0];
       if (urgentSuyo) {
-        setSelectedSuyo(urgentSuyo);
+        handleOpenSuyoDetail(urgentSuyo);
       } else {
         router.push('/map');
       }
@@ -1528,7 +1648,7 @@ export default function DashboardScreen() {
                   key={suyo.id}
                   style={styles.suyoCard}
                   activeOpacity={0.88}
-                  onPress={() => setSelectedSuyo(suyo)}
+                  onPress={() => handleOpenSuyoDetail(suyo)}
                 >
                   <View style={styles.suyoCardTopRow}>
                     <Text style={styles.suyoCardTitle} numberOfLines={2}>
@@ -1889,8 +2009,7 @@ export default function DashboardScreen() {
                         if (isMySuyoEditMode) {
                           handleToggleMySuyoSelect(suyo.id);
                         } else {
-                          setSelectedSuyoContext(mySuyoNavTab);
-                          setSelectedSuyo(suyo);
+                          handleOpenSuyoDetail(suyo, mySuyoNavTab);
                         }
                       }}
                     >
@@ -2614,9 +2733,14 @@ export default function DashboardScreen() {
                       · {selectedSuyo.doer?.rating || DEFAULT_DOER.rating} ·{' '}
                       {selectedSuyo.doer?.vehicle || DEFAULT_DOER.vehicle}
                     </Text>
-                    <Text style={styles.detailDoerPhoneText}>
-                      📞 {selectedSuyo.doer?.phone || DEFAULT_DOER.phone}
-                    </Text>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => handleCallDoer(selectedSuyo.doer?.phone || DEFAULT_DOER.phone)}
+                    >
+                      <Text style={styles.detailDoerPhoneText}>
+                        📞 {selectedSuyo.doer?.phone || DEFAULT_DOER.phone}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               ) : (
@@ -2763,27 +2887,38 @@ export default function DashboardScreen() {
                   )
                 )}
 
-                {/* ACCEPTED NAV BUTTONS (Track Live) */}
+                {/* ACCEPTED NAV BUTTONS (Call Doer & Track Live) */}
                 {selectedSuyoContext === 'accepted' && (
-                  <TouchableOpacity
-                    style={styles.detailTrackCourierBtn}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      handleCloseDetailModal();
-                      router.push({
-                        pathname: '/requester-fulfill',
-                        params: {
-                          id: selectedSuyo.id,
-                          title: selectedSuyo.title,
-                          doerName: selectedSuyo.doer?.name || DEFAULT_DOER.name,
-                          doerPhone: selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
-                        },
-                      });
-                    }}
-                  >
-                    <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                    <Text style={styles.detailTrackCourierBtnText}>Track</Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      style={styles.detailCallDoerBtn}
+                      onPress={() => handleCallDoer(selectedSuyo.doer?.phone || DEFAULT_DOER.phone)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="call" size={15} color="#163523" />
+                      <Text style={styles.detailCallDoerBtnText}>Call Doer</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.detailTrackCourierBtn}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        handleCloseDetailModal();
+                        router.push({
+                          pathname: '/requester-fulfill',
+                          params: {
+                            id: selectedSuyo.id,
+                            title: selectedSuyo.title,
+                            doerName: selectedSuyo.doer?.name || DEFAULT_DOER.name,
+                            doerPhone: selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
+                          },
+                        });
+                      }}
+                    >
+                      <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                      <Text style={styles.detailTrackCourierBtnText}>Track</Text>
+                    </TouchableOpacity>
+                  </>
                 )}
 
                 {/* COMPLETED NAV BUTTONS (Save to Archive, Repeat Suyo) */}
@@ -3218,7 +3353,7 @@ export default function DashboardScreen() {
                         } else {
                           setOpenedFromFavorites(true);
                           setIsFavoritesModalOpen(false);
-                          setSelectedSuyo(suyo);
+                          handleOpenSuyoDetail(suyo);
                         }
                       }}
                     >
@@ -5241,23 +5376,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  detailViewDoerProfileBtnAlt: {
-    flex: 1.2,
+  detailCallDoerBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#E8F5EE',
     borderRadius: 12,
     paddingVertical: 12,
-    gap: 5,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#CDE5D7',
   },
-  detailViewDoerProfileBtnAltText: {
-    fontSize: 12.5,
+  detailCallDoerBtnText: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#163523',
   },
   detailTrackCourierBtn: {
-    flex: 1.2,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
