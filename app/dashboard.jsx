@@ -950,6 +950,7 @@ export default function DashboardScreen() {
     }
   }, [user]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...userProfile });
   const [pushNotifications, setPushNotifications] = useState(true);
   const [expandedSection, setExpandedSection] = useState(null);
@@ -4399,7 +4400,114 @@ export default function DashboardScreen() {
       </Modal>
 
       {/* ========================================================== */}
-      {/* 8. SIDEBAR DRAWER                                          */}
+      {/* 8. STATISTICS MODAL (Errand Performance & Community Stats) */}
+      {/* ========================================================== */}
+      <Modal
+        visible={isStatisticsModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsStatisticsModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.statsModalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={styles.statsIconBadge}>
+                  <Ionicons name="stats-chart" size={17} color="#0284C7" />
+                </View>
+                <Text style={styles.modalTitle}>Errand Statistics</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsStatisticsModalOpen(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={20} color="#163523" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
+              {/* Top Overview Cards */}
+              <View style={styles.statsMetricsGrid}>
+                <View style={styles.statsMetricTile}>
+                  <Text style={styles.statsTileValue}>₱1,280.00</Text>
+                  <Text style={styles.statsTileLabel}>Total Tracked</Text>
+                  <Text style={styles.statsTileSub}>7 Accepted Suyos</Text>
+                </View>
+                <View style={styles.statsMetricTile}>
+                  <Text style={[styles.statsTileValue, { color: '#059669' }]}>100%</Text>
+                  <Text style={styles.statsTileLabel}>Completion</Text>
+                  <Text style={styles.statsTileSub}>0 Cancellations</Text>
+                </View>
+              </View>
+
+              <View style={[styles.statsMetricsGrid, { marginTop: 10 }]}>
+                <View style={styles.statsMetricTile}>
+                  <Text style={styles.statsTileValue}>4.95★</Text>
+                  <Text style={styles.statsTileLabel}>Customer Rating</Text>
+                  <Text style={styles.statsTileSub}>142 Reviews</Text>
+                </View>
+                <View style={styles.statsMetricTile}>
+                  <Text style={[styles.statsTileValue, { color: '#D97706' }]}>99.2%</Text>
+                  <Text style={styles.statsTileLabel}>On-Time Arrival</Text>
+                  <Text style={styles.statsTileSub}>Hyperlocal Delivery</Text>
+                </View>
+              </View>
+
+              {/* Errand Category Breakdown */}
+              <View style={styles.statsCategoryCard}>
+                <Text style={styles.statsSectionHeading}>Errand Types Breakdown</Text>
+                <Text style={styles.statsSectionSubheading}>Distribution of accepted community errands</Text>
+
+                <View style={styles.statsCategoryBar}>
+                  <View style={[styles.statsCategorySegment, { width: '45%', backgroundColor: '#059669' }]} />
+                  <View style={[styles.statsCategorySegment, { width: '30%', backgroundColor: '#0284C7' }]} />
+                  <View style={[styles.statsCategorySegment, { width: '15%', backgroundColor: '#D97706' }]} />
+                  <View style={[styles.statsCategorySegment, { width: '10%', backgroundColor: '#7C3AED' }]} />
+                </View>
+
+                <View style={styles.statsCategoryLegendGrid}>
+                  <View style={styles.statsLegendItem}>
+                    <View style={[styles.statsLegendDot, { backgroundColor: '#059669' }]} />
+                    <Text style={styles.statsLegendText}>Groceries 45% (₱650)</Text>
+                  </View>
+                  <View style={styles.statsLegendItem}>
+                    <View style={[styles.statsLegendDot, { backgroundColor: '#0284C7' }]} />
+                    <Text style={styles.statsLegendText}>Delivery 30% (₱430)</Text>
+                  </View>
+                  <View style={styles.statsLegendItem}>
+                    <View style={[styles.statsLegendDot, { backgroundColor: '#D97706' }]} />
+                    <Text style={styles.statsLegendText}>Documents 15% (₱220)</Text>
+                  </View>
+                  <View style={styles.statsLegendItem}>
+                    <View style={[styles.statsLegendDot, { backgroundColor: '#7C3AED' }]} />
+                    <Text style={styles.statsLegendText}>Queuing 10% (₱150)</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Payment & Settlement Note */}
+              <View style={styles.statsInfoNotice}>
+                <Ionicons name="call-outline" size={15} color="#1E4D2B" />
+                <Text style={styles.statsInfoNoticeText}>
+                  All payment settlements are arranged directly between requesters and doers via call or conversation outside the app.
+                </Text>
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.statsDoneButton}
+              onPress={() => setIsStatisticsModalOpen(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.statsDoneButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ========================================================== */}
+      {/* 9. SIDEBAR DRAWER                                          */}
       {/* ========================================================== */}
       {isSidebarOpen && (
         <Animated.View
@@ -4471,138 +4579,41 @@ export default function DashboardScreen() {
             </View>
 
             <View style={styles.sidebarDivider} />
-            <Text style={styles.sidebarSectionTitle}>Preferences</Text>
+            <Text style={styles.sidebarSectionTitle}>Menu & Preferences</Text>
 
-            <View style={styles.sidebarMenuItem}>
-              <View style={styles.menuItemLeft}>
-                <View
-                  style={[
-                    styles.menuItemIconCircle,
-                    { backgroundColor: '#EAF4EF' },
-                  ]}
-                >
-                  <Ionicons
-                    name="notifications-outline"
-                    size={18}
-                    color="#1E4D2B"
-                  />
-                </View>
-                <View style={styles.menuItemTextCol}>
-                  <Text style={styles.menuItemTitle}>Push Notifications</Text>
-                  <Text style={styles.menuItemSub}>Suyo and errand alerts</Text>
-                </View>
-              </View>
-              <Switch
-                value={pushNotifications}
-                onValueChange={(val) => {
-                  setPushNotifications(val);
-                  triggerToast(
-                    val
-                      ? 'Push notifications enabled'
-                      : 'Push notifications muted',
-                    'notifications'
-                  );
-                }}
-                trackColor={{ false: '#D4E2DA', true: '#1E4D2B' }}
-                thumbColor={pushNotifications ? '#4ADE80' : '#FFFFFF'}
-              />
-            </View>
-
-            {/* Notifications Center Item in Sidebar */}
+            {/* Statistics Nav Item in Sidebar */}
             <TouchableOpacity
               style={styles.sidebarMenuItem}
               activeOpacity={0.75}
               onPress={() => {
                 closeSidebar();
-                setIsNotificationsModalOpen(true);
+                setIsStatisticsModalOpen(true);
               }}
             >
               <View style={styles.menuItemLeft}>
                 <View
                   style={[
                     styles.menuItemIconCircle,
-                    { backgroundColor: '#EAF4EF' },
+                    { backgroundColor: '#E0F2FE' },
                   ]}
                 >
                   <Ionicons
-                    name="mail-unread-outline"
+                    name="stats-chart-outline"
                     size={18}
-                    color="#1E4D2B"
+                    color="#0284C7"
                   />
                 </View>
                 <View style={styles.menuItemTextCol}>
-                  <Text style={styles.menuItemTitle}>Notifications Inbox</Text>
+                  <Text style={styles.menuItemTitle}>Statistics</Text>
                   <Text style={styles.menuItemSub}>
-                    {unreadNotificationsCount > 0
-                      ? `${unreadNotificationsCount} unread message${unreadNotificationsCount > 1 ? 's' : ''}`
-                      : 'All caught up'}
+                    Errand analytics & performance
                   </Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={16} color="#7A9384" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.sidebarMenuItem}
-              activeOpacity={0.75}
-              onPress={() => toggleSection('help')}
-            >
-              <View style={styles.menuItemLeft}>
-                <View
-                  style={[
-                    styles.menuItemIconCircle,
-                    { backgroundColor: '#E8F2FC' },
-                  ]}
-                >
-                  <Ionicons
-                    name="help-buoy-outline"
-                    size={18}
-                    color="#1B609E"
-                  />
-                </View>
-                <View style={styles.menuItemTextCol}>
-                  <Text style={styles.menuItemTitle}>Help & Support</Text>
-                  <Text style={styles.menuItemSub}>
-                    FAQs, 24/7 Chat & Contact
-                  </Text>
-                </View>
-              </View>
-              <Ionicons
-                name={
-                  expandedSection === 'help' ? 'chevron-up' : 'chevron-down'
-                }
-                size={18}
-                color="#7A9384"
-              />
-            </TouchableOpacity>
-
-            {expandedSection === 'help' && (
-              <View style={styles.expandedSubCard}>
-                <TouchableOpacity
-                  style={styles.helpSubRow}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="chatbubbles-outline"
-                    size={16}
-                    color="#1E4D2B"
-                  />
-                  <Text style={styles.helpSubText}>
-                    Live Chat with Support (24/7)
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.helpSubRow}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="call-outline" size={16} color="#1E4D2B" />
-                  <Text style={styles.helpSubText}>
-                    Helpline: (02) 8888-SUYO
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
+            {/* About SuyoLink */}
             <TouchableOpacity
               style={styles.sidebarMenuItem}
               activeOpacity={0.75}
@@ -4650,6 +4661,42 @@ export default function DashboardScreen() {
                 </View>
               </View>
             )}
+
+            {/* Push Notifications (Placed under About SuyoLink) */}
+            <View style={styles.sidebarMenuItem}>
+              <View style={styles.menuItemLeft}>
+                <View
+                  style={[
+                    styles.menuItemIconCircle,
+                    { backgroundColor: '#EAF4EF' },
+                  ]}
+                >
+                  <Ionicons
+                    name="notifications-outline"
+                    size={18}
+                    color="#1E4D2B"
+                  />
+                </View>
+                <View style={styles.menuItemTextCol}>
+                  <Text style={styles.menuItemTitle}>Push Notifications</Text>
+                  <Text style={styles.menuItemSub}>Suyo and errand alerts</Text>
+                </View>
+              </View>
+              <Switch
+                value={pushNotifications}
+                onValueChange={(val) => {
+                  setPushNotifications(val);
+                  triggerToast(
+                    val
+                      ? 'Push notifications enabled'
+                      : 'Push notifications muted',
+                    'notifications'
+                  );
+                }}
+                trackColor={{ false: '#D4E2DA', true: '#1E4D2B' }}
+                thumbColor={pushNotifications ? '#4ADE80' : '#FFFFFF'}
+              />
+            </View>
 
             <View style={styles.logoutWrapper}>
               <TouchableOpacity
@@ -8219,6 +8266,140 @@ const styles = StyleSheet.create({
   },
   receiptCloseActionBtnText: {
     fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  /* Statistics Modal Styles */
+  statsModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 22,
+    width: '92%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  statsIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsMetricsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statsMetricTile: {
+    flex: 1,
+    backgroundColor: '#F8FAF9',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#EDF5F0',
+  },
+  statsTileValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  statsTileLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#557261',
+    marginBottom: 2,
+  },
+  statsTileSub: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#7A9384',
+  },
+  statsCategoryCard: {
+    backgroundColor: '#F8FAF9',
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#EDF5F0',
+  },
+  statsSectionHeading: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  statsSectionSubheading: {
+    fontSize: 11,
+    color: '#7A9384',
+    marginBottom: 12,
+  },
+  statsCategoryBar: {
+    flexDirection: 'row',
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: '#E2E8F0',
+  },
+  statsCategorySegment: {
+    height: '100%',
+  },
+  statsCategoryLegendGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statsLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    width: '48%',
+  },
+  statsLegendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statsLegendText: {
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  statsInfoNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  statsInfoNoticeText: {
+    fontSize: 11.5,
+    color: '#15803D',
+    lineHeight: 16,
+    flex: 1,
+    fontWeight: '500',
+  },
+  statsDoneButton: {
+    backgroundColor: '#1E4D2B',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  statsDoneButtonText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },
