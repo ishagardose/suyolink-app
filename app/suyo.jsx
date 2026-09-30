@@ -104,6 +104,11 @@ export default function SuyoScreen() {
         />
         {assigned && request.status === 'in_progress' ? <>
           <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Completion proof</ThemedText>
+          <ThemedButton
+            title="Open proof submission screen"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/proof', params: { id } })}
+          />
           {button('Choose proof photo', async () => {
             const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
             if (!result.canceled) { setAsset(result.assets[0]); uploaded.current = null; }
@@ -122,6 +127,11 @@ export default function SuyoScreen() {
           {proof.note ? <ThemedText>{proof.note}</ThemedText> : null}
           {proof.rejection_reason ? <ThemedText>Requested changes: {proof.rejection_reason}</ThemedText> : null}
           {own && proof.status === 'submitted' && request.status === 'awaiting_confirmation' ? <>
+            <ThemedButton
+              title="Open full review screen"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/review-proof', params: { id: proof.id, requestId: id } })}
+            />
             {button('Approve completion', () => mutate('review_suyo_proof', { p_proof_id: proof.id, p_accept: true }))}
             {input('Reason for requesting changes', reason, setReason)}
             {button('Request changes', () => mutate('review_suyo_proof', { p_proof_id: proof.id, p_accept: false, p_reason: reason.trim() }), !reason.trim())}
@@ -131,6 +141,11 @@ export default function SuyoScreen() {
           <ThemedText style={{ fontWeight: '700' }}>Rating: {rating.score} / 5</ThemedText><ThemedText>{rating.comment}</ThemedText>
         </> : own ? <>
           <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Rate your provider</ThemedText>
+          <ThemedButton
+            title="Open rating screen"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/rate-suyo', params: { id } })}
+          />
           <View style={{ flexDirection: 'row', gap: 8 }}>{[1, 2, 3, 4, 5].map(value => <ThemedButton key={value} title={String(value)} accessibilityLabel={`${value} stars`}
             accessibilityState={{ selected: score === value }} variant={score === value ? 'primary' : 'secondary'} disabled={busy} onPress={() => setScore(value)} />)}</View>
           {input('Review (optional)', comment, setComment)}
