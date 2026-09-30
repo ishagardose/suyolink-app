@@ -1072,9 +1072,18 @@ export default function DashboardScreen() {
     }
   };
 
-  // Call Doer Action
-  const handleCallDoer = (phone) => {
-    const rawPhone = phone || selectedSuyo?.doer?.phone || DEFAULT_DOER.phone;
+  // Call Action (Doer or Requester)
+  const handleCallDoer = (phone, name = null) => {
+    const targetName =
+      name ||
+      selectedSuyo?.doer?.name ||
+      selectedSuyo?.requesterName ||
+      DEFAULT_DOER.name;
+    const rawPhone =
+      phone ||
+      selectedSuyo?.doer?.phone ||
+      selectedSuyo?.requesterPhone ||
+      DEFAULT_DOER.phone;
     const cleanNumber = (rawPhone || '').replace(/[^0-9+]/g, '');
     const telUrl = `tel:${cleanNumber}`;
 
@@ -1088,7 +1097,7 @@ export default function DashboardScreen() {
       } catch (e) {
         // Fallback for browsers blocking tel protocol
       }
-      triggerToast(`Calling ${selectedSuyo?.doer?.name || DEFAULT_DOER.name} (${rawPhone})...`, 'call');
+      triggerToast(`Calling ${targetName} (${rawPhone})...`, 'call');
       return;
     }
 
@@ -1097,17 +1106,11 @@ export default function DashboardScreen() {
         if (supported) {
           Linking.openURL(telUrl);
         } else {
-          Alert.alert(
-            'Call Doer',
-            `Calling ${selectedSuyo?.doer?.name || DEFAULT_DOER.name} at ${rawPhone}`
-          );
+          Alert.alert('Call', `Calling ${targetName} at ${rawPhone}`);
         }
       })
       .catch(() => {
-        Alert.alert(
-          'Call Doer',
-          `Calling ${selectedSuyo?.doer?.name || DEFAULT_DOER.name} at ${rawPhone}`
-        );
+        Alert.alert('Call', `Calling ${targetName} at ${rawPhone}`);
       });
   };
 
@@ -3256,7 +3259,32 @@ export default function DashboardScreen() {
 
               {/* In Accepted or Completed: Show Who Accepted/Fulfilled It */}
               {selectedSuyoContext === 'accepted' || selectedSuyoContext === 'completed' ? (
-                <View style={styles.detailDoerHighlightCard}>
+                <TouchableOpacity
+                  style={styles.detailDoerHighlightCard}
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    const doer = selectedSuyo.doer || DEFAULT_DOER;
+                    const doerName = doer.name || 'Carlos Dalisay';
+                    const doerRating = (doer.rating || '4.9★').replace(/[★*]/g, '').trim();
+                    const doerPhone = doer.phone || '+63 919 720 9144';
+                    const doerDone = doer.done || '42';
+
+                    setSelectedSuyo(null);
+                    router.push({
+                      pathname: '/profile',
+                      params: {
+                        name: doerName,
+                        rating: doerRating,
+                        done: doerDone,
+                        phone: doerPhone,
+                        vehicle: doer.vehicle || 'Motorcycle',
+                        isOtherUser: 'true',
+                      },
+                    });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="View courier profile"
+                >
                   <View style={styles.detailDoerAvatar}>
                     <Text style={styles.detailDoerAvatarInitials}>
                       {getInitials(selectedSuyo.doer?.name || DEFAULT_DOER.name)}
@@ -3280,18 +3308,51 @@ export default function DashboardScreen() {
                     </Text>
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => handleCallDoer(selectedSuyo.doer?.phone || DEFAULT_DOER.phone)}
+                      onPress={(e) => {
+                        e?.stopPropagation?.();
+                        handleCallDoer(
+                          selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
+                          selectedSuyo.doer?.name || DEFAULT_DOER.name
+                        );
+                      }}
                     >
                       <Text style={styles.detailDoerPhoneText}>
                         📞 {selectedSuyo.doer?.phone || DEFAULT_DOER.phone}
                       </Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ) : (
                 /* Requester Info Row */
                 <View style={styles.detailRequestorRow}>
-                  <View style={styles.detailRequestorLeft}>
+                  <TouchableOpacity
+                    style={styles.detailRequestorLeft}
+                    activeOpacity={0.75}
+                    onPress={() => {
+                      setSelectedSuyo(null);
+                      if (selectedSuyoContext === 'posted') {
+                        router.push('/profile');
+                      } else {
+                        const reqName = selectedSuyo.requesterName || 'Maria Clarissa';
+                        const reqRating = (selectedSuyo.requesterRating || '4.9★').replace(/[★*]/g, '').trim();
+                        const reqDone = (selectedSuyo.completedCount || '15 completed').replace(/[^0-9]/g, '') || '15';
+                        const reqPhone = selectedSuyo.requesterPhone || '0928 341 5520';
+
+                        router.push({
+                          pathname: '/profile',
+                          params: {
+                            name: reqName,
+                            rating: reqRating,
+                            done: reqDone,
+                            phone: reqPhone,
+                            isOtherUser: 'true',
+                          },
+                        });
+                      }
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="View profile"
+                  >
                     <View style={styles.detailAvatarCircle}>
                       <Text style={styles.detailAvatarInitials}>
                         {selectedSuyo.requesterInitials ||
@@ -3318,7 +3379,28 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
+
+                  {/* Add functional call button ONLY for public/available modal (matching 1st image), NOT in MySuyo modals */}
+                  {selectedSuyoContext !== 'posted' &&
+                    selectedSuyoContext !== 'accepted' &&
+                    selectedSuyoContext !== 'completed' &&
+                    selectedSuyoContext !== 'archived' && (
+                      <TouchableOpacity
+                        style={styles.detailRequestorCallBtn}
+                        activeOpacity={0.7}
+                        onPress={() =>
+                          handleCallDoer(
+                            selectedSuyo.requesterPhone || '0917 842 1983',
+                            selectedSuyo.requesterName || 'Atty. Rafael Cruz'
+                          )
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel="Call requester"
+                      >
+                        <Ionicons name="call" size={18} color="#1E4D2B" />
+                      </TouchableOpacity>
+                    )}
                 </View>
               )}
 
@@ -5796,6 +5878,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#4B6354',
+  },
+  detailRequestorCallBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EBF5EE',
+    borderWidth: 1.5,
+    borderColor: '#C2E0CC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
   detailStatsRow: {
     flexDirection: 'row',

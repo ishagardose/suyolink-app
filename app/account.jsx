@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Modal,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -19,6 +20,8 @@ export default function AccountScreen() {
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
+  const isOtherUser = params.isOtherUser === 'true';
+
   // User details with fallbacks aligned with SuyoLink project style
   const initialName = params.name || 'Alex Rivera';
   const initialHandle =
@@ -26,10 +29,12 @@ export default function AccountScreen() {
     `@${initialName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
   const initialRating = (params.rating || '4.9').replace(/[★*]/g, '').trim();
   const initialDone = params.errandsDone || params.done || '48';
-  const initialPoints = params.points || '1,250';
+  const initialPoints = params.points || (isOtherUser ? '1,120' : '1,250');
   const initialBio =
     params.bio ||
-    'Just a helpful neighbor. Ready to run grocery errands, assist with light moving, or pet-sit in Quezon City. 🇵🇭';
+    (isOtherUser
+      ? 'Verified SuyoLink community member. Active requester and helper around the area.'
+      : 'Just a helpful neighbor. Ready to run grocery errands, assist with light moving, or pet-sit in Quezon City. 🇵🇭');
 
   const [profile, setProfile] = useState({
     name: initialName,
@@ -39,6 +44,25 @@ export default function AccountScreen() {
     points: initialPoints,
     bio: initialBio,
   });
+
+  useEffect(() => {
+    if (params.name) {
+      setProfile({
+        name: params.name,
+        handle:
+          params.handle ||
+          `@${params.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+        rating: (params.rating || '4.9').replace(/[★*]/g, '').trim(),
+        done: params.errandsDone || params.done || (isOtherUser ? '34' : '48'),
+        points: params.points || (isOtherUser ? '1,120' : '1,250'),
+        bio:
+          params.bio ||
+          (isOtherUser
+            ? 'Verified SuyoLink community member. Active requester and helper around the area.'
+            : 'Just a helpful neighbor. Ready to run grocery errands, assist with light moving, or pet-sit in Quezon City. 🇵🇭'),
+      });
+    }
+  }, [params.name, params.rating, params.done, isOtherUser]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -73,18 +97,22 @@ export default function AccountScreen() {
           <Ionicons name="arrow-back" size={22} color="#163523" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>My Profile</Text>
+        <Text style={styles.headerTitle}>{isOtherUser ? 'Profile' : 'My Profile'}</Text>
 
-        <TouchableOpacity
-          style={styles.headerIconButton}
-          onPress={() => setIsSettingsModalOpen(true)}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel="Account settings"
-        >
-          <Ionicons name="settings-sharp" size={21} color="#1E4D2B" />
-        </TouchableOpacity>
+        {isOtherUser ? (
+          <View style={{ width: 40 }} />
+        ) : (
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            onPress={() => setIsSettingsModalOpen(true)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Account settings"
+          >
+            <Ionicons name="settings-sharp" size={21} color="#1E4D2B" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -151,19 +179,45 @@ export default function AccountScreen() {
             <Text style={styles.bioBody}>{profile.bio}</Text>
           </View>
 
-          {/* Edit Profile Button */}
-          <TouchableOpacity
-            style={styles.editProfileButton}
-            onPress={() => {
-              setTempProfile({ ...profile });
-              setIsEditModalOpen(true);
-            }}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Edit Profile"
-          >
-            <Text style={styles.editProfileButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
+          {/* Action Button: Call for other user or Edit Profile for current user */}
+          {isOtherUser ? (
+            params.phone ? (
+              <TouchableOpacity
+                style={styles.callProfileButton}
+                onPress={() => {
+                  const telUrl = `tel:${params.phone.replace(/[^0-9+]/g, '')}`;
+                  if (Platform.OS === 'web') {
+                    if (typeof window !== 'undefined' && window.open) {
+                      window.open(telUrl, '_self');
+                    } else {
+                      Linking.openURL(telUrl).catch(() => {});
+                    }
+                  } else {
+                    Linking.openURL(telUrl).catch(() => {});
+                  }
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Call ${profile.name}`}
+              >
+                <Ionicons name="call" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.callProfileButtonText}>Call {profile.name.split(' ')[0]}</Text>
+              </TouchableOpacity>
+            ) : null
+          ) : (
+            <TouchableOpacity
+              style={styles.editProfileButton}
+              onPress={() => {
+                setTempProfile({ ...profile });
+                setIsEditModalOpen(true);
+              }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Edit Profile"
+            >
+              <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* EARNED BADGES SECTION (Matches Image 3) */}
@@ -501,6 +555,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#163523',
+  },
+  callProfileButton: {
+    width: '100%',
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#1E4D2B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callProfileButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   /* EARNED BADGES */
