@@ -533,6 +533,43 @@ export default function DashboardScreen() {
     }
   };
 
+  // Favorites Selection/Delete Mode state
+  const [isFavDeleteMode, setIsFavDeleteMode] = useState(false);
+  const [selectedFavIdsToDelete, setSelectedFavIdsToDelete] = useState([]);
+
+  const handleCloseFavoritesModal = () => {
+    setIsFavoritesModalOpen(false);
+    setIsFavDeleteMode(false);
+    setSelectedFavIdsToDelete([]);
+  };
+
+  const handleToggleFavDeleteMode = () => {
+    setIsFavDeleteMode((prev) => !prev);
+    setSelectedFavIdsToDelete([]);
+  };
+
+  const handleToggleSelectFavToDelete = (id) => {
+    setSelectedFavIdsToDelete((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmDeleteSelectedFavs = () => {
+    if (selectedFavIdsToDelete.length === 0) return;
+    const count = selectedFavIdsToDelete.length;
+    setFavoriteSuyoIds((prev) =>
+      prev.filter((id) => !selectedFavIdsToDelete.includes(id))
+    );
+    setSelectedFavIdsToDelete([]);
+    setIsFavDeleteMode(false);
+    triggerToast(
+      count === 1
+        ? '1 suyo removed from favorites'
+        : `${count} suyos removed from favorites`,
+      'heart-dislike'
+    );
+  };
+
   // Functional Notifications state
   const [notifications, setNotifications] = useState([
     {
@@ -1610,38 +1647,61 @@ export default function DashboardScreen() {
         visible={isFavoritesModalOpen}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setIsFavoritesModalOpen(false)}
+        onRequestClose={handleCloseFavoritesModal}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.favoritesModalCard}>
             <View style={styles.favoritesModalHeader}>
               <View style={styles.favoritesTitleRow}>
-                <Text style={styles.favoritesModalTitle}>Saved Favorites</Text>
+                <Text style={styles.favoritesModalTitle}>
+                  {isFavDeleteMode ? 'Select to Remove' : 'Saved Favorites'}
+                </Text>
                 {favoriteSuyos.length > 0 && (
-                  <View style={styles.favoritesCountPill}>
-                    <Text style={styles.favoritesCountText}>
-                      {favoriteSuyos.length}
+                  <View
+                    style={[
+                      styles.favoritesCountPill,
+                      isFavDeleteMode && { backgroundColor: '#FEE2E2' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.favoritesCountText,
+                        isFavDeleteMode && { color: '#DC2626' },
+                      ]}
+                    >
+                      {isFavDeleteMode
+                        ? `${selectedFavIdsToDelete.length} selected`
+                        : favoriteSuyos.length}
                     </Text>
                   </View>
                 )}
               </View>
 
               <View style={styles.favoritesHeaderActions}>
-                {favoriteSuyos.length > 1 && (
+                {favoriteSuyos.length > 0 && !isFavDeleteMode && (
                   <TouchableOpacity
-                    onPress={() => {
-                      setFavoriteSuyoIds([]);
-                      triggerToast('All favorites removed', 'heart-dislike');
-                    }}
-                    style={styles.favClearAllBtn}
+                    onPress={handleToggleFavDeleteMode}
+                    style={styles.favHeaderTrashBtn}
                     activeOpacity={0.7}
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    accessibilityLabel="Select favorites to remove"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={styles.favClearAllText}>Clear all</Text>
+                    <Ionicons name="trash-outline" size={16} color="#DC2626" />
                   </TouchableOpacity>
                 )}
+
+                {isFavDeleteMode && (
+                  <TouchableOpacity
+                    onPress={handleToggleFavDeleteMode}
+                    style={styles.favCancelDeleteBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.favCancelDeleteText}>Cancel</Text>
+                  </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
-                  onPress={() => setIsFavoritesModalOpen(false)}
+                  onPress={handleCloseFavoritesModal}
                   style={styles.modalCloseButton}
                   activeOpacity={0.7}
                 >
@@ -1650,9 +1710,35 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            <Text style={styles.favoritesModalSub}>
-              Suyos you've saved to review or fulfill later
-            </Text>
+            {isFavDeleteMode ? (
+              <View style={styles.favSelectAllRow}>
+                <Text style={styles.favoritesModalSub}>
+                  Tap items to select what to remove:
+                </Text>
+                {favoriteSuyos.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (selectedFavIdsToDelete.length === favoriteSuyos.length) {
+                        setSelectedFavIdsToDelete([]);
+                      } else {
+                        setSelectedFavIdsToDelete(favoriteSuyos.map((s) => s.id));
+                      }
+                    }}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Text style={styles.favSelectAllText}>
+                      {selectedFavIdsToDelete.length === favoriteSuyos.length
+                        ? 'Deselect all'
+                        : 'Select all'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <Text style={styles.favoritesModalSub}>
+                Suyos you've saved to review or fulfill later
+              </Text>
+            )}
 
             {toastConfig && (
               <View style={styles.favModalToast}>
@@ -1671,88 +1757,104 @@ export default function DashboardScreen() {
                 contentContainerStyle={{ paddingBottom: 4 }}
                 showsVerticalScrollIndicator={false}
               >
-                {favoriteSuyos.map((suyo) => (
-                  <TouchableOpacity
-                    key={suyo.id}
-                    style={styles.favCardItem}
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      setOpenedFromFavorites(true);
-                      setIsFavoritesModalOpen(false);
-                      setSelectedSuyo(suyo);
-                    }}
-                  >
-                    <View style={styles.favCardTopRow}>
-                      <View style={{ flex: 1, paddingRight: 8 }}>
-                        <Text style={styles.favCardTitle} numberOfLines={2}>
-                          {suyo.title}
-                        </Text>
-                        <Text style={styles.favCardLocation}>
-                          <Ionicons name="location-sharp" size={10.5} color="#0D9488" />{' '}
-                          {suyo.location || 'Quezon City'} • {suyo.distanceText || '0.8 km away'}
-                        </Text>
-                      </View>
+                {favoriteSuyos.map((suyo) => {
+                  const isSelected = selectedFavIdsToDelete.includes(suyo.id);
+                  return (
+                    <TouchableOpacity
+                      key={suyo.id}
+                      style={[
+                        styles.favCardItem,
+                        isFavDeleteMode && isSelected && styles.favCardItemSelected,
+                      ]}
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        if (isFavDeleteMode) {
+                          handleToggleSelectFavToDelete(suyo.id);
+                        } else {
+                          setOpenedFromFavorites(true);
+                          setIsFavoritesModalOpen(false);
+                          setSelectedSuyo(suyo);
+                        }
+                      }}
+                    >
+                      <View style={styles.favCardTopRow}>
+                        {isFavDeleteMode && (
+                          <View
+                            style={[
+                              styles.favSelectionCircle,
+                              isSelected && styles.favSelectionCircleSelected,
+                            ]}
+                          >
+                            {isSelected && (
+                              <Ionicons name="checkmark" size={11} color="#FFFFFF" />
+                            )}
+                          </View>
+                        )}
 
-                      <View style={styles.favCardRightCol}>
-                        <Text style={styles.favCardReward}>{suyo.reward}</Text>
-                        <TouchableOpacity
-                          style={styles.favCardRemoveBtn}
-                          onPress={(e) => {
-                            if (e?.stopPropagation) e.stopPropagation();
-                            toggleFavoriteSuyo(suyo);
-                          }}
-                          activeOpacity={0.7}
-                          accessibilityLabel={`Remove ${suyo.title} from favorites`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Ionicons name="trash-outline" size={12.5} color="#DC2626" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={styles.favCardBottomRow}>
-                      <View style={styles.favCardRequestorRow}>
-                        <View style={styles.favAvatarCircle}>
-                          <Text style={styles.favAvatarInitials}>
-                            {suyo.requesterInitials ||
-                              getInitials(suyo.requesterName || 'Maria Clarissa')}
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                          <Text style={styles.favCardTitle} numberOfLines={2}>
+                            {suyo.title}
+                          </Text>
+                          <Text style={styles.favCardLocation}>
+                            <Ionicons name="location-sharp" size={10.5} color="#0D9488" />{' '}
+                            {suyo.location || 'Quezon City'} • {suyo.distanceText || '0.8 km away'}
                           </Text>
                         </View>
-                        <Text style={styles.favCardRequestorName}>
-                          {suyo.requesterName || 'Maria Clarissa'}
-                        </Text>
+
+                        <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                          <Text style={styles.favCardReward}>{suyo.reward}</Text>
+                        </View>
                       </View>
 
                       <View
                         style={[
-                          styles.favTagPill,
-                          suyo.tag === 'Urgent'
-                            ? styles.favTagUrgent
-                            : suyo.tag === 'Due today'
-                            ? styles.favTagToday
-                            : suyo.tag === 'Normal'
-                            ? styles.favTagNormal
-                            : styles.favTagTomorrow,
+                          styles.favCardBottomRow,
+                          isFavDeleteMode && { paddingLeft: 25 },
                         ]}
                       >
-                        <Text
+                        <View style={styles.favCardRequestorRow}>
+                          <View style={styles.favAvatarCircle}>
+                            <Text style={styles.favAvatarInitials}>
+                              {suyo.requesterInitials ||
+                                getInitials(suyo.requesterName || 'Maria Clarissa')}
+                            </Text>
+                          </View>
+                          <Text style={styles.favCardRequestorName}>
+                            {suyo.requesterName || 'Maria Clarissa'}
+                          </Text>
+                        </View>
+
+                        <View
                           style={[
-                            styles.favTagPillText,
+                            styles.favTagPill,
                             suyo.tag === 'Urgent'
-                              ? styles.favTagUrgentText
+                              ? styles.favTagUrgent
                               : suyo.tag === 'Due today'
-                              ? styles.favTagTodayText
+                              ? styles.favTagToday
                               : suyo.tag === 'Normal'
-                              ? styles.favTagNormalText
-                              : styles.favTagTomorrowText,
+                              ? styles.favTagNormal
+                              : styles.favTagTomorrow,
                           ]}
                         >
-                          {suyo.tag}
-                        </Text>
+                          <Text
+                            style={[
+                              styles.favTagPillText,
+                              suyo.tag === 'Urgent'
+                                ? styles.favTagUrgentText
+                                : suyo.tag === 'Due today'
+                                ? styles.favTagTodayText
+                                : suyo.tag === 'Normal'
+                                ? styles.favTagNormalText
+                                : styles.favTagTomorrowText,
+                            ]}
+                          >
+                            {suyo.tag}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             ) : (
               <View style={styles.favEmptyBox}>
@@ -1764,13 +1866,55 @@ export default function DashboardScreen() {
               </View>
             )}
 
-            <TouchableOpacity
-              style={styles.favCloseBottomBtn}
-              onPress={() => setIsFavoritesModalOpen(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.favCloseBottomBtnText}>Done</Text>
-            </TouchableOpacity>
+            {isFavDeleteMode ? (
+              <View style={styles.favDeleteActionsRow}>
+                <TouchableOpacity
+                  style={styles.favCancelBottomBtn}
+                  onPress={handleToggleFavDeleteMode}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.favCancelBottomBtnText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.favConfirmDeleteBtn,
+                    selectedFavIdsToDelete.length === 0 &&
+                      styles.favConfirmDeleteBtnDisabled,
+                  ]}
+                  onPress={handleConfirmDeleteSelectedFavs}
+                  disabled={selectedFavIdsToDelete.length === 0}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={13.5}
+                    color={
+                      selectedFavIdsToDelete.length > 0 ? '#FFFFFF' : '#8CA395'
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.favConfirmDeleteBtnText,
+                      selectedFavIdsToDelete.length === 0 &&
+                        styles.favConfirmDeleteBtnTextDisabled,
+                    ]}
+                  >
+                    {selectedFavIdsToDelete.length > 0
+                      ? `Remove Selected (${selectedFavIdsToDelete.length})`
+                      : 'Select to remove'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.favCloseBottomBtn}
+                onPress={handleCloseFavoritesModal}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.favCloseBottomBtnText}>Done</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </Modal>
@@ -3422,14 +3566,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  favClearAllBtn: {
-    paddingHorizontal: 7,
-    paddingVertical: 3.5,
-    borderRadius: 6,
+  favHeaderTrashBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  favClearAllText: {
-    fontSize: 10.5,
+  favCancelDeleteBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#F0F5F2',
+  },
+  favCancelDeleteText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#52695C',
+  },
+  favSelectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  favSelectAllText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#DC2626',
   },
@@ -3492,6 +3655,25 @@ const styles = StyleSheet.create({
     borderColor: '#E2ECE6',
     marginBottom: 8,
   },
+  favCardItemSelected: {
+    borderColor: '#F87171',
+    backgroundColor: '#FFF9F9',
+  },
+  favSelectionCircle: {
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
+    borderWidth: 1.5,
+    borderColor: '#B0C7B9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    marginTop: 1,
+  },
+  favSelectionCircleSelected: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
   favCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -3510,23 +3692,51 @@ const styles = StyleSheet.create({
     color: '#62806E',
     fontWeight: '500',
   },
-  favCardRightCol: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  favCardRemoveBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   favCardReward: {
     fontSize: 13.5,
     fontWeight: '800',
     color: '#1E4D2B',
+  },
+  favDeleteActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  favCancelBottomBtn: {
+    flex: 1,
+    backgroundColor: '#F0F5F2',
+    borderRadius: 10,
+    paddingVertical: 9.5,
+    alignItems: 'center',
+  },
+  favCancelBottomBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#52695C',
+  },
+  favConfirmDeleteBtn: {
+    flex: 2,
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    paddingVertical: 9.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  favConfirmDeleteBtnDisabled: {
+    backgroundColor: '#E5ECE8',
+  },
+  favConfirmDeleteBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  favConfirmDeleteBtnTextDisabled: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8CA395',
   },
   favCardBottomRow: {
     flexDirection: 'row',
