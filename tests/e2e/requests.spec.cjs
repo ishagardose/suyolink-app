@@ -6,7 +6,9 @@ async function fillForm(page) {
   await page.getByRole('button', { name: 'Groceries category' }).click();
   await page.getByRole('textbox', { name: 'Offer amount (PHP)', exact: true }).fill('150.25');
   await page.getByLabel('Deadline', { exact: true }).fill('2099-12-31T18:30');
-  await page.getByRole('textbox', { name: 'Location', exact: true }).fill('Davao City market');
+  await page.getByRole('textbox', { name: 'Area or landmark (public)', exact: true }).fill('Davao City market');
+  await page.getByRole('textbox', { name: 'Exact address (accepted provider only)', exact: true }).fill('123 Private Street, Gate 2');
+  await page.getByRole('textbox', { name: 'Task contact phone (accepted provider only)', exact: true }).fill('+639171234567');
   await page.getByRole('textbox', { name: 'Additional notes (optional)', exact: true }).fill('Call at the gate.');
 }
 async function choosePin(page) {
@@ -38,7 +40,7 @@ test('post saves a map pin through Supabase and restores it after refresh', asyn
 test('failed post retains details and pin and reuses the same retry reference', async ({ page }) => {
   const calls = await mockSupabase(page, { signedIn: true });
   let first;
-  await page.route('**/rest/v1/rpc/create_suyo_request_at_location', async route => {
+  await page.route('**/rest/v1/rpc/create_suyo_request_v2', async route => {
     if (!first) {
       first = route.request().postDataJSON();
       await route.fulfill({ status: 503, json: { message: 'Service unavailable. Please retry.' } });

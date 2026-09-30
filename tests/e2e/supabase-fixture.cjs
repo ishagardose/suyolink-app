@@ -45,17 +45,24 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
         const id = new URL(request.url()).searchParams.get('id')?.replace('eq.', '');
         json.filter(item => item.id === id).forEach(item => Object.assign(item, body));
       }
-    } else if (path === '/rest/v1/rpc/create_suyo_request_at_location') {
+    } else if (path === '/rest/v1/rpc/create_suyo_request_v2' || path === '/rest/v1/rpc/create_suyo_request_at_location') {
       json = requests.find(item => item.client_reference === body.p_client_reference);
       if (!json) {
         json = { id: `request-${requests.length + 1}`, requester_id: user.id, provider_id: null,
           title: body.p_title, details: body.p_details, category: body.p_category,
-          offer_centavos: body.p_offer_centavos, deadline: body.p_deadline, location: body.p_location,
-          notes: body.p_notes, latitude: body.p_latitude, longitude: body.p_longitude,
+          offer_centavos: body.p_offer_centavos, deadline: body.p_deadline,
+          location: body.p_public_location || body.p_location,
+          notes: body.p_notes,
+          latitude: body.p_latitude, longitude: body.p_longitude,
           client_reference: body.p_client_reference, status: 'open', created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(), requester: profile };
+          updated_at: new Date().toISOString(), requester: profile,
+          exact_address: body.p_exact_address, contact_phone: body.p_contact_phone };
         requests.unshift(json);
       }
+    } else if (path === '/rest/v1/rpc/save_last_location') {
+      json = { user_id: user.id, latitude: body.p_latitude, longitude: body.p_longitude, source: body.p_source, updated_at: new Date().toISOString() };
+    } else if (path === '/rest/v1/rpc/get_my_last_location') {
+      json = null;
     } else if (path === '/auth/v1/resend') {
       json = {};
     } else if (path === '/auth/v1/logout') {

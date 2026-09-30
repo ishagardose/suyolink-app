@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { supabase, authConfigError } from '../lib/supabase';
 import { createRequest } from '../data/suyoRequests';
 import { fromDatabase } from '../data/supabaseRequests';
+import { postRequest as apiPostRequest } from '../data/suyoApi';
 import { hasCoordinates } from '../lib/geo';
 import { AppState } from 'react-native';
 
@@ -91,22 +92,18 @@ export function SuyoProvider({ children }) {
     if (isLoading || error) throw new Error('Retry loading requests before posting.');
     const validated = createRequest(draft, user);
     if (!hasCoordinates(draft.coordinates)) throw new Error('Choose a task location pin on the map.');
-    if (!supabase) throw new Error(authConfigError);
     saving.current = true;
     revision.current++;
     try {
-      const { data, error: saveError } = await supabase.rpc('create_suyo_request_at_location', {
-        p_title: validated.title, p_details: validated.details, p_category: validated.category,
-        p_offer_centavos: validated.offerCentavos, p_deadline: validated.deadline,
-        p_location: validated.location, p_notes: validated.notes,
-        p_latitude: draft.coordinates.latitude, p_longitude: draft.coordinates.longitude,
-        p_client_reference: draft.clientReference,
-      }).single();
-      if (saveError) {
-        if (saveError.code === 'PGRST202') throw new Error('The request-location database update is missing. Apply the new migration, then retry.');
-        throw new Error(saveError.message || 'Could not save your request. Please retry.');
-      }
-      const request = fromDatabase({ ...data, requester: { full_name: user.name } });
+      const created = await apiPostRequest({
+        ...validated,
+        clientReference: draft.clientReference,
+        publicLocation: validated.publicLocation || validated.location,
+        exactAddress: draft.exactAddress || validated.location,
+        phone: draft.phone || 'N/A',
+        coordinates: draft.coordinates,
+      });
+      const request = { ...created, requesterName: user.name };
       if (currentUser.current === user.id) setRequests(previous => [request, ...previous.filter(item => item.id !== request.id)]);
       return request;
     } finally { if (currentUser.current === user.id) saving.current = false; }
