@@ -464,6 +464,100 @@ const INITIAL_ARCHIVED_SUYOS = [
   },
 ];
 
+const WALLET_EARNED_SUYOS = [
+  {
+    id: 'WAL-001',
+    title: 'Drop off documents - Unit 402',
+    category: 'Documents',
+    icon: 'document-text',
+    date: 'Today · 4:00 PM',
+    requesterName: 'Atty. Rafael Cruz',
+    location: 'Makati CBD, Tower 1',
+    earnedAmount: 300,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-9842',
+  },
+  {
+    id: 'WAL-002',
+    title: 'Buy groceries - SM Tagum',
+    category: 'Groceries',
+    icon: 'cart',
+    date: 'Sep 28 · 12:15 PM',
+    requesterName: 'Maria Clarissa',
+    location: 'SM Tagum Supermarket',
+    earnedAmount: 150,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-9801',
+  },
+  {
+    id: 'WAL-003',
+    title: 'Prescription pickup at Mercury Drug',
+    category: 'Medicine',
+    icon: 'medkit',
+    date: 'Sep 26 · 3:45 PM',
+    requesterName: 'Lola Remedios',
+    location: 'Mercury Drug Legaspi',
+    earnedAmount: 180,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-9755',
+  },
+  {
+    id: 'WAL-004',
+    title: 'Queue for Meralco bills payment',
+    category: 'Queuing & Bills',
+    icon: 'time',
+    date: 'Sep 18 · 11:30 AM',
+    requesterName: 'Kenneth Gomez',
+    location: 'Bayad Center Ayala',
+    earnedAmount: 250,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-9510',
+  },
+  {
+    id: 'WAL-005',
+    title: 'Pick up medical supplies & vitamins',
+    category: 'Delivery',
+    icon: 'bag-check-outline',
+    date: 'Sep 12 · 2:30 PM',
+    requesterName: 'Mrs. Angela Santos',
+    location: 'Generika Drugstore',
+    earnedAmount: 180,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-9321',
+  },
+  {
+    id: 'WAL-006',
+    title: 'Print school project & binding',
+    category: 'Documents',
+    icon: 'print',
+    date: 'Sep 05 · 4:15 PM',
+    requesterName: 'Dave B. (Student)',
+    location: 'Davao Printing Hub',
+    earnedAmount: 120,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-9120',
+  },
+  {
+    id: 'WAL-007',
+    title: 'Express parcel delivery to Greenbelt',
+    category: 'Delivery',
+    icon: 'bicycle',
+    date: 'Aug 29 · 10:00 AM',
+    requesterName: 'Patricia Mendoza',
+    location: 'Greenbelt 5 Concierge',
+    earnedAmount: 100,
+    status: 'Credited',
+    paymentMethod: 'Direct Wallet Credit',
+    refNo: 'SYL-EARN-8940',
+  },
+];
+
 const INITIAL_ACTIVITY_RECORDS = [
   {
     id: 'ACT-001',
@@ -2420,323 +2514,134 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* === ACTIVITY & TRANSACTIONS SCREEN === */}
-        {activeTab === 'activity' && (
-          <View style={styles.activityMainWrapper}>
-            {/* 1. Activity Hero Section */}
-            <View style={styles.activityHeroSection}>
-              <View style={styles.activityHeroTextCol}>
-                <Text style={styles.activityHeroSuper}>ACTIVITY & TRANSACTIONS</Text>
-                <Text style={styles.activityHeroTitle}>Errand Ledger & Receipts</Text>
-                <Text style={styles.activityHeroSub}>
-                  Permanent audit log of your errand spend, courier earnings, and digital receipts
+        {/* === WALLET SCREEN (ACCEPTED SUYO EARNINGS LIST) === */}
+        {(activeTab === 'wallet' || activeTab === 'activity') && (
+          <View style={styles.walletMainWrapper}>
+            {/* 1. Wallet Balance Hero Header */}
+            <View style={styles.walletHeroCard}>
+              <View style={styles.walletHeroTopRow}>
+                <View style={styles.walletBadgeRow}>
+                  <View style={styles.walletIconCircle}>
+                    <Ionicons name="wallet" size={17} color="#1E4D2B" />
+                  </View>
+                  <Text style={styles.walletHeroSuper}>SUYOLINK WALLET</Text>
+                </View>
+                <View style={styles.walletVerifiedPill}>
+                  <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                  <Text style={styles.walletVerifiedPillText}>Verified Doer</Text>
+                </View>
+              </View>
+
+              <Text style={styles.walletBalanceLabel}>Total Earned Balance</Text>
+              <Text style={styles.walletBalanceAmount}>₱1,280.00</Text>
+
+              <View style={styles.walletSummaryRow}>
+                <View style={styles.walletSummaryItem}>
+                  <Text style={styles.walletSummaryCount}>{WALLET_EARNED_SUYOS.length}</Text>
+                  <Text style={styles.walletSummaryLabel}>Accepted Suyos</Text>
+                </View>
+                <View style={styles.walletSummaryDivider} />
+                <View style={styles.walletSummaryItem}>
+                  <Text style={styles.walletSummaryCount}>100%</Text>
+                  <Text style={styles.walletSummaryLabel}>Payout Rate</Text>
+                </View>
+                <View style={styles.walletSummaryDivider} />
+                <View style={styles.walletSummaryItem}>
+                  <Text style={styles.walletSummaryCount}>₱0</Text>
+                  <Text style={styles.walletSummaryLabel}>Deductions</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* 2. Section Header: Just the Lists */}
+            <View style={styles.walletSectionHeader}>
+              <View>
+                <Text style={styles.walletSectionTitle}>Accepted Suyo Earnings</Text>
+                <Text style={styles.walletSectionSub}>
+                  Rewards earned from each accepted suyo request
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.activityStatementBtn}
-                onPress={handleExportStatement}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="document-text-outline" size={15} color="#1E4D2B" />
-                <Text style={styles.activityStatementBtnText}>Statement</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 2. Financial Metrics Row (Spent, Earned, Time Saved) */}
-            <View style={styles.activityMetricsRow}>
-              <View style={styles.activityMetricCard}>
-                <View style={[styles.activityMetricIconBox, { backgroundColor: '#FEE2E2' }]}>
-                  <Ionicons name="arrow-down-circle" size={17} color="#DC2626" />
-                </View>
-                <Text style={styles.activityMetricValue}>{activityStats.totalSpent}</Text>
-                <Text style={styles.activityMetricLabel}>Total Spent</Text>
-                <Text style={styles.activityMetricSub}>Requested suyos</Text>
-              </View>
-
-              <View style={styles.activityMetricCard}>
-                <View style={[styles.activityMetricIconBox, { backgroundColor: '#DCFCE7' }]}>
-                  <Ionicons name="arrow-up-circle" size={17} color="#15803D" />
-                </View>
-                <Text style={styles.activityMetricValue}>{activityStats.totalEarned}</Text>
-                <Text style={styles.activityMetricLabel}>Total Earned</Text>
-                <Text style={styles.activityMetricSub}>Courier earnings</Text>
-              </View>
-
-              <View style={styles.activityMetricCard}>
-                <View style={[styles.activityMetricIconBox, { backgroundColor: '#E0F2FE' }]}>
-                  <Ionicons name="time" size={17} color="#0284C7" />
-                </View>
-                <Text style={styles.activityMetricValue}>{activityStats.timeSaved}</Text>
-                <Text style={styles.activityMetricLabel}>Time Saved</Text>
-                <Text style={styles.activityMetricSub}>Community run</Text>
+              <View style={styles.walletCountChip}>
+                <Text style={styles.walletCountChipText}>
+                  {WALLET_EARNED_SUYOS.length} earned
+                </Text>
               </View>
             </View>
 
-            {/* 3. Monthly Category Spending Breakdown */}
-            <View style={styles.activityCategoryBreakdownCard}>
-              <View style={styles.activityCategoryHeader}>
-                <View>
-                  <Text style={styles.activityCategoryTitle}>Monthly Errand Breakdown</Text>
-                  <Text style={styles.activityCategorySub}>Where your community errands were fulfilled</Text>
-                </View>
-                <View style={styles.activityTrustPill}>
-                  <Ionicons name="shield-checkmark" size={12} color="#059669" />
-                  <Text style={styles.activityTrustPillText}>100% Verified</Text>
-                </View>
-              </View>
+            {/* 3. The Clean List of Earned Accepted Suyo Requests */}
+            <View style={styles.walletListWrapper}>
+              {WALLET_EARNED_SUYOS.map((item) => (
+                <View key={item.id} style={styles.walletItemCard}>
+                  <View style={styles.walletItemLeft}>
+                    <View
+                      style={[
+                        styles.walletCategoryIconCircle,
+                        item.category === 'Groceries'
+                          ? { backgroundColor: '#DCFCE7' }
+                          : item.category === 'Medicine'
+                          ? { backgroundColor: '#F3E8FF' }
+                          : item.category === 'Documents'
+                          ? { backgroundColor: '#E0F2FE' }
+                          : item.category === 'Queuing & Bills'
+                          ? { backgroundColor: '#FEF3C7' }
+                          : { backgroundColor: '#EAF4EF' },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon || 'receipt'}
+                        size={18}
+                        color={
+                          item.category === 'Groceries'
+                            ? '#15803D'
+                            : item.category === 'Medicine'
+                            ? '#7E22CE'
+                            : item.category === 'Documents'
+                            ? '#0369A1'
+                            : item.category === 'Queuing & Bills'
+                            ? '#B45309'
+                            : '#1E4D2B'
+                        }
+                      />
+                    </View>
 
-              {/* Segmented Color Bar */}
-              <View style={styles.activityCategoryBar}>
-                <View style={[styles.activityCategorySegment, { width: '45%', backgroundColor: '#059669' }]} />
-                <View style={[styles.activityCategorySegment, { width: '30%', backgroundColor: '#0284C7' }]} />
-                <View style={[styles.activityCategorySegment, { width: '15%', backgroundColor: '#D97706' }]} />
-                <View style={[styles.activityCategorySegment, { width: '10%', backgroundColor: '#7C3AED' }]} />
-              </View>
+                    <View style={styles.walletItemInfoCol}>
+                      <Text style={styles.walletItemTitle} numberOfLines={1}>
+                        {item.title}
+                      </Text>
 
-              {/* Legend Grid */}
-              <View style={styles.activityCategoryLegend}>
-                <View style={styles.activityCategoryLegendItem}>
-                  <View style={[styles.activityCategoryLegendDot, { backgroundColor: '#059669' }]} />
-                  <Text style={styles.activityCategoryLegendText}>Groceries 45% (₱650)</Text>
-                </View>
-                <View style={styles.activityCategoryLegendItem}>
-                  <View style={[styles.activityCategoryLegendDot, { backgroundColor: '#0284C7' }]} />
-                  <Text style={styles.activityCategoryLegendText}>Delivery 30% (₱430)</Text>
-                </View>
-                <View style={styles.activityCategoryLegendItem}>
-                  <View style={[styles.activityCategoryLegendDot, { backgroundColor: '#D97706' }]} />
-                  <Text style={styles.activityCategoryLegendText}>Documents 15% (₱220)</Text>
-                </View>
-                <View style={styles.activityCategoryLegendItem}>
-                  <View style={[styles.activityCategoryLegendDot, { backgroundColor: '#7C3AED' }]} />
-                  <Text style={styles.activityCategoryLegendText}>Queuing 10% (₱150)</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* 4. Filter Tabs & Search */}
-            <View style={styles.activityFilterScrollWrapper}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityFilterScroll}>
-                {[
-                  { key: 'All', label: `All Activity (${activityRecords.length})` },
-                  { key: 'InProgress', label: `In Progress (${activityStats.inProgressCount})` },
-                  { key: 'Spending', label: 'Spent (Requester)' },
-                  { key: 'Earnings', label: 'Earned (Courier)' },
-                  { key: 'Completed', label: `Completed (${activityStats.completedCount})` },
-                ].map((tab) => (
-                  <TouchableOpacity
-                    key={tab.key}
-                    style={[styles.activityFilterChip, activityFilter === tab.key && styles.activityFilterChipActive]}
-                    onPress={() => setActivityFilter(tab.key)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.activityFilterChipText, activityFilter === tab.key && styles.activityFilterChipTextActive]}>
-                      {tab.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Search Bar */}
-            <View style={styles.activitySearchBox}>
-              <Ionicons name="search" size={16} color="#688676" />
-              <TextInput
-                style={styles.activitySearchInput}
-                placeholder="Search reference #, errand, or courier..."
-                placeholderTextColor="#8CA395"
-                value={activitySearchQuery}
-                onChangeText={setActivitySearchQuery}
-              />
-              {activitySearchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setActivitySearchQuery('')}>
-                  <Ionicons name="close-circle" size={16} color="#8FA497" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* 5. Activity Records List */}
-            <View style={styles.activityList}>
-              {filteredActivityRecords.length > 0 ? (
-                filteredActivityRecords.map((item) => {
-                  const isInProgress = item.status === 'In Progress';
-                  const isCompleted = item.status === 'Completed';
-                  const isRefunded = item.status === 'Refunded';
-
-                  return (
-                    <View key={item.id} style={styles.activityCard}>
-                      {/* Card Top Row */}
-                      <View style={styles.activityCardTopRow}>
-                        <View style={styles.activityCategoryHeaderLeft}>
-                          <View
-                            style={[
-                              styles.activityCategoryIconBox,
-                              item.category === 'Groceries'
-                                ? { backgroundColor: '#DCFCE7' }
-                                : item.category === 'Medicine'
-                                ? { backgroundColor: '#F3E8FF' }
-                                : item.category === 'Documents'
-                                ? { backgroundColor: '#E0F2FE' }
-                                : { backgroundColor: '#FEF3C7' },
-                            ]}
-                          >
-                            <Ionicons
-                              name={item.icon || 'receipt'}
-                              size={15}
-                              color={
-                                item.category === 'Groceries'
-                                  ? '#15803D'
-                                  : item.category === 'Medicine'
-                                  ? '#7E22CE'
-                                  : item.category === 'Documents'
-                                  ? '#0369A1'
-                                  : '#B45309'
-                              }
-                            />
-                          </View>
-                          <View style={styles.activityCategoryTextCol}>
-                            <Text style={styles.activityCategoryName}>{item.category}</Text>
-                            <Text style={styles.activityCardDate}>{item.date}</Text>
-                          </View>
-                        </View>
-
-                        {/* Status Badge */}
-                        <View
-                          style={[
-                            styles.activityStatusPill,
-                            isInProgress
-                              ? { backgroundColor: '#E0F2FE' }
-                              : isCompleted
-                              ? { backgroundColor: '#DCFCE7' }
-                              : { backgroundColor: '#FEE2E2' },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.activityStatusPillText,
-                              isInProgress
-                                ? { color: '#0369A1' }
-                                : isCompleted
-                                ? { color: '#15803D' }
-                                : { color: '#DC2626' },
-                            ]}
-                          >
-                            {item.status}
+                      <View style={styles.walletItemMetaRow}>
+                        <Ionicons name="person-circle-outline" size={13} color="#557261" />
+                        <Text style={styles.walletItemRequesterText}>
+                          From:{' '}
+                          <Text style={{ fontWeight: '700', color: '#163523' }}>
+                            {item.requesterName}
                           </Text>
-                        </View>
+                        </Text>
                       </View>
 
-                      {/* Title */}
-                      <Text style={styles.activityCardTitle}>{item.title}</Text>
-
-                      {/* Personnel & Location */}
-                      <View style={styles.activityCardMetaCol}>
-                        {item.doer && (
-                          <View style={styles.activityCardMetaRow}>
-                            <Ionicons name="person-circle-outline" size={13} color="#163523" />
-                            <Text style={styles.activityCardMetaText}>
-                              Courier:{' '}
-                              <Text style={{ fontWeight: '700', color: '#163523' }}>{item.doer.name}</Text>{' '}
-                              ({item.doer.rating}) · {item.doer.vehicle || 'Courier'}
-                            </Text>
-                          </View>
-                        )}
-                        {item.requesterName && (
-                          <View style={styles.activityCardMetaRow}>
-                            <Ionicons name="person-circle-outline" size={13} color="#163523" />
-                            <Text style={styles.activityCardMetaText}>
-                              Requester:{' '}
-                              <Text style={{ fontWeight: '700', color: '#163523' }}>{item.requesterName}</Text>{' '}
-                              ({item.requesterRating})
-                            </Text>
-                          </View>
-                        )}
-                        <View style={styles.activityCardMetaRow}>
-                          <Ionicons name="location-sharp" size={12} color="#0D9488" />
-                          <Text style={styles.activityCardMetaText}>{item.location}</Text>
-                        </View>
-                      </View>
-
-                      {/* Financial Summary Strip */}
-                      <View style={styles.activityFinancialStrip}>
-                        <View>
-                          <Text style={styles.activityRefNo}>{item.refNo}</Text>
-                          <Text style={styles.activityPaymentMethod}>{item.paymentMethod}</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text
-                            style={[
-                              styles.activityAmountText,
-                              item.role === 'doer'
-                                ? { color: '#15803D' }
-                                : isRefunded
-                                ? { color: '#64748B' }
-                                : { color: '#163523' },
-                            ]}
-                          >
-                            {item.role === 'doer' ? `+₱${item.totalAmount.toFixed(2)}` : `-₱${item.totalAmount.toFixed(2)}`}
-                          </Text>
-                          <Text style={styles.activityFeeNote}>
-                            {item.platformFee > 0 ? `Incl. ₱${item.platformFee} platform fee` : 'Direct Wallet Credit'}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Action Buttons */}
-                      <View style={styles.activityCardActionsRow}>
-                        <TouchableOpacity
-                          style={styles.activityViewReceiptBtn}
-                          onPress={() => setSelectedReceipt(item)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="receipt-outline" size={14} color="#163523" />
-                          <Text style={styles.activityViewReceiptBtnText}>View E-Receipt</Text>
-                        </TouchableOpacity>
-
-                        {isInProgress && (
-                          <TouchableOpacity
-                            style={styles.activityTrackBtn}
-                            onPress={() => {
-                              router.push({
-                                pathname: '/requester-fulfill',
-                                params: {
-                                  id: item.id,
-                                  title: item.title,
-                                  doerName: item.doer?.name || DEFAULT_DOER.name,
-                                  doerPhone: item.doer?.phone || DEFAULT_DOER.phone,
-                                },
-                              });
-                            }}
-                            activeOpacity={0.8}
-                          >
-                            <Ionicons name="navigate" size={13} color="#FFFFFF" />
-                            <Text style={styles.activityTrackBtnText}>Track</Text>
-                          </TouchableOpacity>
-                        )}
-
-                        {isCompleted && item.role === 'requester' && (
-                          <TouchableOpacity
-                            style={styles.activityRepeatBtn}
-                            onPress={() => handleRepeatActivitySuyo(item)}
-                            activeOpacity={0.8}
-                          >
-                            <Ionicons name="refresh" size={13} color="#1E4D2B" />
-                            <Text style={styles.activityRepeatBtnText}>Re-order</Text>
-                          </TouchableOpacity>
-                        )}
+                      <View style={styles.walletItemDateRow}>
+                        <Ionicons name="time-outline" size={12} color="#8CA395" />
+                        <Text style={styles.walletItemDateText}>{item.date}</Text>
+                        <Text style={styles.walletItemDot}>•</Text>
+                        <Ionicons name="location-outline" size={12} color="#8CA395" />
+                        <Text style={styles.walletItemLocationText} numberOfLines={1}>
+                          {item.location}
+                        </Text>
                       </View>
                     </View>
-                  );
-                })
-              ) : (
-                <View style={styles.activityEmptyBox}>
-                  <Ionicons name="receipt-outline" size={44} color="#A3B8AC" />
-                  <Text style={styles.activityEmptyTitle}>No activity records found</Text>
-                  <Text style={styles.activityEmptySub}>
-                    Transactions, digital receipts, and courier tasks will appear here as they are fulfilled.
-                  </Text>
+                  </View>
+
+                  <View style={styles.walletItemRight}>
+                    <Text style={styles.walletEarnedAmountText}>
+                      +₱{Number(item.earnedAmount).toFixed(2)}
+                    </Text>
+                    <View style={styles.walletStatusChip}>
+                      <Ionicons name="checkmark-circle" size={10} color="#15803D" />
+                      <Text style={styles.walletStatusChipText}>{item.status}</Text>
+                    </View>
+                  </View>
                 </View>
-              )}
+              ))}
             </View>
           </View>
         )}
@@ -2885,20 +2790,20 @@ export default function DashboardScreen() {
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
-          onPress={() => setActiveTab('activity')}
+          onPress={() => setActiveTab('wallet')}
         >
           <Ionicons
-            name={activeTab === 'activity' ? 'receipt' : 'receipt-outline'}
+            name={activeTab === 'wallet' ? 'wallet' : 'wallet-outline'}
             size={22}
-            color={activeTab === 'activity' ? '#1E4D2B' : '#8FA497'}
+            color={activeTab === 'wallet' ? '#1E4D2B' : '#8FA497'}
           />
           <Text
             style={[
               styles.navItemText,
-              activeTab === 'activity' && styles.navItemTextActive,
+              activeTab === 'wallet' && styles.navItemTextActive,
             ]}
           >
-            Activity
+            Wallet
           </Text>
         </TouchableOpacity>
 
@@ -7488,6 +7393,231 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  /* === WALLET EARNINGS STYLES === */
+  walletMainWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  walletHeroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E2ECE5',
+    elevation: 2,
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  walletHeroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  walletBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  walletIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#EAF4EF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletHeroSuper: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E4D2B',
+    letterSpacing: 0.8,
+  },
+  walletVerifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  walletVerifiedPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  walletBalanceLabel: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#557261',
+    marginBottom: 4,
+  },
+  walletBalanceAmount: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#163523',
+    letterSpacing: -0.5,
+    marginBottom: 16,
+  },
+  walletSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAF9',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#EDF5F0',
+  },
+  walletSummaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  walletSummaryCount: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  walletSummaryLabel: {
+    fontSize: 11,
+    color: '#557261',
+    fontWeight: '600',
+  },
+  walletSummaryDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#D7EBE0',
+  },
+  walletSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 2,
+  },
+  walletSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  walletSectionSub: {
+    fontSize: 11.5,
+    color: '#557261',
+  },
+  walletCountChip: {
+    backgroundColor: '#EAF4EF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CDE5D7',
+  },
+  walletCountChipText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#1E4D2B',
+  },
+  walletListWrapper: {
+    gap: 10,
+  },
+  walletItemCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2ECE5',
+    elevation: 1,
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+  },
+  walletItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingRight: 10,
+    gap: 12,
+  },
+  walletCategoryIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletItemInfoCol: {
+    flex: 1,
+    gap: 3,
+  },
+  walletItemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  walletItemMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  walletItemRequesterText: {
+    fontSize: 12,
+    color: '#557261',
+  },
+  walletItemDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  walletItemDateText: {
+    fontSize: 11,
+    color: '#8CA395',
+  },
+  walletItemDot: {
+    fontSize: 10,
+    color: '#CBD5E1',
+    marginHorizontal: 2,
+  },
+  walletItemLocationText: {
+    fontSize: 11,
+    color: '#8CA395',
+    flex: 1,
+  },
+  walletItemRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  walletEarnedAmountText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#15803D',
+  },
+  walletStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    gap: 3,
+  },
+  walletStatusChipText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#15803D',
   },
 
   /* === ACTIVITY & TRANSACTIONS STYLES === */
