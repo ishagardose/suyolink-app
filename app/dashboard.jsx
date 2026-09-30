@@ -1621,7 +1621,7 @@ export default function DashboardScreen() {
                 style={styles.modalCloseButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={20} color="#163523" />
+                <Ionicons name="close" size={18} color="#163523" />
               </TouchableOpacity>
             </View>
 
@@ -1632,7 +1632,7 @@ export default function DashboardScreen() {
             {favoriteSuyos.length > 0 ? (
               <ScrollView
                 style={styles.favoritesScrollList}
-                contentContainerStyle={{ paddingBottom: 6 }}
+                contentContainerStyle={{ paddingBottom: 4 }}
                 showsVerticalScrollIndicator={false}
               >
                 {favoriteSuyos.map((suyo) => (
@@ -1651,7 +1651,7 @@ export default function DashboardScreen() {
                           {suyo.title}
                         </Text>
                         <Text style={styles.favCardLocation}>
-                          <Ionicons name="location-sharp" size={12} color="#0D9488" />{' '}
+                          <Ionicons name="location-sharp" size={10.5} color="#0D9488" />{' '}
                           {suyo.location || 'Quezon City'} • {suyo.distanceText || '0.8 km away'}
                         </Text>
                       </View>
@@ -1676,26 +1676,26 @@ export default function DashboardScreen() {
 
                       <View
                         style={[
-                          styles.suyoTagPill,
+                          styles.favTagPill,
                           suyo.tag === 'Urgent'
-                            ? styles.suyoTagUrgent
+                            ? styles.favTagUrgent
                             : suyo.tag === 'Due today'
-                            ? styles.suyoTagToday
+                            ? styles.favTagToday
                             : suyo.tag === 'Normal'
-                            ? styles.suyoTagNormal
-                            : styles.suyoTagTomorrow,
+                            ? styles.favTagNormal
+                            : styles.favTagTomorrow,
                         ]}
                       >
                         <Text
                           style={[
-                            styles.suyoTagPillText,
+                            styles.favTagPillText,
                             suyo.tag === 'Urgent'
-                              ? styles.suyoTagUrgentText
+                              ? styles.favTagUrgentText
                               : suyo.tag === 'Due today'
-                              ? styles.suyoTagTodayText
+                              ? styles.favTagTodayText
                               : suyo.tag === 'Normal'
-                              ? styles.suyoTagNormalText
-                              : styles.suyoTagTomorrowText,
+                              ? styles.favTagNormalText
+                              : styles.favTagTomorrowText,
                           ]}
                         >
                           {suyo.tag}
@@ -1707,7 +1707,7 @@ export default function DashboardScreen() {
               </ScrollView>
             ) : (
               <View style={styles.favEmptyBox}>
-                <Ionicons name="bookmark-outline" size={44} color="#A3B8AC" />
+                <Ionicons name="bookmark-outline" size={36} color="#A3B8AC" />
                 <Text style={styles.favEmptyTitle}>No saved suyos yet</Text>
                 <Text style={styles.favEmptySub}>
                   Tap the heart icon on any suyo to save it here for later.
@@ -3354,100 +3354,101 @@ const styles = StyleSheet.create({
   /* Favorites Modal */
   favoritesModalCard: {
     width: '100%',
-    maxWidth: 390,
-    height: '76%',
-    maxHeight: '88%',
+    maxWidth: 370,
+    height: '70%',
+    maxHeight: '82%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 22,
+    borderRadius: 18,
+    padding: 16,
     elevation: 10,
   },
   favoritesModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   favoritesTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   favoritesModalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#163523',
     letterSpacing: -0.3,
   },
   favoritesCountPill: {
     backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 8,
   },
   favoritesCountText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: '#DC2626',
   },
   favoritesModalSub: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#658172',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   favoritesScrollList: {
     flex: 1,
-    marginTop: 4,
-    marginBottom: 8,
+    marginTop: 2,
+    marginBottom: 6,
   },
   favCardItem: {
     backgroundColor: '#F9FBF9',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1.2,
+    borderRadius: 11,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
     borderColor: '#E2ECE6',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   favCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   favCardTitle: {
-    fontSize: 14.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#163523',
-    lineHeight: 19,
-    marginBottom: 4,
+    lineHeight: 16.5,
+    marginBottom: 2.5,
   },
   favCardLocation: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: '#62806E',
     fontWeight: '500',
   },
   favCardReward: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 13.5,
+    fontWeight: '800',
     color: '#1E4D2B',
   },
   favCardBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#ECF4EF',
   },
   favCardRequestorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   favAvatarCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#EBF4EE',
     borderWidth: 1,
     borderColor: '#B5D4C2',
@@ -3455,41 +3456,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   favAvatarInitials: {
-    fontSize: 10,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#163523',
   },
   favCardRequestorName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#344E41',
   },
+  favTagPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  favTagUrgent: {
+    backgroundColor: '#FEE2E2',
+  },
+  favTagToday: {
+    backgroundColor: '#FEF3C7',
+  },
+  favTagNormal: {
+    backgroundColor: '#E8F5EE',
+  },
+  favTagTomorrow: {
+    backgroundColor: '#E0F2FE',
+  },
+  favTagPillText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+  },
+  favTagUrgentText: {
+    color: '#DC2626',
+  },
+  favTagTodayText: {
+    color: '#D97706',
+  },
+  favTagNormalText: {
+    color: '#1E4D2B',
+  },
+  favTagTomorrowText: {
+    color: '#0369A1',
+  },
   favEmptyBox: {
-    paddingVertical: 36,
-    paddingHorizontal: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   favEmptyTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#163523',
   },
   favEmptySub: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: '#718C7D',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   favCloseBottomBtn: {
     backgroundColor: '#1E4D2B',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 10,
+    paddingVertical: 9.5,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   favCloseBottomBtnText: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },
