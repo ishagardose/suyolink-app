@@ -1937,11 +1937,6 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
 
-                      {/* Details snippet */}
-                      <Text style={styles.mySuyoCardDetails} numberOfLines={2}>
-                        {suyo.details}
-                      </Text>
-
                       {/* Tab-Specific Feature Rows */}
 
                       {/* In Posted: Boost Prompt if waiting long */}
@@ -1978,22 +1973,12 @@ export default function DashboardScreen() {
                         </View>
                       )}
 
-                      {/* In Accepted: Courier Strip & Profile Link */}
+                      {/* In Accepted: Courier Strip */}
                       {mySuyoNavTab === 'accepted' && suyo.doer && (
                         <View style={styles.mySuyoCourierStrip}>
-                          <Ionicons name="bicycle" size={14} color="#1E4D2B" />
                           <Text style={styles.mySuyoCourierStripText} numberOfLines={1}>
                             Courier: <Text style={{ fontWeight: '700', color: '#163523' }}>{suyo.doer.name}</Text> ({suyo.doer.rating})
                           </Text>
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              setSelectedDoerProfile(suyo.doer);
-                            }}
-                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                          >
-                            <Text style={styles.mySuyoViewDoerProfileLinkText}>View Profile →</Text>
-                          </TouchableOpacity>
                         </View>
                       )}
 
