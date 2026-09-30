@@ -55,10 +55,13 @@ const parseDistanceKm = (val) => {
 };
 
 const getInitials = (name) => {
-  if (!name || typeof name !== 'string') return 'MC';
-  const clean = name.replace(/^(atty\.|dr\.|engr\.|mr\.|ms\.|mrs\.)\s+/i, '').trim();
+  if (!name || typeof name !== 'string') return 'JD';
+  const clean = name
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/^(atty\.|dr\.|engr\.|mr\.|ms\.|mrs\.)\s+/i, '')
+    .trim();
   const parts = clean.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'MC';
+  if (parts.length === 0) return 'JD';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
@@ -2684,7 +2687,21 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <Text style={styles.detailTaskHeading}>Task Description</Text>
+              {/* Task Description & Clickable Edit Action */}
+              <View style={styles.detailTaskHeadingRow}>
+                <Text style={styles.detailTaskHeading}>Task Description</Text>
+                {(selectedSuyoContext === 'posted' || selectedSuyoContext === 'archived') && selectedSuyo.status !== 'Cancelled' && (
+                  <TouchableOpacity
+                    style={styles.detailClickableEditAction}
+                    activeOpacity={0.7}
+                    onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="pencil" size={15} color="#1E4D2B" />
+                    <Text style={styles.detailClickableEditText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <Text style={styles.detailTaskBody}>
                 {selectedSuyo.details}
                 {selectedSuyo.notes ? ` ${selectedSuyo.notes}` : ''}
@@ -2734,44 +2751,25 @@ export default function DashboardScreen() {
 
               {/* Dynamic Action Buttons Row (Context-Specific) */}
               <View style={styles.detailActionButtonsRow}>
-                <TouchableOpacity
-                  style={styles.detailCloseBtn}
-                  onPress={handleCloseDetailModal}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.detailCloseBtnText}>Close</Text>
-                </TouchableOpacity>
-
-                {/* POSTED NAV BUTTONS (Edit, Cancel, or Re-post) */}
+                {/* POSTED NAV BUTTONS (Cancel or Re-post) */}
                 {selectedSuyoContext === 'posted' && (
                   selectedSuyo.status !== 'Cancelled' ? (
-                    <>
-                      <TouchableOpacity
-                        style={styles.detailEditSuyoBtn}
-                        onPress={() => handleOpenEditSuyo(selectedSuyo)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="pencil" size={15} color="#163523" />
-                        <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.detailCancelSuyoBtn}
-                        onPress={() => handleCancelSuyo(selectedSuyo.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="close-circle-outline" size={15} color="#DC2626" />
-                        <Text style={styles.detailCancelSuyoBtnText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </>
+                    <TouchableOpacity
+                      style={styles.detailCancelSuyoBtn}
+                      onPress={() => handleCancelSuyo(selectedSuyo.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="close-circle-outline" size={16} color="#DC2626" />
+                      <Text style={styles.detailCancelSuyoBtnText}>Cancel Suyo</Text>
+                    </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
-                      style={styles.detailRepostBtn}
+                      style={styles.detailPrimaryActionBtn}
                       onPress={() => handleRepeatRequest(selectedSuyo)}
                       activeOpacity={0.8}
                     >
                       <Ionicons name="refresh" size={16} color="#FFFFFF" />
-                      <Text style={styles.detailRepostBtnText}>Re-post Suyo</Text>
+                      <Text style={styles.detailPrimaryActionBtnText}>Re-post Suyo</Text>
                     </TouchableOpacity>
                   )
                 )}
@@ -2833,27 +2831,16 @@ export default function DashboardScreen() {
                   </>
                 )}
 
-                {/* ARCHIVED NAV BUTTONS (Edit Template, Repeat Request) */}
+                {/* ARCHIVED NAV BUTTONS (Post Suyo Request) */}
                 {selectedSuyoContext === 'archived' && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.detailEditSuyoBtn}
-                      onPress={() => handleOpenEditSuyo(selectedSuyo)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="pencil" size={15} color="#163523" />
-                      <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.detailRepeatSuyoBtn}
-                      onPress={() => handleRepeatRequest(selectedSuyo)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="paper-plane" size={15} color="#FFFFFF" />
-                      <Text style={styles.detailRepeatSuyoBtnText}>Post Suyo</Text>
-                    </TouchableOpacity>
-                  </>
+                  <TouchableOpacity
+                    style={styles.detailPrimaryActionBtn}
+                    onPress={() => handleRepeatRequest(selectedSuyo)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="paper-plane" size={16} color="#FFFFFF" />
+                    <Text style={styles.detailPrimaryActionBtnText}>Post Suyo</Text>
+                  </TouchableOpacity>
                 )}
 
                 {/* AVAILABLE / EXPLORE FEED BUTTON (Keep Fulfill for Couriers) */}
@@ -4952,11 +4939,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E4D2B',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   detailAvatarInitials: {
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
+    textAlign: 'center',
+    includeFontPadding: false,
+    lineHeight: 18,
   },
   detailRequestorTextCol: {
     flex: 1,
@@ -5014,11 +5005,33 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#163523',
   },
+  detailTaskHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+    marginTop: 2,
+  },
   detailTaskHeading: {
     fontSize: 13.5,
     fontWeight: '800',
     color: '#163523',
-    marginBottom: 4,
+  },
+  detailClickableEditAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#E8F5EE',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C6E3D1',
+  },
+  detailClickableEditText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E4D2B',
   },
   detailTaskBody: {
     fontSize: 13,
@@ -5283,6 +5296,21 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '700',
     color: '#334155',
+  },
+  detailPrimaryActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E4D2B',
+    borderRadius: 14,
+    paddingVertical: 13,
+    gap: 8,
+  },
+  detailPrimaryActionBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   detailRepeatSuyoBtn: {
     flex: 1.5,
