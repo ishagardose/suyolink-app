@@ -63,6 +63,13 @@ const getInitials = (name) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
+const formatDateTimeNow = () => {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${dateStr} · ${timeStr}`;
+};
+
 const INITIAL_AVAILABLE_SUYOS = [
   {
     id: 'SYL-101',
@@ -199,7 +206,7 @@ const INITIAL_POSTED_SUYOS = [
     tag: 'Waiting for doer',
     status: 'Open - waiting for a doer',
     createdAt: Date.now() - 45 * 60 * 1000,
-    formattedDate: 'Sep 28',
+    formattedDate: 'Sep 28 · 11:20 AM',
     waitTime: 'Waiting for 45m',
     needsBoost: true,
     details: '2 cartons of milk, 1 loaf of wheat bread, and 1 pack of eggs from supermarket.',
@@ -217,7 +224,7 @@ const INITIAL_POSTED_SUYOS = [
     tag: 'Waiting for doer',
     status: 'Open - waiting for a doer',
     createdAt: Date.now() - 25 * 60 * 1000,
-    formattedDate: 'Today, 5:15 PM',
+    formattedDate: 'Today · 5:15 PM',
     waitTime: 'Waiting for 25m',
     needsBoost: true,
     details: 'Drop off pre-packed box with return barcode sticker at LBC branch.',
@@ -235,7 +242,7 @@ const INITIAL_POSTED_SUYOS = [
     tag: 'Cancelled',
     status: 'Cancelled',
     createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 22',
+    formattedDate: 'Sep 22 · 3:40 PM',
     details: 'Pick up notarized contract copy from law office at 5th floor.',
     notes: 'Cancelled by requester due to rescheduled meeting.',
     requesterName: 'Juan Dela Cruz (You)',
@@ -254,7 +261,7 @@ const INITIAL_ACCEPTED_SUYOS = [
     tag: 'In Progress',
     status: 'In Progress - On the way',
     createdAt: Date.now() - 35 * 60 * 1000,
-    formattedDate: 'Today, 4:00 PM',
+    formattedDate: 'Today · 4:00 PM',
     details: 'Drop off notarized lease agreements and corporate papers at 4th floor reception.',
     notes: 'Please hand directly to Ms. Santos.',
     requesterName: 'Juan Dela Cruz (You)',
@@ -284,7 +291,7 @@ const INITIAL_ACCEPTED_SUYOS = [
     tag: 'In Progress',
     status: 'In Progress - Shopping',
     createdAt: Date.now() - 90 * 60 * 1000,
-    formattedDate: 'Today, 2:30 PM',
+    formattedDate: 'Today · 2:30 PM',
     details: '2 cartons oat milk, 1 loaf whole wheat bread, 1 tray fresh eggs.',
     notes: 'Please check expiration date before purchasing.',
     requesterName: 'Juan Dela Cruz (You)',
@@ -317,7 +324,7 @@ const INITIAL_COMPLETED_SUYOS = [
     tag: 'Completed',
     status: 'Completed',
     createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 20',
+    formattedDate: 'Sep 20 · 3:15 PM',
     completedDate: 'Sep 20, 2026 at 3:15 PM',
     details: 'Full color printing and ring binding of 45-page thesis project.',
     notes: 'Completed ahead of schedule.',
@@ -348,7 +355,7 @@ const INITIAL_COMPLETED_SUYOS = [
     tag: 'Completed',
     status: 'Completed',
     createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 23',
+    formattedDate: 'Sep 23 · 11:40 AM',
     completedDate: 'Sep 23, 2026 at 11:40 AM',
     details: 'Pick up prescribed maintenance asthma medication and vitamins.',
     notes: 'Delivered directly to reception desk.',
@@ -379,7 +386,7 @@ const INITIAL_COMPLETED_SUYOS = [
     tag: 'Completed',
     status: 'Completed',
     createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 28',
+    formattedDate: 'Sep 28 · 1:10 PM',
     completedDate: 'Sep 28, 2026 at 1:10 PM',
     details: 'Pay monthly electricity bill before 4 PM counter cut-off.',
     notes: 'Validated payment slip returned.',
@@ -413,7 +420,7 @@ const INITIAL_ARCHIVED_SUYOS = [
     tag: 'Archived Template',
     status: 'Archived Template',
     createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Saved template',
+    formattedDate: 'Saved · Sep 18, 9:15 AM',
     details: 'Standard weekly supply: 2 cartons milk, 1 loaf whole wheat bread, eggs, fruit.',
     notes: 'Reimbursement upon delivery receipt.',
     requesterName: 'Juan Dela Cruz (You)',
@@ -429,7 +436,7 @@ const INITIAL_ARCHIVED_SUYOS = [
     tag: 'Archived Template',
     status: 'Archived Template',
     createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Saved template',
+    formattedDate: 'Saved · Sep 15, 1:20 PM',
     details: 'Pay monthly electricity bill with prepared cash envelope.',
     notes: 'Return receipt to lobby guard.',
     requesterName: 'Juan Dela Cruz (You)',
@@ -445,7 +452,7 @@ const INITIAL_ARCHIVED_SUYOS = [
     tag: 'Archived Template',
     status: 'Archived Template',
     createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Saved template',
+    formattedDate: 'Saved · Aug 29, 10:45 AM',
     details: 'Maintenance prescription pickup from pharmacy counter.',
     notes: 'Senior citizen discount book is at pharmacy.',
     requesterName: 'Juan Dela Cruz (You)',
@@ -2008,19 +2015,9 @@ export default function DashboardScreen() {
                       {/* In Completed: Courier Who Fulfilled Strip */}
                       {mySuyoNavTab === 'completed' && suyo.doer && (
                         <View style={styles.mySuyoCourierStrip}>
-                          <Ionicons name="checkmark-circle" size={14} color="#059669" />
                           <Text style={styles.mySuyoCourierStripText} numberOfLines={1}>
-                            Fulfilled by <Text style={{ fontWeight: '700', color: '#163523' }}>{suyo.doer.name}</Text>
+                            Fulfilled by <Text style={{ fontWeight: '700', color: '#163523' }}>{suyo.doer.name}</Text> ({suyo.doer.rating})
                           </Text>
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              setSelectedDoerProfile(suyo.doer);
-                            }}
-                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                          >
-                            <Text style={styles.mySuyoViewDoerProfileLinkText}>View Profile →</Text>
-                          </TouchableOpacity>
                         </View>
                       )}
 
@@ -2524,169 +2521,119 @@ export default function DashboardScreen() {
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.suyoDetailModalCard}>
-              {/* Top Tag & Status Row */}
-              <View style={styles.detailTopTagRow}>
-                <View style={styles.detailTopTagLeft}>
-                  {selectedSuyoContext === 'posted' ? (
-                    <View
-                      style={[
-                        styles.detailUrgencyPill,
-                        selectedSuyo.status === 'Cancelled'
-                          ? { backgroundColor: '#FEE2E2' }
-                          : { backgroundColor: '#FEF3C7' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.detailUrgencyPillText,
-                          selectedSuyo.status === 'Cancelled'
-                            ? { color: '#DC2626' }
-                            : { color: '#B45309' },
-                        ]}
-                      >
-                        {selectedSuyo.status === 'Cancelled'
-                          ? 'Cancelled'
-                          : 'Open - waiting for a doer'}
-                      </Text>
-                    </View>
-                  ) : selectedSuyoContext === 'accepted' ? (
-                    <View
-                      style={[
-                        styles.detailUrgencyPill,
-                        { backgroundColor: '#E0F2FE' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.detailUrgencyPillText,
-                          { color: '#0369A1' },
-                        ]}
-                      >
-                        In Progress · Accepted
-                      </Text>
-                    </View>
-                  ) : selectedSuyoContext === 'completed' ? (
-                    <View
-                      style={[
-                        styles.detailUrgencyPill,
-                        { backgroundColor: '#DCFCE7' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.detailUrgencyPillText,
-                          { color: '#15803D' },
-                        ]}
-                      >
-                        ✓ Completed
-                      </Text>
-                    </View>
-                  ) : selectedSuyoContext === 'archived' ? (
-                    <View
-                      style={[
-                        styles.detailUrgencyPill,
-                        { backgroundColor: '#F1F5F9' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.detailUrgencyPillText,
-                          { color: '#475569' },
-                        ]}
-                      >
-                        Archived Template
-                      </Text>
-                    </View>
-                  ) : (
-                    <View
-                      style={[
-                        styles.detailUrgencyPill,
-                        selectedSuyo.tag === 'Urgent'
-                          ? styles.detailPillUrgent
-                          : selectedSuyo.tag === 'Due today'
-                          ? styles.detailPillToday
-                          : selectedSuyo.tag === 'Normal'
-                          ? styles.detailPillNormal
-                          : styles.detailPillTomorrow,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.detailUrgencyPillText,
-                          selectedSuyo.tag === 'Urgent'
-                            ? styles.detailPillTextUrgent
-                            : selectedSuyo.tag === 'Due today'
-                            ? styles.detailPillTextToday
-                            : selectedSuyo.tag === 'Normal'
-                            ? styles.detailPillTextNormal
-                            : styles.detailPillTextTomorrow,
-                        ]}
-                      >
-                        {selectedSuyo.tag || 'Normal'}
-                      </Text>
-                    </View>
-                  )}
-
+              {/* Top Meta Bar: Time & Date on Left, Action/Close on Right */}
+              <View style={styles.detailTopMetaRow}>
+                <View style={styles.detailTopMetaLeft}>
+                  <Ionicons name="time-outline" size={13} color="#658172" />
                   <Text style={styles.detailPostedTimeText}>
                     {selectedSuyoContext === 'posted'
-                      ? selectedSuyo.waitTime || 'Waiting for doer'
+                      ? `Posted: ${selectedSuyo.formattedDate || 'Sep 28 · 11:20 AM'}`
                       : selectedSuyoContext === 'accepted'
-                      ? 'Courier assigned'
+                      ? `Accepted: ${selectedSuyo.formattedDate || 'Today · 4:00 PM'}`
                       : selectedSuyoContext === 'completed'
-                      ? `Done · ${selectedSuyo.formattedDate || 'Sep 20'}`
+                      ? `Completed: ${selectedSuyo.formattedDate || 'Sep 20 · 3:15 PM'}`
                       : selectedSuyoContext === 'archived'
-                      ? 'Reusable template'
-                      : `Posted ${selectedSuyo.postedTime || '10m ago'}`}
+                      ? `Archived: ${selectedSuyo.formattedDate || 'Sep 18 · 9:15 AM'}`
+                      : `Posted: ${selectedSuyo.formattedDate || selectedSuyo.postedTime || '10m ago'}`}
                   </Text>
                 </View>
 
-                {/* Right Action (Heart in browse mode, Edit in posted mode) */}
-                {selectedSuyoContext === 'posted' && selectedSuyo.status !== 'Cancelled' ? (
-                  <TouchableOpacity
-                    style={styles.detailEditHeaderBtn}
-                    activeOpacity={0.7}
-                    onPress={() => handleOpenEditSuyo(selectedSuyo)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="create-outline" size={20} color="#1E4D2B" />
-                  </TouchableOpacity>
-                ) : selectedSuyoContext === 'available' ? (
-                  <TouchableOpacity
-                    style={styles.detailHeartBtn}
-                    activeOpacity={0.7}
-                    onPress={() => toggleFavoriteSuyo(selectedSuyo)}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                  >
-                    <Ionicons
-                      name={
-                        favoriteSuyoIds.includes(selectedSuyo.id)
-                          ? 'heart'
-                          : 'heart-outline'
-                      }
-                      size={24}
-                      color={
-                        favoriteSuyoIds.includes(selectedSuyo.id)
-                          ? '#DC2626'
-                          : '#6B8576'
-                      }
-                    />
-                  </TouchableOpacity>
-                ) : (
+                <View style={styles.detailTopMetaRight}>
+                  {selectedSuyoContext === 'posted' && selectedSuyo.status !== 'Cancelled' && (
+                    <TouchableOpacity
+                      style={styles.detailEditHeaderBtn}
+                      activeOpacity={0.7}
+                      onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="create-outline" size={18} color="#1E4D2B" />
+                    </TouchableOpacity>
+                  )}
+
+                  {selectedSuyoContext === 'available' && (
+                    <TouchableOpacity
+                      style={styles.detailHeartBtn}
+                      activeOpacity={0.7}
+                      onPress={() => toggleFavoriteSuyo(selectedSuyo)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Ionicons
+                        name={
+                          favoriteSuyoIds.includes(selectedSuyo.id)
+                            ? 'heart'
+                            : 'heart-outline'
+                        }
+                        size={22}
+                        color={
+                          favoriteSuyoIds.includes(selectedSuyo.id)
+                            ? '#DC2626'
+                            : '#6B8576'
+                        }
+                      />
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
                     style={styles.detailCloseIconBtn}
                     activeOpacity={0.7}
                     onPress={handleCloseDetailModal}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="close" size={20} color="#6B8576" />
+                    <Ionicons name="close" size={19} color="#6B8576" />
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
 
-              <Text style={styles.detailCardTitle}>{selectedSuyo.title}</Text>
+              {/* Title & Status Row: Status placed at opposite side, in line with Title */}
+              <View style={styles.detailTitleAndStatusRow}>
+                <Text style={styles.detailCardTitleInRow}>
+                  {selectedSuyo.title}
+                </Text>
+
+                <View
+                  style={[
+                    styles.detailStatusPillInline,
+                    selectedSuyo.status === 'Cancelled'
+                      ? { backgroundColor: '#FEE2E2' }
+                      : selectedSuyoContext === 'completed' || selectedSuyo.status?.includes('Completed')
+                      ? { backgroundColor: '#DCFCE7' }
+                      : selectedSuyoContext === 'accepted' || selectedSuyo.status?.includes('In Progress')
+                      ? { backgroundColor: '#E0F2FE' }
+                      : selectedSuyoContext === 'archived'
+                      ? { backgroundColor: '#F1F5F9' }
+                      : { backgroundColor: '#FEF3C7' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.detailStatusPillInlineText,
+                      selectedSuyo.status === 'Cancelled'
+                        ? { color: '#DC2626' }
+                        : selectedSuyoContext === 'completed' || selectedSuyo.status?.includes('Completed')
+                        ? { color: '#15803D' }
+                        : selectedSuyoContext === 'accepted' || selectedSuyo.status?.includes('In Progress')
+                        ? { color: '#0369A1' }
+                        : selectedSuyoContext === 'archived'
+                        ? { color: '#475569' }
+                        : { color: '#B45309' },
+                    ]}
+                  >
+                    {selectedSuyo.status === 'Cancelled'
+                      ? 'Cancelled'
+                      : selectedSuyoContext === 'completed'
+                      ? 'Completed'
+                      : selectedSuyoContext === 'accepted'
+                      ? 'Accepted'
+                      : selectedSuyoContext === 'archived'
+                      ? 'Archived'
+                      : selectedSuyo.status || 'Open'}
+                  </Text>
+                </View>
+              </View>
+
               <View style={styles.detailDivider} />
 
-              {/* In Accepted or Completed: Show Who Accepted/Fulfilled It + View Profile */}
+              {/* In Accepted or Completed: Show Who Accepted/Fulfilled It */}
               {selectedSuyoContext === 'accepted' || selectedSuyoContext === 'completed' ? (
                 <View style={styles.detailDoerHighlightCard}>
                   <View style={styles.detailDoerAvatar}>
@@ -2699,7 +2646,9 @@ export default function DashboardScreen() {
                       <Text style={styles.detailDoerNameText}>
                         {selectedSuyo.doer?.name || DEFAULT_DOER.name}
                       </Text>
-                      <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                      {selectedSuyoContext !== 'completed' && (
+                        <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                      )}
                     </View>
                     <Text style={styles.detailDoerMetaText}>
                       {selectedSuyoContext === 'completed'
@@ -2718,7 +2667,7 @@ export default function DashboardScreen() {
                     activeOpacity={0.8}
                     onPress={() => setSelectedDoerProfile(selectedSuyo.doer || DEFAULT_DOER)}
                   >
-                    <Text style={styles.detailViewDoerProfileBtnText}>View Profile</Text>
+                    <Text style={styles.detailViewDoerProfileBtnText}>Profile</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -4930,6 +4879,57 @@ const styles = StyleSheet.create({
     padding: 22,
     elevation: 10,
   },
+  detailTopMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  detailTopMetaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+  },
+  detailTopMetaRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailPostedTimeText: {
+    fontSize: 12,
+    color: '#658172',
+    fontWeight: '600',
+  },
+  detailTitleAndStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 6,
+  },
+  detailCardTitleInRow: {
+    fontSize: 17.5,
+    fontWeight: '800',
+    color: '#163523',
+    lineHeight: 23,
+    flex: 1,
+  },
+  detailStatusPillInline: {
+    paddingVertical: 4.5,
+    paddingHorizontal: 9.5,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: 140,
+  },
+  detailStatusPillInlineText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.1,
+  },
   detailTopTagRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -4973,11 +4973,6 @@ const styles = StyleSheet.create({
   },
   detailPillTextTomorrow: {
     color: '#0369A1',
-  },
-  detailPostedTimeText: {
-    fontSize: 12,
-    color: '#718C7D',
-    fontWeight: '500',
   },
   detailHeartBtn: {
     padding: 4,
