@@ -45,19 +45,129 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
         const id = new URL(request.url()).searchParams.get('id')?.replace('eq.', '');
         json.filter(item => item.id === id).forEach(item => Object.assign(item, body));
       }
-    } else if (path === '/rest/v1/rpc/create_suyo_request_at_location') {
+    } else if (path === '/rest/v1/rpc/create_suyo_request_v2' || path === '/rest/v1/rpc/create_suyo_request_at_location') {
       json = requests.find(item => item.client_reference === body.p_client_reference);
       if (!json) {
         json = { id: `request-${requests.length + 1}`, requester_id: user.id, provider_id: null,
           title: body.p_title, details: body.p_details, category: body.p_category,
-          offer_centavos: body.p_offer_centavos, deadline: body.p_deadline, location: body.p_location,
-          notes: body.p_notes, latitude: body.p_latitude, longitude: body.p_longitude,
+          offer_centavos: body.p_offer_centavos, deadline: body.p_deadline,
+          location: body.p_public_location || body.p_location,
+          notes: body.p_notes,
+          latitude: body.p_latitude, longitude: body.p_longitude,
           client_reference: body.p_client_reference, status: 'open', created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(), requester: profile };
+          updated_at: new Date().toISOString(), requester: profile,
+          exact_address: body.p_exact_address, contact_phone: body.p_contact_phone };
         requests.unshift(json);
       }
+    } else if (path === '/rest/v1/rpc/list_suyo_requests') {
+      const now = Date.now();
+      let filtered = [...requests];
+      if (body.p_scope === 'browse') {
+        filtered = filtered.filter(r => r.status === 'open' && Date.parse(r.deadline) > now);
+      } else if (body.p_scope === 'posted') {
+        filtered = filtered.filter(r => r.requester_id === user.id);
+      } else if (body.p_scope === 'assigned') {
+        filtered = filtered.filter(r => r.provider_id === user.id);
+      }
+      if (body.p_category) filtered = filtered.filter(r => r.category === body.p_category);
+      if (body.p_query) {
+        const q = body.p_query.toLowerCase();
+        filtered = filtered.filter(r => (r.title + ' ' + r.details + ' ' + r.location).toLowerCase().includes(q));
+      }
+      json = filtered.map(r => ({
+        id: r.id, requester_id: r.requester_id, provider_id: r.provider_id,
+        requester_name: r.requester?.full_name || 'Requester',
+        title: r.title, details: r.details, category: r.category,
+        offer_centavos: r.offer_centavos, deadline: r.deadline,
+        location: r.location, notes: r.notes, status: r.status,
+        latitude: r.latitude, longitude: r.longitude,
+        created_at: r.created_at, updated_at: r.updated_at,
+        distance_km: null,
+      }));
+    } else if (path === '/rest/v1/rpc/get_suyo_details') {
+      const r = requests.find(item => item.id === body.p_request_id);
+      if (!r) json = null;
+      else {
+        const isReq = r.requester_id === user.id;
+        const isProv = r.provider_id === user.id;
+        const role = isReq ? 'requester' : (isProv ? 'provider' : 'unrelated');
+        json = {
+          id: r.id, requester_id: r.requester_id, provider_id: r.provider_id,
+          requester_name: r.requester?.full_name || 'Requester',
+          title: r.title, details: r.details, category: r.category,
+          offer_centavos: r.offer_centavos, currency: 'PHP', deadline: r.deadline,
+          location: r.location, notes: r.notes, status: r.status,
+          latitude: r.latitude, longitude: r.longitude,
+          created_at: r.created_at, updated_at: r.updated_at,
+          viewer_role: role,
+          exact_address: (isReq || isProv) ? (r.exact_address || '123 Private Street, Gate 2') : null,
+          exact_latitude: (isReq || isProv) ? r.latitude : null,
+          exact_longitude: (isReq || isProv) ? r.longitude : null,
+          contact_phone: (isReq || isProv) ? (r.contact_phone || '+639171234567') : null,
+        };
+      }
+    } else if (path === '/rest/v1/rpc/save_last_location') {
+      json = { user_id: user.id, latitude: body.p_latitude, longitude: body.p_longitude, source: body.p_source, updated_at: new Date().toISOString() };
+    } else if (path === '/rest/v1/rpc/get_my_last_location') {
+      json = null;
     } else if (path === '/auth/v1/resend') {
       json = {};
+    } else if (path === '/rest/v1/rpc/change_suyo_status') {
+      const r = requests.find(item => item.id === body.p_request_id);
+      if (r) {
+        const fromStatus = r.status;
+        r.status = body.p_status;
+        if (!workflow.request_events) workflow.request_events = [];
+        workflow.request_events.push({
+          id: `event-${workflow.request_events.length + 1}`,
+          request_id: r.id,
+          actor_id: user.id,
+          from_status: fromStatus,
+          to_status: r.status,
+          created_at: new Date().toISOString(),
+        });
+      }
+      json = r;
+    } else if (path === '/rest/v1/rpc/submit_suyo_proof') {
+      const r = requests.find(item => item.id === body.p_request_id);
+      if (r) {
+        const fromStatus = r.status;
+        r.status = 'awaiting_confirmation';
+        if (!workflow.request_events) workflow.request_events = [];
+        workflow.request_events.push({
+          id: `event-${workflow.request_events.length + 1}`,
+          request_id: r.id,
+          actor_id: user.id,
+          from_status: fromStatus,
+          to_status: r.status,
+          created_at: new Date().toISOString(),
+        });
+      }
+      const proof = {
+        id: `proof-${(workflow.proofs || []).length + 1}`,
+        request_id: body.p_request_id,
+        provider_id: user.id,
+        storage_path: body.p_storage_path,
+        note: body.p_note || '',
+        status: 'submitted',
+        created_at: new Date().toISOString(),
+      };
+      if (!workflow.proofs) workflow.proofs = [];
+      workflow.proofs.push(proof);
+      json = proof;
+    } else if (path === '/rest/v1/rpc/get_my_transactions') {
+      json = (workflow.transactions || []).map(t => ({
+        request_id: t.request_id,
+        title: t.title,
+        role: t.role,
+        other_user_id: t.other_user_id || user.id,
+        other_user_name: t.other_user_name || 'SuyoLink user',
+        reward_centavos: t.reward_centavos,
+        currency: t.currency || 'PHP',
+        completed_at: t.completed_at,
+        rating_score: t.rating_score ?? null,
+        rating_comment: t.rating_comment ?? null,
+      }));
     } else if (path === '/auth/v1/logout') {
       return route.fulfill({ status: 204 });
     } else if (path === '/auth/v1/user') json = user;

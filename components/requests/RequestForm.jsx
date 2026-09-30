@@ -28,7 +28,10 @@ const EMPTY = {
   deadlineDate: '',
   deadlineTime: '',
   location: '',
+  publicLocation: '',
+  exactAddress: '',
   contactPhone: '',
+  phone: '',
   coordinates: null,
   notes: '',
 };
@@ -245,6 +248,10 @@ export default function RequestForm({ onPosted }) {
         ...draft,
         category: draft.category || 'Delivery',
         details: draft.details.trim() || draft.title.trim(),
+        location: draft.location.trim(),
+        publicLocation: draft.location.trim(),
+        exactAddress: draft.location.trim(),
+        phone: draft.contactPhone.trim() || draft.phone || 'N/A',
         coordinates: draft.coordinates || { latitude: 7.4475, longitude: 125.8078 },
         deadline: combinedDeadline,
         notes: draft.contactPhone

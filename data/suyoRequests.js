@@ -16,7 +16,7 @@ export const REQUEST_STATUS = {
 };
 export const STATUS_LABELS = {
   open: 'Open',
-  assigned: 'Assigned',
+  assigned: 'Accepted',
   in_progress: 'In progress',
   awaiting_confirmation: 'Awaiting confirmation',
   completed: 'Completed',
@@ -45,8 +45,8 @@ export function createRequest(draft, user, now = Date.now()) {
   if (!user?.email) throw new Error('Please log in before posting a suyo.');
   const title = draft.title.trim();
   const details = draft.details.trim();
-  const location = draft.location.trim();
-  const notes = draft.notes.trim();
+  const location = (draft.publicLocation || draft.location || '').trim();
+  const notes = (draft.notes || '').trim();
   if (!title || !details || !location)
     throw new Error('Enter a title, task details, and location.');
   if (
@@ -72,7 +72,36 @@ export function createRequest(draft, user, now = Date.now()) {
   const deadline = parseDeadline(draft.deadline);
   if (deadline.getTime() <= now)
     throw new Error('Choose a deadline in the future.');
-  return {
+
+  // Validate private fields if present or required
+  const publicLocation = (draft.publicLocation || draft.location || '').trim();
+  const exactAddress = draft.exactAddress !== undefined ? draft.exactAddress.trim() : null;
+  const phone = draft.phone !== undefined ? draft.phone.trim() : null;
+  const coordinates = draft.coordinates !== undefined ? draft.coordinates : null;
+
+  if (exactAddress !== null && (!exactAddress || exactAddress.length > 500)) {
+    throw new Error('Enter an exact address (up to 500 characters).');
+  }
+  if (phone !== null && (!phone || phone.length > 40)) {
+    throw new Error('Enter a contact phone number (up to 40 characters).');
+  }
+  if (draft.coordinates !== undefined) {
+    if (
+      !coordinates ||
+      typeof coordinates.latitude !== 'number' ||
+      typeof coordinates.longitude !== 'number' ||
+      isNaN(coordinates.latitude) ||
+      isNaN(coordinates.longitude) ||
+      coordinates.latitude < -90 ||
+      coordinates.latitude > 90 ||
+      coordinates.longitude < -180 ||
+      coordinates.longitude > 180
+    ) {
+      throw new Error('Choose a valid task location pin.');
+    }
+  }
+
+  const result = {
     id:
       'suyo-' +
       now.toString(36) +
@@ -85,14 +114,21 @@ export function createRequest(draft, user, now = Date.now()) {
     category: draft.category,
     offerCentavos: Math.round(Number(amount) * 100),
     deadline: deadline.toISOString(),
-    location,
+    location: publicLocation,
     notes,
+    publicLocation,
     status: REQUEST_STATUS.OPEN,
     providerEmail: null,
     applicants: [],
     createdAt: new Date(now).toISOString(),
     updatedAt: new Date(now).toISOString(),
   };
+
+  if (exactAddress) result.exactAddress = exactAddress;
+  if (phone) result.phone = phone;
+  if (coordinates) result.coordinates = coordinates;
+
+  return result;
 }
 
 export function readRequests(raw) {

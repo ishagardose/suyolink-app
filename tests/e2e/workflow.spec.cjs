@@ -97,6 +97,8 @@ test('provider starts task and uploads proof to private storage', async ({ page 
     const body = route.request().postDataJSON();
     expect(body.p_storage_path).toContain(`${request.id}/${me}/`);
     request.status = 'awaiting_confirmation';
+    if (!workflow.request_events) workflow.request_events = [];
+    workflow.request_events.push({ id: 'event-proof', request_id: request.id, to_status: request.status, created_at: new Date().toISOString() });
     await route.fulfill({ json: {} });
   });
   await page.goto('/suyo?id=task-1');
@@ -141,4 +143,37 @@ test('automatic GPS selects a pin and quick deadline chooses a future date', asy
   await page.getByRole('button', { name: 'In 1 hour', exact: true }).click();
   const value = await page.getByLabel('Deadline', { exact: true }).inputValue();
   expect(new Date(value).getTime()).toBeGreaterThan(Date.now() + 3500000);
+});
+
+test('transaction history shows earned/spent totals, cards, empty and retry states', async ({ page }) => {
+  const workflow = {
+    transactions: [
+      { request_id: 'tx-1', title: 'Grocery run', role: 'provider', other_user_id: other, other_user_name: 'Maria', reward_centavos: 20000, currency: 'PHP', completed_at: '2026-09-28T12:00:00Z', rating_score: 5, rating_comment: 'Excellent' },
+      { request_id: 'tx-2', title: 'Document pickup', role: 'requester', other_user_id: other, other_user_name: 'Juan', reward_centavos: 10000, currency: 'PHP', completed_at: '2026-09-27T08:00:00Z', rating_score: null, rating_comment: null },
+    ],
+  };
+  await mockSupabase(page, { signedIn: true, workflow });
+  await page.goto('/transactions');
+  await expect(page.getByLabel('Total earned ₱200.00')).toBeVisible();
+  await expect(page.getByLabel('Total spent ₱100.00')).toBeVisible();
+  await expect(page.getByText('Grocery run')).toBeVisible();
+  await expect(page.getByText('Document pickup')).toBeVisible();
+  await expect(page.getByText(/Maria/)).toBeVisible();
+  await expect(page.getByText(/★★★★★/)).toBeVisible();
+
+  // Empty state
+  workflow.transactions = [];
+  await page.goto('/transactions');
+  await expect(page.getByText('No completed transactions yet')).toBeVisible();
+
+  // Error with retry
+  let failTx = true;
+  await page.route('**/rest/v1/rpc/get_my_transactions', async route => {
+    if (failTx) { failTx = false; return route.fulfill({ status: 500, json: { message: 'Server error' } }); }
+    await route.fulfill({ json: [{ request_id: 'tx-3', title: 'Recovered task', role: 'provider', other_user_id: other, other_user_name: 'Ana', reward_centavos: 5000, currency: 'PHP', completed_at: '2026-09-29T10:00:00Z', rating_score: null, rating_comment: null }] });
+  });
+  await page.goto('/transactions');
+  await expect(page.getByRole('button', { name: 'Retry loading transactions' })).toBeVisible();
+  await page.getByRole('button', { name: 'Retry loading transactions' }).click();
+  await expect(page.getByText('Recovered task')).toBeVisible();
 });
