@@ -100,7 +100,6 @@ export default function AccountScreen() {
     `@${initialName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
   const initialRating = (params.rating || '4.9').replace(/[★*]/g, '').trim();
   const initialDone = params.suyosDone || params.errandsDone || params.done || '48';
-  const initialPoints = params.points || (isOtherUser ? '1,120' : '1,250');
   const initialBio =
     params.bio ||
     (isOtherUser
@@ -112,7 +111,6 @@ export default function AccountScreen() {
     handle: initialHandle,
     rating: initialRating,
     done: initialDone,
-    points: initialPoints,
     bio: initialBio,
   });
 
@@ -125,7 +123,6 @@ export default function AccountScreen() {
           `@${params.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         rating: (params.rating || '4.9').replace(/[★*]/g, '').trim(),
         done: params.suyosDone || params.errandsDone || params.done || (isOtherUser ? '34' : '48'),
-        points: params.points || (isOtherUser ? '1,120' : '1,250'),
         bio:
           params.bio ||
           (isOtherUser
@@ -215,11 +212,11 @@ export default function AccountScreen() {
             </Text>
           </View>
 
-          {/* 3-Column Stats Panel */}
+          {/* 2-Column Stats Panel */}
           <View style={styles.statsCard}>
             <View style={styles.statCol}>
               <Text style={styles.statNumber}>{profile.done}</Text>
-              <Text style={styles.statLabel}>Done</Text>
+              <Text style={styles.statLabel}>Suyos Done</Text>
             </View>
 
             <View style={styles.statDivider} />
@@ -235,13 +232,6 @@ export default function AccountScreen() {
                 />
               </View>
               <Text style={styles.statLabel}>Rating</Text>
-            </View>
-
-            <View style={styles.statDivider} />
-
-            <View style={styles.statCol}>
-              <Text style={styles.statNumber}>{profile.points}</Text>
-              <Text style={styles.statLabel}>Points</Text>
             </View>
           </View>
 
@@ -564,7 +554,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  /* 3-COLUMN STATS PANEL */
+  /* STATS PANEL */
   statsCard: {
     flexDirection: 'row',
     alignItems: 'center',

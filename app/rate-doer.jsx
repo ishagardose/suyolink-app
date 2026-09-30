@@ -157,7 +157,6 @@ export default function RateDoerScreen({ forcedTarget }) {
                 rating: subjectRating,
                 role: isRatingRequester ? 'requester' : 'doer',
                 suyosDone: isRatingRequester ? '34' : '48',
-                points: isRatingRequester ? '850' : '1,250',
                 bio: isRatingRequester
                   ? 'Legal professional in Makati CBD. Regularly requests prompt document handoffs and express parcel delivery.'
                   : 'Just a helpful neighbor. Ready to run grocery suyos, assist with light moving, or pet-sit in Quezon City. 🇵🇭',
