@@ -2618,14 +2618,6 @@ export default function DashboardScreen() {
                       📞 {selectedSuyo.doer?.phone || DEFAULT_DOER.phone}
                     </Text>
                   </View>
-
-                  <TouchableOpacity
-                    style={styles.detailViewDoerProfileBtn}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedDoerProfile(selectedSuyo.doer || DEFAULT_DOER)}
-                  >
-                    <Text style={styles.detailViewDoerProfileBtnText}>Profile</Text>
-                  </TouchableOpacity>
                 </View>
               ) : (
                 /* Requester Info Row */
@@ -2687,21 +2679,7 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              {/* Task Description & Clickable Edit Action */}
-              <View style={styles.detailTaskHeadingRow}>
-                <Text style={styles.detailTaskHeading}>Task Description</Text>
-                {(selectedSuyoContext === 'posted' || selectedSuyoContext === 'archived') && selectedSuyo.status !== 'Cancelled' && (
-                  <TouchableOpacity
-                    style={styles.detailClickableEditAction}
-                    activeOpacity={0.7}
-                    onPress={() => handleOpenEditSuyo(selectedSuyo)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="pencil" size={15} color="#1E4D2B" />
-                    <Text style={styles.detailClickableEditText}>Edit</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              <Text style={styles.detailTaskHeading}>Task Description</Text>
               <Text style={styles.detailTaskBody}>
                 {selectedSuyo.details}
                 {selectedSuyo.notes ? ` ${selectedSuyo.notes}` : ''}
@@ -2751,17 +2729,28 @@ export default function DashboardScreen() {
 
               {/* Dynamic Action Buttons Row (Context-Specific) */}
               <View style={styles.detailActionButtonsRow}>
-                {/* POSTED NAV BUTTONS (Cancel or Re-post) */}
+                {/* POSTED NAV BUTTONS (Edit, Cancel, or Re-post) */}
                 {selectedSuyoContext === 'posted' && (
                   selectedSuyo.status !== 'Cancelled' ? (
-                    <TouchableOpacity
-                      style={styles.detailCancelSuyoBtn}
-                      onPress={() => handleCancelSuyo(selectedSuyo.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="close-circle-outline" size={16} color="#DC2626" />
-                      <Text style={styles.detailCancelSuyoBtnText}>Cancel Suyo</Text>
-                    </TouchableOpacity>
+                    <>
+                      <TouchableOpacity
+                        style={styles.detailEditSuyoBtn}
+                        onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="pencil" size={15} color="#163523" />
+                        <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.detailCancelSuyoBtn}
+                        onPress={() => handleCancelSuyo(selectedSuyo.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close-circle-outline" size={15} color="#DC2626" />
+                        <Text style={styles.detailCancelSuyoBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
                   ) : (
                     <TouchableOpacity
                       style={styles.detailPrimaryActionBtn}
@@ -2774,38 +2763,27 @@ export default function DashboardScreen() {
                   )
                 )}
 
-                {/* ACCEPTED NAV BUTTONS (View Profile, Track Live) */}
+                {/* ACCEPTED NAV BUTTONS (Track Live) */}
                 {selectedSuyoContext === 'accepted' && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.detailViewDoerProfileBtnAlt}
-                      onPress={() => setSelectedDoerProfile(selectedSuyo.doer || DEFAULT_DOER)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="person-outline" size={15} color="#163523" />
-                      <Text style={styles.detailViewDoerProfileBtnAltText}>Doer Profile</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.detailTrackCourierBtn}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        handleCloseDetailModal();
-                        router.push({
-                          pathname: '/requester-fulfill',
-                          params: {
-                            id: selectedSuyo.id,
-                            title: selectedSuyo.title,
-                            doerName: selectedSuyo.doer?.name || DEFAULT_DOER.name,
-                            doerPhone: selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
-                          },
-                        });
-                      }}
-                    >
-                      <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                      <Text style={styles.detailTrackCourierBtnText}>Track</Text>
-                    </TouchableOpacity>
-                  </>
+                  <TouchableOpacity
+                    style={styles.detailTrackCourierBtn}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      handleCloseDetailModal();
+                      router.push({
+                        pathname: '/requester-fulfill',
+                        params: {
+                          id: selectedSuyo.id,
+                          title: selectedSuyo.title,
+                          doerName: selectedSuyo.doer?.name || DEFAULT_DOER.name,
+                          doerPhone: selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
+                        },
+                      });
+                    }}
+                  >
+                    <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                    <Text style={styles.detailTrackCourierBtnText}>Track</Text>
+                  </TouchableOpacity>
                 )}
 
                 {/* COMPLETED NAV BUTTONS (Save to Archive, Repeat Suyo) */}
@@ -2831,16 +2809,27 @@ export default function DashboardScreen() {
                   </>
                 )}
 
-                {/* ARCHIVED NAV BUTTONS (Post Suyo Request) */}
+                {/* ARCHIVED NAV BUTTONS (Edit Template, Repeat Request) */}
                 {selectedSuyoContext === 'archived' && (
-                  <TouchableOpacity
-                    style={styles.detailPrimaryActionBtn}
-                    onPress={() => handleRepeatRequest(selectedSuyo)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="paper-plane" size={16} color="#FFFFFF" />
-                    <Text style={styles.detailPrimaryActionBtnText}>Post Suyo</Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      style={styles.detailEditSuyoBtn}
+                      onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="pencil" size={15} color="#163523" />
+                      <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.detailRepeatSuyoBtn}
+                      onPress={() => handleRepeatRequest(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="paper-plane" size={15} color="#FFFFFF" />
+                      <Text style={styles.detailRepeatSuyoBtnText}>Post Suyo</Text>
+                    </TouchableOpacity>
+                  </>
                 )}
 
                 {/* AVAILABLE / EXPLORE FEED BUTTON (Keep Fulfill for Couriers) */}
