@@ -1,6 +1,6 @@
 import ThemedText from '../themed/ThemedText';
 import React, { useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -8,7 +8,13 @@ export default function ActiveSuyoCard({ activeSuyo, onTrack }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   return (
-    <View style={styles.floatingFooterActiveBarWrapper} pointerEvents="box-none">
+    <View
+      style={[
+        styles.floatingFooterActiveBarWrapper,
+        Platform.OS === 'web' ? { pointerEvents: 'box-none' } : undefined,
+      ]}
+      pointerEvents={Platform.OS === 'web' ? undefined : 'box-none'}
+    >
       <TouchableOpacity
         style={styles.floatingFooterActiveBar}
         activeOpacity={0.92}

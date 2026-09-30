@@ -1,6 +1,6 @@
 import ThemedText from '../themed/ThemedText';
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Modal, Dimensions } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Modal, Dimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
@@ -25,7 +25,13 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
   };
   if (!userProfile) return null;
   return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        <View
+          style={[
+            StyleSheet.absoluteFillObject,
+            Platform.OS === 'web' ? { pointerEvents: 'box-none' } : undefined,
+          ]}
+          pointerEvents={Platform.OS === 'web' ? undefined : 'box-none'}
+        >
           <View
             style={[
               styles.sidebarBackdrop,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -29,6 +29,7 @@ import { RefreshControl } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 340);
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 const getTodayFormatted = () => {
   const now = new Date();
@@ -243,7 +244,7 @@ function SwipeableNotificationItem({
           Animated.timing(translateX, {
             toValue: -SCREEN_WIDTH,
             duration: 180,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }).start(() => {
             onRemove(item.id);
           });
@@ -251,7 +252,7 @@ function SwipeableNotificationItem({
           Animated.spring(translateX, {
             toValue: 0,
             friction: 7,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }).start();
         }
       },
@@ -262,7 +263,7 @@ function SwipeableNotificationItem({
     Animated.timing(translateX, {
       toValue: -SCREEN_WIDTH,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start(() => {
       onRemove(item.id);
     });
@@ -497,14 +498,14 @@ export default function DashboardScreen() {
       toValue: 1,
       tension: 75,
       friction: 8,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
 
     toastTimerRef.current = setTimeout(() => {
       Animated.timing(toastAnim, {
         toValue: 0,
         duration: 220,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start(() => {
         setToastConfig(null);
       });
@@ -717,12 +718,12 @@ export default function DashboardScreen() {
       Animated.timing(sidebarAnim, {
         toValue: 0,
         duration: 260,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(backdropAnim, {
         toValue: 1,
         duration: 260,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };
@@ -732,12 +733,12 @@ export default function DashboardScreen() {
       Animated.timing(sidebarAnim, {
         toValue: -SIDEBAR_WIDTH,
         duration: 220,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(backdropAnim, {
         toValue: 0,
         duration: 220,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start(() => {
       setIsSidebarOpen(false);
@@ -1030,8 +1031,9 @@ export default function DashboardScreen() {
           style={[
             styles.floatingActiveModalWrapper,
             { bottom: 62 + bottomInset },
+            Platform.OS === 'web' ? { pointerEvents: 'box-none' } : undefined,
           ]}
-          pointerEvents="box-none"
+          pointerEvents={Platform.OS === 'web' ? undefined : 'box-none'}
         >
           <TouchableOpacity
             style={styles.floatingActiveModalTouchable}
