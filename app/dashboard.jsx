@@ -4746,8 +4746,12 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
-              {/* Top Overview Cards */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.statsScrollView}
+              contentContainerStyle={{ paddingBottom: 4 }}
+            >
+              {/* Top Overview Cards: 2x2 Grid */}
               <View style={styles.statsMetricsGrid}>
                 <View style={styles.statsMetricTile}>
                   <Text style={styles.statsTileValue}>₱1,280.00</Text>
@@ -4761,7 +4765,7 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <View style={[styles.statsMetricsGrid, { marginTop: 10 }]}>
+              <View style={[styles.statsMetricsGrid, { marginTop: 8 }]}>
                 <View style={styles.statsMetricTile}>
                   <Text style={styles.statsTileValue}>4.95★</Text>
                   <Text style={styles.statsTileLabel}>Customer Rating</Text>
@@ -4769,20 +4773,20 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.statsMetricTile}>
                   <Text style={[styles.statsTileValue, { color: '#059669' }]}>99.4%</Text>
-                  <Text style={styles.statsTileLabel}>Customer Satisfaction</Text>
-                  <Text style={styles.statsTileSub}>Positive Community Feedback</Text>
+                  <Text style={styles.statsTileLabel}>Satisfaction</Text>
+                  <Text style={styles.statsTileSub}>Positive Feedback</Text>
                 </View>
               </View>
 
               {/* Customer Satisfaction Breakdown Graph */}
               <View style={styles.statsCategoryCard}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View>
-                    <Text style={styles.statsSectionHeading}>Customer Satisfaction Breakdown</Text>
-                    <Text style={styles.statsSectionSubheading}>Community ratings across completed suyos (142 reviews)</Text>
+                <View style={styles.statsCategoryHeaderRow}>
+                  <View style={{ flex: 1, paddingRight: 6 }}>
+                    <Text style={styles.statsSectionHeading}>Customer Satisfaction</Text>
+                    <Text style={styles.statsSectionSubheading}>Community ratings (142 reviews)</Text>
                   </View>
                   <View style={styles.statsSatisfactionScoreBadge}>
-                    <Ionicons name="star" size={13} color="#F59E0B" />
+                    <Ionicons name="star" size={12} color="#F59E0B" />
                     <Text style={styles.statsSatisfactionScoreText}>4.95 / 5.0</Text>
                   </View>
                 </View>
@@ -4793,7 +4797,7 @@ export default function DashboardScreen() {
                   <View style={styles.csatBarRow}>
                     <View style={styles.csatStarLabelRow}>
                       <Text style={styles.csatStarText}>5</Text>
-                      <Ionicons name="star" size={11} color="#F59E0B" />
+                      <Ionicons name="star" size={10} color="#F59E0B" />
                     </View>
                     <View style={styles.csatTrack}>
                       <View style={[styles.csatFill, { width: '94%', backgroundColor: '#059669' }]} />
@@ -4805,7 +4809,7 @@ export default function DashboardScreen() {
                   <View style={styles.csatBarRow}>
                     <View style={styles.csatStarLabelRow}>
                       <Text style={styles.csatStarText}>4</Text>
-                      <Ionicons name="star" size={11} color="#F59E0B" />
+                      <Ionicons name="star" size={10} color="#F59E0B" />
                     </View>
                     <View style={styles.csatTrack}>
                       <View style={[styles.csatFill, { width: '5%', backgroundColor: '#0284C7' }]} />
@@ -4817,7 +4821,7 @@ export default function DashboardScreen() {
                   <View style={styles.csatBarRow}>
                     <View style={styles.csatStarLabelRow}>
                       <Text style={styles.csatStarText}>3</Text>
-                      <Ionicons name="star" size={11} color="#F59E0B" />
+                      <Ionicons name="star" size={10} color="#F59E0B" />
                     </View>
                     <View style={styles.csatTrack}>
                       <View style={[styles.csatFill, { width: '1%', backgroundColor: '#D97706' }]} />
@@ -4829,10 +4833,10 @@ export default function DashboardScreen() {
                   <View style={styles.csatBarRow}>
                     <View style={styles.csatStarLabelRow}>
                       <Text style={styles.csatStarText}>2</Text>
-                      <Ionicons name="star" size={11} color="#D1D5DB" />
+                      <Ionicons name="star" size={10} color="#CBD5E1" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#9CA3AF' }]} />
+                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#94A3B8' }]} />
                     </View>
                     <Text style={styles.csatPctText}>0% (0)</Text>
                   </View>
@@ -4841,10 +4845,10 @@ export default function DashboardScreen() {
                   <View style={styles.csatBarRow}>
                     <View style={styles.csatStarLabelRow}>
                       <Text style={styles.csatStarText}>1</Text>
-                      <Ionicons name="star" size={11} color="#D1D5DB" />
+                      <Ionicons name="star" size={10} color="#CBD5E1" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#9CA3AF' }]} />
+                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#94A3B8' }]} />
                     </View>
                     <Text style={styles.csatPctText}>0% (0)</Text>
                   </View>
@@ -4853,19 +4857,19 @@ export default function DashboardScreen() {
                 {/* Key Satisfaction Metric Badges */}
                 <View style={styles.csatHighlightsRow}>
                   <View style={styles.csatHighlightChip}>
-                    <Ionicons name="checkmark-circle" size={13} color="#059669" />
-                    <Text style={styles.csatHighlightText}>Punctual & Polite (98%)</Text>
+                    <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                    <Text style={styles.csatHighlightText} numberOfLines={1}>Punctual (98%)</Text>
                   </View>
                   <View style={styles.csatHighlightChip}>
-                    <Ionicons name="shield-checkmark" size={13} color="#0284C7" />
-                    <Text style={styles.csatHighlightText}>Careful Handling (99%)</Text>
+                    <Ionicons name="shield-checkmark" size={12} color="#0284C7" />
+                    <Text style={styles.csatHighlightText} numberOfLines={1}>Careful (99%)</Text>
                   </View>
                 </View>
               </View>
 
               {/* Payment & Settlement Note */}
               <View style={styles.statsInfoNotice}>
-                <Ionicons name="call-outline" size={15} color="#1E4D2B" />
+                <Ionicons name="call-outline" size={14} color="#1E4D2B" />
                 <Text style={styles.statsInfoNoticeText}>
                   All payment settlements are arranged directly between requesters and doers via call or conversation outside the app.
                 </Text>
@@ -8712,16 +8716,21 @@ const styles = StyleSheet.create({
   /* Statistics Modal Styles */
   statsModalCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
+    borderRadius: 22,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
     width: '92%',
-    maxWidth: 440,
-    maxHeight: '85%',
+    maxWidth: 420,
+    maxHeight: '90%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 24,
     elevation: 8,
+  },
+  statsScrollView: {
+    flexShrink: 1,
+    width: '100%',
   },
   statsIconBadge: {
     width: 32,
@@ -8733,51 +8742,56 @@ const styles = StyleSheet.create({
   },
   statsMetricsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   statsMetricTile: {
     flex: 1,
     backgroundColor: '#F8FAF9',
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: '#EDF5F0',
   },
   statsTileValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#163523',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statsTileLabel: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '700',
     color: '#557261',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statsTileSub: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '500',
     color: '#7A9384',
   },
   statsCategoryCard: {
     backgroundColor: '#F8FAF9',
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 14,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: '#EDF5F0',
   },
+  statsCategoryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   statsSectionHeading: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#163523',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statsSectionSubheading: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#7A9384',
-    marginBottom: 12,
   },
   statsCategoryBar: {
     flexDirection: 'row',
@@ -8813,32 +8827,33 @@ const styles = StyleSheet.create({
   },
   statsInfoNotice: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 8,
     backgroundColor: '#F0FDF4',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 14,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: '#DCFCE7',
   },
   statsInfoNoticeText: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: '#15803D',
-    lineHeight: 16,
+    lineHeight: 15,
     flex: 1,
     fontWeight: '500',
   },
   statsDoneButton: {
     backgroundColor: '#1E4D2B',
-    borderRadius: 14,
-    paddingVertical: 13,
+    borderRadius: 12,
+    paddingVertical: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 11,
   },
   statsDoneButtonText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -8848,43 +8863,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#FDE68A',
   },
   statsSatisfactionScoreText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     color: '#92400E',
   },
   csatBarsContainer: {
-    marginTop: 10,
-    marginBottom: 12,
-    gap: 7,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 5,
   },
   csatBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
   },
   csatStarLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     width: 24,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     gap: 2,
   },
   csatStarText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#334155',
   },
   csatTrack: {
     flex: 1,
-    height: 8,
-    backgroundColor: '#F1F5F9',
+    height: 7,
+    backgroundColor: '#E2E8F0',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -8893,31 +8908,32 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   csatPctText: {
-    width: 60,
-    fontSize: 10.5,
+    width: 58,
+    fontSize: 10,
     fontWeight: '700',
     color: '#475569',
     textAlign: 'right',
   },
   csatHighlightsRow: {
     flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginTop: 4,
+    gap: 6,
+    marginTop: 3,
   },
   csatHighlightChip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    justifyContent: 'center',
+    gap: 4,
     backgroundColor: '#F0FDF4',
-    paddingHorizontal: 9,
+    paddingHorizontal: 6,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#DCFCE7',
   },
   csatHighlightText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '700',
     color: '#166534',
   },
