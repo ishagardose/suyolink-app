@@ -172,84 +172,72 @@ const INITIAL_AVAILABLE_SUYOS = [
   },
 ];
 
-const INITIAL_MY_REQUESTED_SUYOS = [
+const DEFAULT_DOER = {
+  id: 'DOER-101',
+  name: 'Alex Morales',
+  initials: 'AM',
+  phone: '+63 917 842 1983',
+  rating: '4.95★',
+  reviewCount: '142 reviews',
+  completedCount: '142 errands',
+  vehicle: 'Honda Beat 125cc (Motorcycle)',
+  vehiclePlate: 'ND-8821',
+  badge: 'Top Rated Courier',
+  onTimeRate: '99.2%',
+  bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum. Fast, reliable, and careful with parcels & documents.',
+};
+
+const INITIAL_POSTED_SUYOS = [
   {
-    id: 'MY-REQ-001',
-    title: 'Pick up medical supplies from Mercury Drug',
-    category: 'Delivery',
-    location: 'Mercury Drug Legaspi',
-    distanceText: '1.1 km away',
-    reward: '₱180',
-    rewardAmount: 180,
-    tag: 'Completed',
-    status: 'Completed',
-    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 23, 2026',
-    details: 'Pick up prescribed maintenance asthma medication and vitamins.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doerName: 'Alex M.',
-  },
-  {
-    id: 'MY-REQ-002',
-    title: 'Deliver notarized lease documents to lawyer',
-    category: 'Documents',
-    location: 'Ayala Tower 1, Makati',
-    distanceText: '0.9 km away',
-    reward: '₱250',
-    rewardAmount: 250,
-    tag: 'Completed',
-    status: 'Completed',
-    createdAt: Date.now() - 4 * 24 * 60 * 1000,
-    formattedDate: 'Sep 26, 2026',
-    details: 'Urgent delivery of 3 notarized lease agreements.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doerName: 'Carlos D.',
-  },
-  {
-    id: 'MY-REQ-003',
-    title: 'Queue for Meralco electric bill payment',
-    category: 'Queuing & Bills',
-    location: 'Bayad Center Ayala',
-    distanceText: '1.4 km away',
+    id: 'POST-001',
+    title: 'Buy groceries - SM Tagum',
+    category: 'Groceries',
+    location: 'SM Tagum',
+    distanceText: '0.8 km away',
     reward: '₱150',
     rewardAmount: 150,
-    tag: 'Completed',
-    status: 'Completed',
-    createdAt: Date.now() - 2 * 24 * 60 * 1000,
-    formattedDate: 'Sep 28, 2026',
-    details: 'Pay monthly electricity bill before 4 PM counter cut-off.',
+    tag: 'Waiting for doer',
+    status: 'Open - waiting for a doer',
+    createdAt: Date.now() - 45 * 60 * 1000,
+    formattedDate: 'Sep 28',
+    waitTime: 'Waiting for 45m',
+    needsBoost: true,
+    details: '2 cartons of milk, 1 loaf of wheat bread, and 1 pack of eggs from supermarket.',
+    notes: 'Receipt will be reimbursed via GCash or cash upon delivery.',
     requesterName: 'Juan Dela Cruz (You)',
-    doerName: 'Maria C.',
   },
   {
-    id: 'MY-REQ-004',
-    title: 'Buy fresh groceries and bread at Landmark',
-    category: 'Groceries',
-    location: 'Landmark Supermarket',
-    distanceText: '0.8 km away',
-    reward: '₱200',
-    rewardAmount: 200,
-    tag: 'In Progress',
-    status: 'In Progress',
-    createdAt: Date.now() - 3 * 60 * 60 * 1000,
-    formattedDate: 'Today, 2:30 PM',
-    details: '2 cartons oat milk, 1 loaf whole wheat bread, 1 tray fresh eggs.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doerName: 'Alex M.',
-  },
-  {
-    id: 'MY-REQ-005',
+    id: 'POST-002',
     title: 'Package pickup and drop-off at LBC Glorietta',
     category: 'Delivery',
     location: 'LBC Express - Glorietta',
     distanceText: '1.6 km away',
     reward: '₱160',
     rewardAmount: 160,
-    tag: 'Looking for Doer',
-    status: 'Open',
-    createdAt: Date.now() - 30 * 60 * 1000,
+    tag: 'Waiting for doer',
+    status: 'Open - waiting for a doer',
+    createdAt: Date.now() - 25 * 60 * 1000,
     formattedDate: 'Today, 5:15 PM',
-    details: 'Drop off pre-packed box with return barcode sticker.',
+    waitTime: 'Waiting for 25m',
+    needsBoost: true,
+    details: 'Drop off pre-packed box with return barcode sticker at LBC branch.',
+    notes: 'Already prepaid, just drop off at counter 2.',
+    requesterName: 'Juan Dela Cruz (You)',
+  },
+  {
+    id: 'POST-003',
+    title: 'Pick up documents',
+    category: 'Documents',
+    location: 'Makati CBD',
+    distanceText: '1.2 km away',
+    reward: '₱200',
+    rewardAmount: 200,
+    tag: 'Cancelled',
+    status: 'Cancelled',
+    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Sep 22',
+    details: 'Pick up notarized contract copy from law office at 5th floor.',
+    notes: 'Cancelled by requester due to rescheduled meeting.',
     requesterName: 'Juan Dela Cruz (You)',
   },
 ];
@@ -264,28 +252,203 @@ const INITIAL_ACCEPTED_SUYOS = [
     reward: '₱300',
     rewardAmount: 300,
     tag: 'In Progress',
-    status: 'In Progress',
-    createdAt: Date.now() - 45 * 60 * 1000,
+    status: 'In Progress - On the way',
+    createdAt: Date.now() - 35 * 60 * 1000,
     formattedDate: 'Today, 4:00 PM',
     details: 'Drop off notarized lease agreements and corporate papers at 4th floor reception.',
-    requesterName: 'Atty. Rafael Cruz',
-    requesterPhone: '0917 842 1983',
+    notes: 'Please hand directly to Ms. Santos.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doer: {
+      id: 'DOER-101',
+      name: 'Alex Morales',
+      initials: 'AM',
+      phone: '+63 917 842 1983',
+      rating: '4.95★',
+      reviewCount: '142 reviews',
+      completedCount: '142 errands',
+      vehicle: 'Honda Beat 125cc (Motorcycle)',
+      vehiclePlate: 'ND-8821',
+      badge: 'Top Rated Courier',
+      onTimeRate: '99.2%',
+      bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum. Fast, reliable, and careful with parcels.',
+    },
   },
   {
     id: 'ACC-002',
-    title: 'Buy groceries - SM Tagum',
+    title: 'Buy fresh groceries and bread at Landmark',
     category: 'Groceries',
-    location: 'SM Tagum',
+    location: 'Landmark Supermarket',
     distanceText: '0.8 km away',
+    reward: '₱200',
+    rewardAmount: 200,
+    tag: 'In Progress',
+    status: 'In Progress - Shopping',
+    createdAt: Date.now() - 90 * 60 * 1000,
+    formattedDate: 'Today, 2:30 PM',
+    details: '2 cartons oat milk, 1 loaf whole wheat bread, 1 tray fresh eggs.',
+    notes: 'Please check expiration date before purchasing.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doer: {
+      id: 'DOER-102',
+      name: 'Maria Clarissa',
+      initials: 'MC',
+      phone: '+63 928 341 5520',
+      rating: '4.88★',
+      reviewCount: '89 reviews',
+      completedCount: '89 errands',
+      vehicle: 'Bicycle Courier',
+      vehiclePlate: 'BIKE-04',
+      badge: 'Verified Suyo Courier',
+      onTimeRate: '98.5%',
+      bio: 'Eco-friendly bicycle courier servicing Greenbelt and Legazpi village.',
+    },
+  },
+];
+
+const INITIAL_COMPLETED_SUYOS = [
+  {
+    id: 'COMP-001',
+    title: 'Print school project',
+    category: 'Documents',
+    location: 'Davao Printing Hub',
+    distanceText: '1.5 km away',
+    reward: '₱80',
+    rewardAmount: 80,
+    tag: 'Completed',
+    status: 'Completed',
+    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Sep 20',
+    completedDate: 'Sep 20, 2026 at 3:15 PM',
+    details: 'Full color printing and ring binding of 45-page thesis project.',
+    notes: 'Completed ahead of schedule.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doer: {
+      id: 'DOER-103',
+      name: 'Carlos Dalisay',
+      initials: 'CD',
+      phone: '+63 919 720 9144',
+      rating: '4.9★',
+      reviewCount: '210 reviews',
+      completedCount: '210 errands',
+      vehicle: 'Yamaha Mio (Motorcycle)',
+      vehiclePlate: 'DC-9912',
+      badge: 'Community Hero',
+      onTimeRate: '99.5%',
+      bio: 'Dependable community courier with over 200+ completed local errands.',
+    },
+  },
+  {
+    id: 'COMP-002',
+    title: 'Pick up medical supplies from Mercury Drug',
+    category: 'Delivery',
+    location: 'Mercury Drug Legaspi',
+    distanceText: '1.1 km away',
+    reward: '₱180',
+    rewardAmount: 180,
+    tag: 'Completed',
+    status: 'Completed',
+    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Sep 23',
+    completedDate: 'Sep 23, 2026 at 11:40 AM',
+    details: 'Pick up prescribed maintenance asthma medication and vitamins.',
+    notes: 'Delivered directly to reception desk.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doer: {
+      id: 'DOER-101',
+      name: 'Alex Morales',
+      initials: 'AM',
+      phone: '+63 917 842 1983',
+      rating: '4.95★',
+      reviewCount: '142 reviews',
+      completedCount: '142 errands',
+      vehicle: 'Honda Beat 125cc (Motorcycle)',
+      vehiclePlate: 'ND-8821',
+      badge: 'Top Rated Courier',
+      onTimeRate: '99.2%',
+      bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum.',
+    },
+  },
+  {
+    id: 'COMP-003',
+    title: 'Queue for Meralco electric bill payment',
+    category: 'Queuing & Bills',
+    location: 'Bayad Center Ayala',
+    distanceText: '1.4 km away',
     reward: '₱150',
     rewardAmount: 150,
     tag: 'Completed',
     status: 'Completed',
-    createdAt: Date.now() - 24 * 60 * 60 * 1000,
-    formattedDate: 'Yesterday, 1:15 PM',
-    details: '2 cartons of milk, 1 loaf of wheat bread, and 1 pack of eggs from supermarket.',
-    requesterName: 'Maria Clarissa',
-    requesterPhone: '0928 341 5520',
+    createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Sep 28',
+    completedDate: 'Sep 28, 2026 at 1:10 PM',
+    details: 'Pay monthly electricity bill before 4 PM counter cut-off.',
+    notes: 'Validated payment slip returned.',
+    requesterName: 'Juan Dela Cruz (You)',
+    doer: {
+      id: 'DOER-104',
+      name: 'Kenneth Gomez',
+      initials: 'KG',
+      phone: '+63 905 188 4390',
+      rating: '5.0★',
+      reviewCount: '64 reviews',
+      completedCount: '64 errands',
+      vehicle: 'Walking / Commute',
+      vehiclePlate: 'COMMUTER',
+      badge: 'Queuing Specialist',
+      onTimeRate: '100%',
+      bio: 'Specialist in government agency and utility bills queuing.',
+    },
+  },
+];
+
+const INITIAL_ARCHIVED_SUYOS = [
+  {
+    id: 'ARCH-001',
+    title: 'Weekly SM Supermarket Grocery Run',
+    category: 'Groceries',
+    location: 'SM Tagum',
+    distanceText: '0.8 km away',
+    reward: '₱180',
+    rewardAmount: 180,
+    tag: 'Archived Template',
+    status: 'Archived Template',
+    createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Saved template',
+    details: 'Standard weekly supply: 2 cartons milk, 1 loaf whole wheat bread, eggs, fruit.',
+    notes: 'Reimbursement upon delivery receipt.',
+    requesterName: 'Juan Dela Cruz (You)',
+  },
+  {
+    id: 'ARCH-002',
+    title: 'Monthly Electric Bill Bayad Center',
+    category: 'Queuing & Bills',
+    location: 'Bayad Center Ayala',
+    distanceText: '1.4 km away',
+    reward: '₱150',
+    rewardAmount: 150,
+    tag: 'Archived Template',
+    status: 'Archived Template',
+    createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Saved template',
+    details: 'Pay monthly electricity bill with prepared cash envelope.',
+    notes: 'Return receipt to lobby guard.',
+    requesterName: 'Juan Dela Cruz (You)',
+  },
+  {
+    id: 'ARCH-003',
+    title: 'Emergency Maintenance Medicine Pickup',
+    category: 'Delivery',
+    location: 'Mercury Drug Legaspi',
+    distanceText: '1.1 km away',
+    reward: '₱160',
+    rewardAmount: 160,
+    tag: 'Archived Template',
+    status: 'Archived Template',
+    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+    formattedDate: 'Saved template',
+    details: 'Maintenance prescription pickup from pharmacy counter.',
+    notes: 'Senior citizen discount book is at pharmacy.',
+    requesterName: 'Juan Dela Cruz (You)',
   },
 ];
 
@@ -686,14 +849,27 @@ export default function DashboardScreen() {
     );
   };
 
-  // MySuyo Tab Navigation & Management state
-  const [myRequestedSuyos, setMyRequestedSuyos] = useState(() => INITIAL_MY_REQUESTED_SUYOS);
+  // MySuyo Tab Navigation & Management state (Posted, Accepted, Completed, Archived)
+  const [postedSuyos, setPostedSuyos] = useState(() => INITIAL_POSTED_SUYOS);
   const [acceptedSuyos, setAcceptedSuyos] = useState(() => INITIAL_ACCEPTED_SUYOS);
-  const [mySuyoNavTab, setMySuyoNavTab] = useState('my_suyo'); // 'my_suyo' or 'accepted'
+  const [completedSuyos, setCompletedSuyos] = useState(() => INITIAL_COMPLETED_SUYOS);
+  const [archivedSuyos, setArchivedSuyos] = useState(() => INITIAL_ARCHIVED_SUYOS);
+  const [mySuyoNavTab, setMySuyoNavTab] = useState('posted'); // 'posted' | 'accepted' | 'completed' | 'archived'
   const [isMySuyoEditMode, setIsMySuyoEditMode] = useState(false);
   const [selectedMySuyoIdsToDelete, setSelectedMySuyoIdsToDelete] = useState([]);
+  const [selectedSuyoContext, setSelectedSuyoContext] = useState('available'); // 'available' | 'posted' | 'accepted' | 'completed' | 'archived'
+  const [selectedDoerProfile, setSelectedDoerProfile] = useState(null);
+  const [isEditingSuyoModalOpen, setIsEditingSuyoModalOpen] = useState(false);
+  const [editingSuyoData, setEditingSuyoData] = useState({
+    id: '',
+    title: '',
+    details: '',
+    notes: '',
+    rewardAmount: 150,
+    context: 'posted',
+  });
 
-  // Sync any newly posted backend requests into myRequestedSuyos (maintaining oldest to newest)
+  // Sync any newly posted backend requests into postedSuyos
   useEffect(() => {
     if (requests && requests.length > 0) {
       const userBackendRequests = requests.filter(
@@ -703,7 +879,7 @@ export default function DashboardScreen() {
           r.requesterName === userProfile?.name
       );
       if (userBackendRequests.length > 0) {
-        setMyRequestedSuyos((prev) => {
+        setPostedSuyos((prev) => {
           const prevIds = new Set(prev.map((p) => p.id));
           const newItems = userBackendRequests
             .filter((r) => !prevIds.has(r.id))
@@ -715,15 +891,17 @@ export default function DashboardScreen() {
               distanceText: '0.8 km away',
               reward: formatOffer(r.offerCentavos || 0),
               rewardAmount: (r.offerCentavos || 0) / 100,
-              tag: 'Looking for Doer',
-              status: r.status === 'open' ? 'Looking for Doer' : r.status,
+              tag: 'Waiting for doer',
+              status: 'Open - waiting for a doer',
               createdAt: Date.parse(r.createdAt || Date.now()),
-              formattedDate: 'Recently posted',
+              formattedDate: 'Just now',
+              waitTime: 'Just posted',
+              needsBoost: false,
               details: r.details || 'No details provided.',
               requesterName: r.requesterName || userProfile?.name || 'You',
             }));
           if (newItems.length === 0) return prev;
-          return [...prev, ...newItems].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+          return [...newItems, ...prev];
         });
       }
     }
@@ -738,12 +916,20 @@ export default function DashboardScreen() {
   const handleConfirmDeleteMySuyo = () => {
     if (selectedMySuyoIdsToDelete.length === 0) return;
     const count = selectedMySuyoIdsToDelete.length;
-    if (mySuyoNavTab === 'my_suyo') {
-      setMyRequestedSuyos((prev) =>
+    if (mySuyoNavTab === 'posted') {
+      setPostedSuyos((prev) =>
         prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
       );
-    } else {
+    } else if (mySuyoNavTab === 'accepted') {
       setAcceptedSuyos((prev) =>
+        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+      );
+    } else if (mySuyoNavTab === 'completed') {
+      setCompletedSuyos((prev) =>
+        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+      );
+    } else if (mySuyoNavTab === 'archived') {
+      setArchivedSuyos((prev) =>
         prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
       );
     }
@@ -755,6 +941,146 @@ export default function DashboardScreen() {
         : `${count} suyos removed from history`,
       'trash'
     );
+  };
+
+  // Feature: Increase / Boost Reward
+  const handleBoostReward = (suyoId, addAmount) => {
+    setPostedSuyos((prev) =>
+      prev.map((s) => {
+        if (s.id === suyoId) {
+          const currentAmt = Number(s.rewardAmount || 150);
+          const newAmt = currentAmt + addAmount;
+          return {
+            ...s,
+            rewardAmount: newAmt,
+            reward: `₱${newAmt}`,
+            needsBoost: false,
+          };
+        }
+        return s;
+      })
+    );
+    if (selectedSuyo && selectedSuyo.id === suyoId) {
+      const currentAmt = Number(selectedSuyo.rewardAmount || 150);
+      const newAmt = currentAmt + addAmount;
+      setSelectedSuyo((prev) => ({
+        ...prev,
+        rewardAmount: newAmt,
+        reward: `₱${newAmt}`,
+        needsBoost: false,
+      }));
+    }
+    triggerToast(`Reward increased to +₱${addAmount}! Couriers notified.`, 'sparkles');
+  };
+
+  // Feature: Cancel Suyo
+  const handleCancelSuyo = (suyoId) => {
+    setPostedSuyos((prev) =>
+      prev.map((s) =>
+        s.id === suyoId
+          ? { ...s, status: 'Cancelled', tag: 'Cancelled', needsBoost: false }
+          : s
+      )
+    );
+    if (selectedSuyo && selectedSuyo.id === suyoId) {
+      setSelectedSuyo((prev) => ({
+        ...prev,
+        status: 'Cancelled',
+        tag: 'Cancelled',
+        needsBoost: false,
+      }));
+    }
+    triggerToast('Suyo marked as cancelled', 'close-circle');
+  };
+
+  // Feature: Open Edit Suyo
+  const handleOpenEditSuyo = (suyo) => {
+    setEditingSuyoData({
+      id: suyo.id,
+      title: suyo.title || '',
+      details: suyo.details || '',
+      notes: suyo.notes || '',
+      rewardAmount: suyo.rewardAmount || 150,
+      context: selectedSuyoContext,
+    });
+    setIsEditingSuyoModalOpen(true);
+  };
+
+  // Feature: Save Edited Suyo
+  const handleSaveEditedSuyo = () => {
+    if (!editingSuyoData.title.trim()) {
+      triggerToast('Title cannot be empty', 'alert-circle');
+      return;
+    }
+    const updatedReward = `₱${Number(editingSuyoData.rewardAmount) || 150}`;
+    const updateInList = (list) =>
+      list.map((item) =>
+        item.id === editingSuyoData.id
+          ? {
+              ...item,
+              title: editingSuyoData.title.trim(),
+              details: editingSuyoData.details.trim(),
+              notes: editingSuyoData.notes.trim(),
+              rewardAmount: Number(editingSuyoData.rewardAmount) || 150,
+              reward: updatedReward,
+            }
+          : item
+      );
+
+    if (editingSuyoData.context === 'posted') {
+      setPostedSuyos(updateInList);
+    } else if (editingSuyoData.context === 'archived') {
+      setArchivedSuyos(updateInList);
+    }
+
+    if (selectedSuyo && selectedSuyo.id === editingSuyoData.id) {
+      setSelectedSuyo((prev) => ({
+        ...prev,
+        title: editingSuyoData.title.trim(),
+        details: editingSuyoData.details.trim(),
+        notes: editingSuyoData.notes.trim(),
+        rewardAmount: Number(editingSuyoData.rewardAmount) || 150,
+        reward: updatedReward,
+      }));
+    }
+
+    setIsEditingSuyoModalOpen(false);
+    triggerToast('Suyo details updated successfully', 'checkmark-circle');
+  };
+
+  // Feature: Save completed suyo to Archive for future repeat requests
+  const handleSaveToArchive = (suyo) => {
+    const isAlreadyArchived = archivedSuyos.some((a) => a.title === suyo.title);
+    if (!isAlreadyArchived) {
+      const template = {
+        ...suyo,
+        id: `ARCH-${Date.now().toString().slice(-4)}`,
+        status: 'Archived Template',
+        tag: 'Archived Template',
+        formattedDate: 'Saved template',
+      };
+      setArchivedSuyos((prev) => [template, ...prev]);
+    }
+    triggerToast('Saved to Archive for future repeat requests', 'bookmark');
+  };
+
+  // Feature: Repeat request from completed or archived
+  const handleRepeatRequest = (suyo) => {
+    const newPostedSuyo = {
+      ...suyo,
+      id: `POST-${Date.now().toString().slice(-4)}`,
+      status: 'Open - waiting for a doer',
+      tag: 'Waiting for doer',
+      formattedDate: 'Just now',
+      waitTime: 'Just posted',
+      needsBoost: false,
+      createdAt: Date.now(),
+      doer: undefined,
+    };
+    setPostedSuyos((prev) => [newPostedSuyo, ...prev]);
+    setSelectedSuyo(null);
+    setMySuyoNavTab('posted');
+    triggerToast('Suyo re-posted! Couriers are now being notified.', 'bicycle');
   };
 
   // Functional Notifications state
@@ -1265,24 +1591,29 @@ export default function DashboardScreen() {
             <View style={styles.mySuyoHeroSection}>
               <View style={styles.mySuyoHeroTextCol}>
                 <Text style={styles.mySuyoHeroSuper}>MY SUYO HUB</Text>
-                <Text style={styles.mySuyoHeroTitle}>Errand History</Text>
+                <Text style={styles.mySuyoHeroTitle}>Requested Errands</Text>
                 <Text style={styles.mySuyoHeroSub}>
-                  Chronological list of your requested and fulfilled errands
+                  Manage, track, boost, and repeat your requested suyos
                 </Text>
               </View>
               <View style={styles.mySuyoHeroBadge}>
-                <Ionicons name="time-outline" size={24} color="#1E4D2B" />
+                <Ionicons name="receipt-outline" size={24} color="#1E4D2B" />
               </View>
             </View>
 
-            {/* Modern Text Navigation ("MySuyo" vs "Accepted" - Zero chunky button styles) */}
+            {/* Modern Text Navigation: Posted, Accepted, Completed, Archived (Zero chunky button pills) */}
             <View style={styles.mySuyoTextNavWrapper}>
-              <View style={styles.mySuyoTextNavRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.mySuyoTextNavRow}
+              >
+                {/* 1. Posted Tab */}
                 <TouchableOpacity
                   style={styles.mySuyoTextNavItem}
                   activeOpacity={0.7}
                   onPress={() => {
-                    setMySuyoNavTab('my_suyo');
+                    setMySuyoNavTab('posted');
                     setIsMySuyoEditMode(false);
                     setSelectedMySuyoIdsToDelete([]);
                   }}
@@ -1290,24 +1621,25 @@ export default function DashboardScreen() {
                   <Text
                     style={[
                       styles.mySuyoTextNavTitle,
-                      mySuyoNavTab === 'my_suyo' && styles.mySuyoTextNavTitleActive,
+                      mySuyoNavTab === 'posted' && styles.mySuyoTextNavTitleActive,
                     ]}
                   >
-                    MySuyo
+                    Posted
                   </Text>
                   <Text
                     style={[
                       styles.mySuyoTextNavCount,
-                      mySuyoNavTab === 'my_suyo' && styles.mySuyoTextNavCountActive,
+                      mySuyoNavTab === 'posted' && styles.mySuyoTextNavCountActive,
                     ]}
                   >
-                    ({myRequestedSuyos.length})
+                    ({postedSuyos.length})
                   </Text>
-                  {mySuyoNavTab === 'my_suyo' && (
+                  {mySuyoNavTab === 'posted' && (
                     <View style={styles.mySuyoTextNavUnderline} />
                   )}
                 </TouchableOpacity>
 
+                {/* 2. Accepted Tab */}
                 <TouchableOpacity
                   style={styles.mySuyoTextNavItem}
                   activeOpacity={0.7}
@@ -1337,29 +1669,113 @@ export default function DashboardScreen() {
                     <View style={styles.mySuyoTextNavUnderline} />
                   )}
                 </TouchableOpacity>
-              </View>
+
+                {/* 3. Completed Tab */}
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setMySuyoNavTab('completed');
+                    setIsMySuyoEditMode(false);
+                    setSelectedMySuyoIdsToDelete([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      mySuyoNavTab === 'completed' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Completed
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      mySuyoNavTab === 'completed' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({completedSuyos.length})
+                  </Text>
+                  {mySuyoNavTab === 'completed' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+
+                {/* 4. Archived Tab */}
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setMySuyoNavTab('archived');
+                    setIsMySuyoEditMode(false);
+                    setSelectedMySuyoIdsToDelete([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      mySuyoNavTab === 'archived' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Archived
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      mySuyoNavTab === 'archived' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({archivedSuyos.length})
+                  </Text>
+                  {mySuyoNavTab === 'archived' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
             </View>
 
-            {/* Sub-bar with title, chronological notice, and fading text 'Edit' */}
+            {/* Sub-bar with title, status note, and fading text 'Edit' */}
             <View style={styles.mySuyoSubBar}>
-              <View>
+              <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.mySuyoSubBarTitle}>
-                  {mySuyoNavTab === 'my_suyo'
-                    ? 'Requested Suyos'
-                    : 'Accepted Suyos'}
+                  {mySuyoNavTab === 'posted'
+                    ? 'Posted Suyos'
+                    : mySuyoNavTab === 'accepted'
+                    ? 'Accepted Suyos'
+                    : mySuyoNavTab === 'completed'
+                    ? 'Completed Suyos'
+                    : 'Archived Suyos'}
                 </Text>
                 <Text style={styles.mySuyoSubBarSubtitle}>
-                  Ordered oldest to newest (past to present)
+                  {mySuyoNavTab === 'posted'
+                    ? 'Awaiting courier acceptance · Boost reward to speed up'
+                    : mySuyoNavTab === 'accepted'
+                    ? 'Couriers currently fulfilling these errands'
+                    : mySuyoNavTab === 'completed'
+                    ? 'Successfully fulfilled errands from past to present'
+                    : 'Saved templates for quick 1-tap repeating'}
                 </Text>
               </View>
 
-              {(mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).length > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              {((mySuyoNavTab === 'posted'
+                ? postedSuyos
+                : mySuyoNavTab === 'accepted'
+                ? acceptedSuyos
+                : mySuyoNavTab === 'completed'
+                ? completedSuyos
+                : archivedSuyos).length > 0) && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   {isMySuyoEditMode && (
                     <TouchableOpacity
                       onPress={() => {
                         const currentList =
-                          mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos;
+                          mySuyoNavTab === 'posted'
+                            ? postedSuyos
+                            : mySuyoNavTab === 'accepted'
+                            ? acceptedSuyos
+                            : mySuyoNavTab === 'completed'
+                            ? completedSuyos
+                            : archivedSuyos;
                         if (selectedMySuyoIdsToDelete.length === currentList.length) {
                           setSelectedMySuyoIdsToDelete([]);
                         } else {
@@ -1370,7 +1786,13 @@ export default function DashboardScreen() {
                     >
                       <Text style={styles.mySuyoSelectAllText}>
                         {selectedMySuyoIdsToDelete.length ===
-                        (mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).length
+                        (mySuyoNavTab === 'posted'
+                          ? postedSuyos
+                          : mySuyoNavTab === 'accepted'
+                          ? acceptedSuyos
+                          : mySuyoNavTab === 'completed'
+                          ? completedSuyos
+                          : archivedSuyos).length
                           ? 'Deselect all'
                           : 'Select all'}
                       </Text>
@@ -1393,10 +1815,57 @@ export default function DashboardScreen() {
               )}
             </View>
 
-            {/* List of Details of Suyos from Past to Present (Oldest to Newest) */}
+            {/* List of Suyos (Rendered based on selected tab) */}
             <View style={styles.mySuyoCardsList}>
-              {(mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).length > 0 ? (
-                (mySuyoNavTab === 'my_suyo' ? myRequestedSuyos : acceptedSuyos).map((suyo) => {
+              {(() => {
+                const currentList =
+                  mySuyoNavTab === 'posted'
+                    ? postedSuyos
+                    : mySuyoNavTab === 'accepted'
+                    ? acceptedSuyos
+                    : mySuyoNavTab === 'completed'
+                    ? completedSuyos
+                    : archivedSuyos;
+
+                if (currentList.length === 0) {
+                  return (
+                    <View style={styles.mySuyoEmptyBox}>
+                      <Ionicons
+                        name={
+                          mySuyoNavTab === 'posted'
+                            ? 'paper-plane-outline'
+                            : mySuyoNavTab === 'accepted'
+                            ? 'bicycle-outline'
+                            : mySuyoNavTab === 'completed'
+                            ? 'checkmark-done-circle-outline'
+                            : 'bookmark-outline'
+                        }
+                        size={40}
+                        color="#A3B8AC"
+                      />
+                      <Text style={styles.mySuyoEmptyTitle}>
+                        {mySuyoNavTab === 'posted'
+                          ? 'No pending posted suyos'
+                          : mySuyoNavTab === 'accepted'
+                          ? 'No suyos in progress'
+                          : mySuyoNavTab === 'completed'
+                          ? 'No completed suyos yet'
+                          : 'No archived templates'}
+                      </Text>
+                      <Text style={styles.mySuyoEmptySub}>
+                        {mySuyoNavTab === 'posted'
+                          ? "All your suyos have been accepted, or you haven't posted any. Tap Post below to request an errand!"
+                          : mySuyoNavTab === 'accepted'
+                          ? "When a courier accepts one of your posted suyos, it will appear here so you can view the doer profile and track live progress."
+                          : mySuyoNavTab === 'completed'
+                          ? "Finished errands will appear here with the courier who completed them."
+                          : "Save completed or frequent errands to your archive so you can repeat them with a single tap!"}
+                      </Text>
+                    </View>
+                  );
+                }
+
+                return currentList.map((suyo) => {
                   const isSelected = selectedMySuyoIdsToDelete.includes(suyo.id);
                   return (
                     <TouchableOpacity
@@ -1410,17 +1879,14 @@ export default function DashboardScreen() {
                         if (isMySuyoEditMode) {
                           handleToggleMySuyoSelect(suyo.id);
                         } else {
-                          setSelectedSuyo({
-                            ...suyo,
-                            requesterPhone: suyo.requesterPhone || '+63 917 123 4567',
-                            requesterRating: '4.9★',
-                            completedCount: '15 completed',
-                          });
+                          setSelectedSuyoContext(mySuyoNavTab);
+                          setSelectedSuyo(suyo);
                         }
                       }}
                     >
-                      <View style={styles.mySuyoCardHeader}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {/* Top Row: Title + Reward (Green Pxxx) */}
+                      <View style={styles.mySuyoCardTopRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
                           {isMySuyoEditMode && (
                             <View
                               style={[
@@ -1433,41 +1899,150 @@ export default function DashboardScreen() {
                               )}
                             </View>
                           )}
-                          <View style={styles.mySuyoDatePill}>
-                            <Ionicons name="calendar-outline" size={11.5} color="#52695C" />
-                            <Text style={styles.mySuyoDateText}>{suyo.formattedDate}</Text>
-                          </View>
+                          <Text style={styles.mySuyoCardTitle} numberOfLines={1}>
+                            {suyo.title}
+                          </Text>
                         </View>
+                        <Text style={styles.mySuyoCardRewardText}>{suyo.reward}</Text>
+                      </View>
 
+                      {/* Second Row: Status & Date (Image 2 style) */}
+                      <View style={styles.mySuyoCardSubRow}>
                         <View
                           style={[
                             styles.mySuyoStatusPill,
-                            suyo.status === 'Completed'
+                            suyo.status?.includes('Completed')
                               ? styles.mySuyoStatusCompleted
-                              : suyo.status === 'In Progress'
+                              : suyo.status?.includes('In Progress')
                               ? styles.mySuyoStatusInProgress
+                              : suyo.status === 'Cancelled'
+                              ? { backgroundColor: '#FEE2E2' }
+                              : suyo.status === 'Archived Template'
+                              ? { backgroundColor: '#F1F5F9' }
                               : styles.mySuyoStatusOpen,
                           ]}
                         >
                           <Text
                             style={[
-                              suyo.status === 'Completed'
+                              styles.mySuyoStatusPillText,
+                              suyo.status?.includes('Completed')
                                 ? styles.mySuyoStatusCompletedText
-                                : suyo.status === 'In Progress'
+                                : suyo.status?.includes('In Progress')
                                 ? styles.mySuyoStatusInProgressText
+                                : suyo.status === 'Cancelled'
+                                ? { color: '#DC2626' }
+                                : suyo.status === 'Archived Template'
+                                ? { color: '#475569' }
                                 : styles.mySuyoStatusOpenText,
                             ]}
                           >
                             {suyo.status}
                           </Text>
                         </View>
+
+                        <Text style={styles.mySuyoCardDateText}>
+                          {suyo.formattedDate || 'Recent'}
+                        </Text>
                       </View>
 
-                      <Text style={styles.mySuyoCardTitle}>{suyo.title}</Text>
+                      {/* Details snippet */}
                       <Text style={styles.mySuyoCardDetails} numberOfLines={2}>
                         {suyo.details}
                       </Text>
 
+                      {/* Tab-Specific Feature Rows */}
+
+                      {/* In Posted: Boost Prompt if waiting long */}
+                      {mySuyoNavTab === 'posted' && suyo.needsBoost && !isMySuyoEditMode && suyo.status !== 'Cancelled' && (
+                        <View style={styles.mySuyoCardBoostRow}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
+                            <Ionicons name="sparkles" size={13} color="#059669" />
+                            <Text style={styles.mySuyoCardBoostPromptText}>
+                              No doer yet? Boost reward
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 6 }}>
+                            <TouchableOpacity
+                              style={styles.mySuyoCardQuickBoostBtn}
+                              activeOpacity={0.75}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleBoostReward(suyo.id, 20);
+                              }}
+                            >
+                              <Text style={styles.mySuyoCardQuickBoostText}>+₱20</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.mySuyoCardQuickBoostBtn, styles.mySuyoCardQuickBoostBtnGreen]}
+                              activeOpacity={0.75}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleBoostReward(suyo.id, 50);
+                              }}
+                            >
+                              <Text style={[styles.mySuyoCardQuickBoostText, { color: '#FFFFFF' }]}>+₱50</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* In Accepted: Courier Strip & Profile Link */}
+                      {mySuyoNavTab === 'accepted' && suyo.doer && (
+                        <View style={styles.mySuyoCourierStrip}>
+                          <Ionicons name="bicycle" size={14} color="#1E4D2B" />
+                          <Text style={styles.mySuyoCourierStripText} numberOfLines={1}>
+                            Courier: <Text style={{ fontWeight: '700', color: '#163523' }}>{suyo.doer.name}</Text> ({suyo.doer.rating})
+                          </Text>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedDoerProfile(suyo.doer);
+                            }}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <Text style={styles.mySuyoViewDoerProfileLinkText}>View Profile →</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* In Completed: Courier Who Fulfilled Strip */}
+                      {mySuyoNavTab === 'completed' && suyo.doer && (
+                        <View style={styles.mySuyoCourierStrip}>
+                          <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                          <Text style={styles.mySuyoCourierStripText} numberOfLines={1}>
+                            Fulfilled by <Text style={{ fontWeight: '700', color: '#163523' }}>{suyo.doer.name}</Text>
+                          </Text>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedDoerProfile(suyo.doer);
+                            }}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <Text style={styles.mySuyoViewDoerProfileLinkText}>View Profile →</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* In Archived: 1-Tap Repeat Banner */}
+                      {mySuyoNavTab === 'archived' && (
+                        <View style={styles.mySuyoArchivedStrip}>
+                          <Text style={styles.mySuyoArchivedStripText}>Saved template for repeat errands</Text>
+                          <TouchableOpacity
+                            style={styles.mySuyoRepeatQuickBtn}
+                            activeOpacity={0.8}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleRepeatRequest(suyo);
+                            }}
+                          >
+                            <Ionicons name="refresh" size={12} color="#FFFFFF" />
+                            <Text style={styles.mySuyoRepeatQuickBtnText}>Repeat Suyo</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* Footer Row: Location Pin */}
                       <View style={styles.mySuyoCardFooter}>
                         <View style={styles.mySuyoCardLocationRow}>
                           <Ionicons name="location-sharp" size={13} color="#0D9488" />
@@ -1476,22 +2051,12 @@ export default function DashboardScreen() {
                           </Text>
                         </View>
 
-                        <Text style={styles.mySuyoCardRewardText}>{suyo.reward}</Text>
+                        <Text style={styles.mySuyoTapDetailHint}>Tap for options →</Text>
                       </View>
                     </TouchableOpacity>
                   );
-                })
-              ) : (
-                <View style={styles.mySuyoEmptyBox}>
-                  <Ionicons name="receipt-outline" size={38} color="#A3B8AC" />
-                  <Text style={styles.mySuyoEmptyTitle}>No suyos found</Text>
-                  <Text style={styles.mySuyoEmptySub}>
-                    {mySuyoNavTab === 'my_suyo'
-                      ? "You haven't posted any suyos yet. Tap Post below to request your first errand!"
-                      : "You haven't accepted any suyos yet. Browse Available Suyo on Home to pick up a task!"}
-                  </Text>
-                </View>
-              )}
+                });
+              })()}
             </View>
 
             {/* Bottom Edit Action Bar when in Edit Mode */}
@@ -1947,6 +2512,9 @@ export default function DashboardScreen() {
       {/* ========================================================== */}
       {/* 6. SUYO DETAILS MODAL                                      */}
       {/* ========================================================== */}
+      {/* ========================================================== */}
+      {/* 6. SUYO DETAILS MODAL (CONTEXT-AWARE FOR REQUESTER & DOER) */}
+      {/* ========================================================== */}
       {selectedSuyo && (
         <Modal
           visible={!!selectedSuyo}
@@ -1956,94 +2524,240 @@ export default function DashboardScreen() {
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.suyoDetailModalCard}>
+              {/* Top Tag & Status Row */}
               <View style={styles.detailTopTagRow}>
                 <View style={styles.detailTopTagLeft}>
-                  <View
-                    style={[
-                      styles.detailUrgencyPill,
-                      selectedSuyo.tag === 'Urgent'
-                        ? styles.detailPillUrgent
-                        : selectedSuyo.tag === 'Due today'
-                        ? styles.detailPillToday
-                        : selectedSuyo.tag === 'Normal'
-                        ? styles.detailPillNormal
-                        : styles.detailPillTomorrow,
-                    ]}
-                  >
-                    <Text
+                  {selectedSuyoContext === 'posted' ? (
+                    <View
                       style={[
-                        styles.detailUrgencyPillText,
-                        selectedSuyo.tag === 'Urgent'
-                          ? styles.detailPillTextUrgent
-                          : selectedSuyo.tag === 'Due today'
-                          ? styles.detailPillTextToday
-                          : selectedSuyo.tag === 'Normal'
-                          ? styles.detailPillTextNormal
-                          : styles.detailPillTextTomorrow,
+                        styles.detailUrgencyPill,
+                        selectedSuyo.status === 'Cancelled'
+                          ? { backgroundColor: '#FEE2E2' }
+                          : { backgroundColor: '#FEF3C7' },
                       ]}
                     >
-                      {selectedSuyo.tag || 'Normal'}
-                    </Text>
-                  </View>
+                      <Text
+                        style={[
+                          styles.detailUrgencyPillText,
+                          selectedSuyo.status === 'Cancelled'
+                            ? { color: '#DC2626' }
+                            : { color: '#B45309' },
+                        ]}
+                      >
+                        {selectedSuyo.status === 'Cancelled'
+                          ? 'Cancelled'
+                          : 'Open - waiting for a doer'}
+                      </Text>
+                    </View>
+                  ) : selectedSuyoContext === 'accepted' ? (
+                    <View
+                      style={[
+                        styles.detailUrgencyPill,
+                        { backgroundColor: '#E0F2FE' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.detailUrgencyPillText,
+                          { color: '#0369A1' },
+                        ]}
+                      >
+                        In Progress · Accepted
+                      </Text>
+                    </View>
+                  ) : selectedSuyoContext === 'completed' ? (
+                    <View
+                      style={[
+                        styles.detailUrgencyPill,
+                        { backgroundColor: '#DCFCE7' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.detailUrgencyPillText,
+                          { color: '#15803D' },
+                        ]}
+                      >
+                        ✓ Completed
+                      </Text>
+                    </View>
+                  ) : selectedSuyoContext === 'archived' ? (
+                    <View
+                      style={[
+                        styles.detailUrgencyPill,
+                        { backgroundColor: '#F1F5F9' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.detailUrgencyPillText,
+                          { color: '#475569' },
+                        ]}
+                      >
+                        Archived Template
+                      </Text>
+                    </View>
+                  ) : (
+                    <View
+                      style={[
+                        styles.detailUrgencyPill,
+                        selectedSuyo.tag === 'Urgent'
+                          ? styles.detailPillUrgent
+                          : selectedSuyo.tag === 'Due today'
+                          ? styles.detailPillToday
+                          : selectedSuyo.tag === 'Normal'
+                          ? styles.detailPillNormal
+                          : styles.detailPillTomorrow,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.detailUrgencyPillText,
+                          selectedSuyo.tag === 'Urgent'
+                            ? styles.detailPillTextUrgent
+                            : selectedSuyo.tag === 'Due today'
+                            ? styles.detailPillTextToday
+                            : selectedSuyo.tag === 'Normal'
+                            ? styles.detailPillTextNormal
+                            : styles.detailPillTextTomorrow,
+                        ]}
+                      >
+                        {selectedSuyo.tag || 'Normal'}
+                      </Text>
+                    </View>
+                  )}
+
                   <Text style={styles.detailPostedTimeText}>
-                    Posted {selectedSuyo.postedTime || '10m ago'}
+                    {selectedSuyoContext === 'posted'
+                      ? selectedSuyo.waitTime || 'Waiting for doer'
+                      : selectedSuyoContext === 'accepted'
+                      ? 'Courier assigned'
+                      : selectedSuyoContext === 'completed'
+                      ? `Done · ${selectedSuyo.formattedDate || 'Sep 20'}`
+                      : selectedSuyoContext === 'archived'
+                      ? 'Reusable template'
+                      : `Posted ${selectedSuyo.postedTime || '10m ago'}`}
                   </Text>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.detailHeartBtn}
-                  activeOpacity={0.7}
-                  onPress={() => toggleFavoriteSuyo(selectedSuyo)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons
-                    name={
-                      favoriteSuyoIds.includes(selectedSuyo.id)
-                        ? 'heart'
-                        : 'heart-outline'
-                    }
-                    size={24}
-                    color={
-                      favoriteSuyoIds.includes(selectedSuyo.id)
-                        ? '#DC2626'
-                        : '#6B8576'
-                    }
-                  />
-                </TouchableOpacity>
+                {/* Right Action (Heart in browse mode, Edit in posted mode) */}
+                {selectedSuyoContext === 'posted' && selectedSuyo.status !== 'Cancelled' ? (
+                  <TouchableOpacity
+                    style={styles.detailEditHeaderBtn}
+                    activeOpacity={0.7}
+                    onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="create-outline" size={20} color="#1E4D2B" />
+                  </TouchableOpacity>
+                ) : selectedSuyoContext === 'available' ? (
+                  <TouchableOpacity
+                    style={styles.detailHeartBtn}
+                    activeOpacity={0.7}
+                    onPress={() => toggleFavoriteSuyo(selectedSuyo)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons
+                      name={
+                        favoriteSuyoIds.includes(selectedSuyo.id)
+                          ? 'heart'
+                          : 'heart-outline'
+                      }
+                      size={24}
+                      color={
+                        favoriteSuyoIds.includes(selectedSuyo.id)
+                          ? '#DC2626'
+                          : '#6B8576'
+                      }
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.detailCloseIconBtn}
+                    activeOpacity={0.7}
+                    onPress={handleCloseDetailModal}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close" size={20} color="#6B8576" />
+                  </TouchableOpacity>
+                )}
               </View>
 
               <Text style={styles.detailCardTitle}>{selectedSuyo.title}</Text>
               <View style={styles.detailDivider} />
 
-              <View style={styles.detailRequestorRow}>
-                <View style={styles.detailRequestorLeft}>
-                  <View style={styles.detailAvatarCircle}>
-                    <Text style={styles.detailAvatarInitials}>
-                      {selectedSuyo.requesterInitials ||
-                        getInitials(
-                          selectedSuyo.requesterName || 'Maria Clarissa'
-                        )}
+              {/* In Accepted or Completed: Show Who Accepted/Fulfilled It + View Profile */}
+              {selectedSuyoContext === 'accepted' || selectedSuyoContext === 'completed' ? (
+                <View style={styles.detailDoerHighlightCard}>
+                  <View style={styles.detailDoerAvatar}>
+                    <Text style={styles.detailDoerAvatarInitials}>
+                      {getInitials(selectedSuyo.doer?.name || DEFAULT_DOER.name)}
                     </Text>
                   </View>
-                  <View style={styles.detailRequestorTextCol}>
-                    <Text style={styles.detailRequestorName}>
-                      {selectedSuyo.requesterName || 'Maria Clarissa'}
-                    </Text>
-                    <Text style={styles.detailRequestorMeta}>
-                      Requestor · {selectedSuyo.requesterRating || '4.9★'}  -  {(selectedSuyo.completedCount || '34 completed').replace(/[()]/g, '')}
-                    </Text>
-                    <View style={styles.detailRequestorPhoneRow}>
-                      <Ionicons name="call" size={11} color="#6D8777" />
-                      <Text style={styles.detailRequestorPhoneText}>
-                        {selectedSuyo.requesterPhone || '0928 341 5520'}
+                  <View style={styles.detailDoerTextCol}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={styles.detailDoerNameText}>
+                        {selectedSuyo.doer?.name || DEFAULT_DOER.name}
                       </Text>
+                      <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    </View>
+                    <Text style={styles.detailDoerMetaText}>
+                      {selectedSuyoContext === 'completed'
+                        ? 'Fulfilled your Suyo'
+                        : 'Accepted Courier'}{' '}
+                      · {selectedSuyo.doer?.rating || DEFAULT_DOER.rating} ·{' '}
+                      {selectedSuyo.doer?.vehicle || DEFAULT_DOER.vehicle}
+                    </Text>
+                    <Text style={styles.detailDoerPhoneText}>
+                      📞 {selectedSuyo.doer?.phone || DEFAULT_DOER.phone}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.detailViewDoerProfileBtn}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedDoerProfile(selectedSuyo.doer || DEFAULT_DOER)}
+                  >
+                    <Text style={styles.detailViewDoerProfileBtnText}>View Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                /* Requester Info Row */
+                <View style={styles.detailRequestorRow}>
+                  <View style={styles.detailRequestorLeft}>
+                    <View style={styles.detailAvatarCircle}>
+                      <Text style={styles.detailAvatarInitials}>
+                        {selectedSuyo.requesterInitials ||
+                          getInitials(
+                            selectedSuyo.requesterName || userProfile?.name || 'Juan Dela Cruz'
+                          )}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRequestorTextCol}>
+                      <Text style={styles.detailRequestorName}>
+                        {selectedSuyoContext === 'posted'
+                          ? `${userProfile?.name || 'Juan Dela Cruz'} (You)`
+                          : selectedSuyo.requesterName || 'Maria Clarissa'}
+                      </Text>
+                      <Text style={styles.detailRequestorMeta}>
+                        Requestor · {selectedSuyo.requesterRating || '4.9★'}  -  {(selectedSuyo.completedCount || '15 completed').replace(/[()]/g, '')}
+                      </Text>
+                      <View style={styles.detailRequestorPhoneRow}>
+                        <Ionicons name="call" size={11} color="#6D8777" />
+                        <Text style={styles.detailRequestorPhoneText}>
+                          {selectedSuyoContext === 'posted'
+                            ? userProfile?.phone || '+63 917 123 4567'
+                            : selectedSuyo.requesterPhone || '0928 341 5520'}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
+              )}
 
               <View style={styles.detailDivider} />
 
+              {/* Reward & Location Stats */}
               <View style={styles.detailStatsRow}>
                 <View style={styles.detailStatCol}>
                   <Text style={styles.detailStatLabel}>REWARD</Text>
@@ -2052,7 +2766,7 @@ export default function DashboardScreen() {
                       ? `₱${Number(selectedSuyo.rewardAmount).toFixed(2)}`
                       : selectedSuyo.reward && selectedSuyo.reward.startsWith('₱')
                       ? `${selectedSuyo.reward}.00`
-                      : '₱250.00'}
+                      : '₱150.00'}
                   </Text>
                 </View>
 
@@ -2061,7 +2775,7 @@ export default function DashboardScreen() {
                   <View style={styles.detailLocationRow}>
                     <Ionicons name="location-sharp" size={17} color="#0D9488" />
                     <Text style={styles.detailLocationName} numberOfLines={1}>
-                      {selectedSuyo.location || 'Quezon City'}
+                      {selectedSuyo.location || 'SM Tagum'}
                     </Text>
                   </View>
                 </View>
@@ -2073,6 +2787,57 @@ export default function DashboardScreen() {
                 {selectedSuyo.notes ? ` ${selectedSuyo.notes}` : ''}
               </Text>
 
+              {/* FEATURE: Prompt to Increase Reward if Waiting Long in Posted Nav */}
+              {selectedSuyoContext === 'posted' && selectedSuyo.status !== 'Cancelled' && (
+                <View style={styles.detailBoostCard}>
+                  <View style={styles.detailBoostHeader}>
+                    <View style={styles.detailBoostIconBox}>
+                      <Ionicons name="sparkles" size={15} color="#059669" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.detailBoostTitle}>No one accepting yet?</Text>
+                      <Text style={styles.detailBoostSubtitle}>
+                        Boost your reward to get accepted faster by nearby doers:
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.detailBoostButtonsRow}>
+                    <TouchableOpacity
+                      style={styles.detailBoostChip}
+                      activeOpacity={0.75}
+                      onPress={() => handleBoostReward(selectedSuyo.id, 20)}
+                    >
+                      <Text style={styles.detailBoostChipText}>+₱20</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.detailBoostChip}
+                      activeOpacity={0.75}
+                      onPress={() => handleBoostReward(selectedSuyo.id, 50)}
+                    >
+                      <Text style={styles.detailBoostChipText}>+₱50</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.detailBoostChip, styles.detailBoostChipGreen]}
+                      activeOpacity={0.75}
+                      onPress={() => handleBoostReward(selectedSuyo.id, 100)}
+                    >
+                      <Text style={[styles.detailBoostChipText, { color: '#FFFFFF' }]}>+₱100</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* Context Notice for Archived Templates */}
+              {selectedSuyoContext === 'archived' && (
+                <View style={styles.detailArchivedNoticeBox}>
+                  <Ionicons name="bookmark" size={16} color="#475569" />
+                  <Text style={styles.detailArchivedNoticeText}>
+                    This is a saved template. Tap "Repeat Suyo" to post it again without filling out the form.
+                  </Text>
+                </View>
+              )}
+
+              {/* Dynamic Action Buttons Row (Context-Specific) */}
               <View style={styles.detailActionButtonsRow}>
                 <TouchableOpacity
                   style={styles.detailCloseBtn}
@@ -2082,38 +2847,384 @@ export default function DashboardScreen() {
                   <Text style={styles.detailCloseBtnText}>Close</Text>
                 </TouchableOpacity>
 
+                {/* POSTED NAV BUTTONS (Edit, Cancel, or Re-post) */}
+                {selectedSuyoContext === 'posted' && (
+                  selectedSuyo.status !== 'Cancelled' ? (
+                    <>
+                      <TouchableOpacity
+                        style={styles.detailEditSuyoBtn}
+                        onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="pencil" size={15} color="#163523" />
+                        <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.detailCancelSuyoBtn}
+                        onPress={() => handleCancelSuyo(selectedSuyo.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close-circle-outline" size={15} color="#DC2626" />
+                        <Text style={styles.detailCancelSuyoBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.detailRepostBtn}
+                      onPress={() => handleRepeatRequest(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="refresh" size={16} color="#FFFFFF" />
+                      <Text style={styles.detailRepostBtnText}>Re-post Suyo</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+
+                {/* ACCEPTED NAV BUTTONS (View Profile, Track Live) */}
+                {selectedSuyoContext === 'accepted' && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.detailViewDoerProfileBtnAlt}
+                      onPress={() => setSelectedDoerProfile(selectedSuyo.doer || DEFAULT_DOER)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="person-outline" size={15} color="#163523" />
+                      <Text style={styles.detailViewDoerProfileBtnAltText}>Doer Profile</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.detailTrackCourierBtn}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        handleCloseDetailModal();
+                        router.push({
+                          pathname: '/requester-fulfill',
+                          params: {
+                            id: selectedSuyo.id,
+                            title: selectedSuyo.title,
+                            doerName: selectedSuyo.doer?.name || DEFAULT_DOER.name,
+                            doerPhone: selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
+                          },
+                        });
+                      }}
+                    >
+                      <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                      <Text style={styles.detailTrackCourierBtnText}>Track</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* COMPLETED NAV BUTTONS (Save to Archive, Repeat Suyo) */}
+                {selectedSuyoContext === 'completed' && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.detailArchiveSuyoBtn}
+                      onPress={() => handleSaveToArchive(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="bookmark-outline" size={15} color="#163523" />
+                      <Text style={styles.detailArchiveSuyoBtnText}>Archive</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.detailRepeatSuyoBtn}
+                      onPress={() => handleRepeatRequest(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="refresh" size={15} color="#FFFFFF" />
+                      <Text style={styles.detailRepeatSuyoBtnText}>Repeat Suyo</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* ARCHIVED NAV BUTTONS (Edit Template, Repeat Request) */}
+                {selectedSuyoContext === 'archived' && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.detailEditSuyoBtn}
+                      onPress={() => handleOpenEditSuyo(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="pencil" size={15} color="#163523" />
+                      <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.detailRepeatSuyoBtn}
+                      onPress={() => handleRepeatRequest(selectedSuyo)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="paper-plane" size={15} color="#FFFFFF" />
+                      <Text style={styles.detailRepeatSuyoBtnText}>Post Suyo</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* AVAILABLE / EXPLORE FEED BUTTON (Keep Fulfill for Couriers) */}
+                {selectedSuyoContext === 'available' && (
+                  <TouchableOpacity
+                    style={styles.detailFulfillBtn}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      const taskToFulfill = selectedSuyo;
+                      setSelectedSuyo(null);
+                      setOpenedFromFavorites(false);
+                      router.push({
+                        pathname: '/fulfill',
+                        params: {
+                          id: taskToFulfill?.id || 'SYL-102',
+                          title: taskToFulfill?.title || 'Quick Grocery Delivery (5 items)',
+                          category: taskToFulfill?.category || 'Groceries',
+                          location: taskToFulfill?.location || 'SM Tagum',
+                          distanceText: taskToFulfill?.distanceText || '0.8 km away',
+                          reward: taskToFulfill?.reward || '₱150',
+                          requesterName: taskToFulfill?.requesterName || 'Maria Santos',
+                          requesterLocation: taskToFulfill?.location || 'Quezon City',
+                          requesterPhone: taskToFulfill?.requesterPhone || '09564781552',
+                          details: taskToFulfill?.details || 'Grocery delivery items',
+                        },
+                      });
+                    }}
+                  >
+                    <Ionicons name="bicycle" size={18} color="#FFFFFF" />
+                    <Text style={styles.detailFulfillBtnText}>Fulfill Suyo</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ========================================================== */}
+      {/* 6B. DOER PROFILE MODAL (VIEW COURIER DETAILS)              */}
+      {/* ========================================================== */}
+      {selectedDoerProfile && (
+        <Modal
+          visible={!!selectedDoerProfile}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSelectedDoerProfile(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.doerProfileModalCard}>
+              {/* Header */}
+              <View style={styles.doerProfileHeader}>
+                <Text style={styles.doerProfileHeaderTitle}>Doer Profile</Text>
                 <TouchableOpacity
-                  style={styles.detailFulfillBtn}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    const taskToFulfill = selectedSuyo;
-                    setSelectedSuyo(null);
-                    setOpenedFromFavorites(false);
-                    router.push({
-                      pathname: '/fulfill',
-                      params: {
-                        id: taskToFulfill?.id || 'SYL-102',
-                        title: taskToFulfill?.title || 'Quick Grocery Delivery (5 items)',
-                        category: taskToFulfill?.category || 'Groceries',
-                        location: taskToFulfill?.location || 'SM Tagum',
-                        distanceText: taskToFulfill?.distanceText || '0.8 km away',
-                        reward: taskToFulfill?.reward || '₱150',
-                        requesterName: taskToFulfill?.requesterName || 'Maria Santos',
-                        requesterLocation: taskToFulfill?.location || 'Quezon City',
-                        requesterPhone: taskToFulfill?.requesterPhone || '09564781552',
-                        details: taskToFulfill?.details || 'Grocery delivery items',
-                      },
-                    });
-                  }}
+                  style={styles.modalCloseButton}
+                  onPress={() => setSelectedDoerProfile(null)}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="bicycle" size={18} color="#FFFFFF" />
-                  <Text style={styles.detailFulfillBtnText}>Fulfill Suyo</Text>
+                  <Ionicons name="close" size={18} color="#163523" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Profile Hero */}
+              <View style={styles.doerProfileHero}>
+                <View style={styles.doerProfileAvatarCircle}>
+                  <Text style={styles.doerProfileAvatarInitials}>
+                    {getInitials(selectedDoerProfile.name)}
+                  </Text>
+                  <View style={styles.doerVerifiedBadge}>
+                    <Ionicons name="shield-checkmark" size={12} color="#FFFFFF" />
+                  </View>
+                </View>
+                <Text style={styles.doerProfileName}>{selectedDoerProfile.name}</Text>
+                <View style={styles.doerVerifiedTag}>
+                  <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                  <Text style={styles.doerVerifiedTagText}>Verified Courier & Doer</Text>
+                </View>
+                <Text style={styles.doerProfileRating}>
+                  ⭐ {selectedDoerProfile.rating || '4.9★'} · {selectedDoerProfile.completedCount || '128 suyos delivered'}
+                </Text>
+              </View>
+
+              {/* Stats Grid */}
+              <View style={styles.doerStatsGrid}>
+                <View style={styles.doerStatItem}>
+                  <Text style={styles.doerStatValue}>
+                    {selectedDoerProfile.completedCount?.split(' ')[0] || '128'}
+                  </Text>
+                  <Text style={styles.doerStatLabel}>Completed</Text>
+                </View>
+                <View style={styles.doerStatItem}>
+                  <Text style={styles.doerStatValue}>99.4%</Text>
+                  <Text style={styles.doerStatLabel}>On-Time</Text>
+                </View>
+                <View style={styles.doerStatItem}>
+                  <Text style={styles.doerStatValue}>100%</Text>
+                  <Text style={styles.doerStatLabel}>Reliable</Text>
+                </View>
+              </View>
+
+              {/* Details List */}
+              <View style={styles.doerInfoList}>
+                <View style={styles.doerInfoRow}>
+                  <Ionicons name="bicycle" size={15} color="#1E4D2B" />
+                  <Text style={styles.doerInfoLabel}>Transport:</Text>
+                  <Text style={styles.doerInfoValue}>{selectedDoerProfile.vehicle || 'Motorcycle'}</Text>
+                </View>
+                <View style={styles.doerInfoRow}>
+                  <Ionicons name="call" size={15} color="#1E4D2B" />
+                  <Text style={styles.doerInfoLabel}>Contact:</Text>
+                  <Text style={styles.doerInfoValue}>{selectedDoerProfile.phone || '+63 917 555 0192'}</Text>
+                </View>
+                <View style={styles.doerInfoRow}>
+                  <Ionicons name="calendar-outline" size={15} color="#1E4D2B" />
+                  <Text style={styles.doerInfoLabel}>Joined:</Text>
+                  <Text style={styles.doerInfoValue}>{selectedDoerProfile.joinedDate || 'March 2023'}</Text>
+                </View>
+              </View>
+
+              {/* Bio snippet */}
+              <Text style={styles.doerBioText}>
+                "{selectedDoerProfile.bio || 'Reliable and fast delivery courier in Tagum and Davao area. Careful with groceries and delicate items.'}"
+              </Text>
+
+              {/* Actions */}
+              <View style={styles.doerProfileActionsRow}>
+                <TouchableOpacity
+                  style={styles.doerProfileCallBtn}
+                  activeOpacity={0.8}
+                  onPress={() => triggerToast(`Calling ${selectedDoerProfile.name}...`, 'call')}
+                >
+                  <Ionicons name="call" size={15} color="#FFFFFF" />
+                  <Text style={styles.doerProfileCallBtnText}>Call Doer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.doerProfileMsgBtn}
+                  activeOpacity={0.8}
+                  onPress={() => triggerToast(`Opening chat with ${selectedDoerProfile.name}...`, 'chatbubble-ellipses')}
+                >
+                  <Ionicons name="chatbubble-ellipses" size={15} color="#1E4D2B" />
+                  <Text style={styles.doerProfileMsgBtnText}>Message</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
       )}
+
+      {/* ========================================================== */}
+      {/* 6C. EDIT SUYO MODAL                                        */}
+      {/* ========================================================== */}
+      <Modal
+        visible={isEditingSuyoModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEditingSuyoModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.editSuyoModalCard}>
+            <View style={styles.editSuyoHeader}>
+              <Text style={styles.editSuyoHeaderTitle}>Edit Suyo Details</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setIsEditingSuyoModalOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={18} color="#163523" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
+              <Text style={styles.editSuyoInputLabel}>Title</Text>
+              <TextInput
+                style={styles.editSuyoTextInput}
+                value={editingSuyoData.title}
+                onChangeText={(text) => setEditingSuyoData((prev) => ({ ...prev, title: text }))}
+                placeholder="e.g. Buy groceries at SM Tagum"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.editSuyoInputLabel}>Reward Offer (₱)</Text>
+              <View style={styles.editSuyoRewardRow}>
+                <TextInput
+                  style={[styles.editSuyoTextInput, { flex: 1, marginBottom: 0 }]}
+                  value={String(editingSuyoData.rewardAmount)}
+                  onChangeText={(text) =>
+                    setEditingSuyoData((prev) => ({
+                      ...prev,
+                      rewardAmount: text.replace(/[^0-9]/g, ''),
+                    }))
+                  }
+                  keyboardType="numeric"
+                  placeholder="150"
+                  placeholderTextColor="#94A3B8"
+                />
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    style={styles.editSuyoQuickAddPill}
+                    activeOpacity={0.75}
+                    onPress={() =>
+                      setEditingSuyoData((prev) => ({
+                        ...prev,
+                        rewardAmount: Number(prev.rewardAmount || 0) + 20,
+                      }))
+                    }
+                  >
+                    <Text style={styles.editSuyoQuickAddText}>+₱20</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.editSuyoQuickAddPill}
+                    activeOpacity={0.75}
+                    onPress={() =>
+                      setEditingSuyoData((prev) => ({
+                        ...prev,
+                        rewardAmount: Number(prev.rewardAmount || 0) + 50,
+                      }))
+                    }
+                  >
+                    <Text style={styles.editSuyoQuickAddText}>+₱50</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={styles.editSuyoInputLabel}>Task Description</Text>
+              <TextInput
+                style={[styles.editSuyoTextInput, styles.editSuyoTextArea]}
+                value={editingSuyoData.details}
+                onChangeText={(text) => setEditingSuyoData((prev) => ({ ...prev, details: text }))}
+                multiline={true}
+                numberOfLines={3}
+                placeholder="Detailed task description..."
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.editSuyoInputLabel}>Special Notes / Instructions (Optional)</Text>
+              <TextInput
+                style={[styles.editSuyoTextInput, styles.editSuyoTextArea]}
+                value={editingSuyoData.notes}
+                onChangeText={(text) => setEditingSuyoData((prev) => ({ ...prev, notes: text }))}
+                multiline={true}
+                numberOfLines={2}
+                placeholder="e.g. Please ask for the receipt"
+                placeholderTextColor="#94A3B8"
+              />
+            </ScrollView>
+
+            <View style={styles.editSuyoActionsRow}>
+              <TouchableOpacity
+                style={styles.editSuyoCancelBtn}
+                onPress={() => setIsEditingSuyoModalOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.editSuyoCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.editSuyoSaveBtn}
+                onPress={handleSaveEditedSuyo}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark-sharp" size={16} color="#FFFFFF" />
+                <Text style={styles.editSuyoSaveBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ========================================================== */}
       {/* 7. FAVORITES SUYOS MODAL                                   */}
@@ -4002,6 +5113,514 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailFulfillBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  detailEditHeaderBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#EBF4EE',
+  },
+  detailCloseIconBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+  },
+  detailDoerHighlightCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3FAF5',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#CDE5D6',
+    gap: 10,
+    marginBottom: 4,
+  },
+  detailDoerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1E4D2B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailDoerAvatarInitials: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  detailDoerTextCol: {
+    flex: 1,
+  },
+  detailDoerNameText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  detailDoerMetaText: {
+    fontSize: 11,
+    color: '#607B6C',
+    marginTop: 1,
+  },
+  detailDoerPhoneText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#425C4D',
+    marginTop: 2,
+  },
+  detailViewDoerProfileBtn: {
+    backgroundColor: '#1E4D2B',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  detailViewDoerProfileBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  detailBoostCard: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  detailBoostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  detailBoostIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailBoostTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  detailBoostSubtitle: {
+    fontSize: 11,
+    color: '#4B6354',
+    lineHeight: 15,
+  },
+  detailBoostButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  detailBoostChip: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    borderRadius: 8,
+    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailBoostChipGreen: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  detailBoostChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  detailArchivedNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  detailArchivedNoticeText: {
+    fontSize: 11.5,
+    color: '#475569',
+    flex: 1,
+    lineHeight: 16,
+  },
+  detailEditSuyoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5EE',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 5,
+  },
+  detailEditSuyoBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  detailCancelSuyoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 5,
+  },
+  detailCancelSuyoBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  detailRepostBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E4D2B',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  detailRepostBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  detailViewDoerProfileBtnAlt: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5EE',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 5,
+  },
+  detailViewDoerProfileBtnAltText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  detailTrackCourierBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  detailTrackCourierBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  detailArchiveSuyoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 5,
+  },
+  detailArchiveSuyoBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  detailRepeatSuyoBtn: {
+    flex: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E4D2B',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  detailRepeatSuyoBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  /* Doer Profile Modal */
+  doerProfileModalCard: {
+    width: '100%',
+    maxWidth: 370,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    elevation: 10,
+  },
+  doerProfileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  doerProfileHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  doerProfileHero: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  doerProfileAvatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#1E4D2B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+  },
+  doerProfileAvatarInitials: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  doerVerifiedBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#059669',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerProfileName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 3,
+  },
+  doerVerifiedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginBottom: 5,
+  },
+  doerVerifiedTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  doerProfileRating: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#658172',
+  },
+  doerStatsGrid: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  doerStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  doerStatValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  doerStatLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  doerInfoList: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  doerInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  doerInfoLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    width: 75,
+  },
+  doerInfoValue: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#163523',
+    flex: 1,
+  },
+  doerBioText: {
+    fontSize: 11.5,
+    color: '#52695C',
+    fontStyle: 'italic',
+    lineHeight: 16,
+    backgroundColor: '#F3FAF5',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  doerProfileActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  doerProfileCallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E4D2B',
+    borderRadius: 12,
+    paddingVertical: 11,
+    gap: 6,
+  },
+  doerProfileCallBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  doerProfileMsgBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5EE',
+    borderRadius: 12,
+    paddingVertical: 11,
+    gap: 6,
+  },
+  doerProfileMsgBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#163523',
+  },
+
+  /* Edit Suyo Modal */
+  editSuyoModalCard: {
+    width: '100%',
+    maxWidth: 390,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    elevation: 10,
+  },
+  editSuyoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  editSuyoHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  editSuyoInputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 5,
+    marginTop: 8,
+  },
+  editSuyoTextInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13.5,
+    color: '#163523',
+    marginBottom: 4,
+  },
+  editSuyoRewardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editSuyoQuickAddPill: {
+    backgroundColor: '#E8F5EE',
+    borderWidth: 1,
+    borderColor: '#A7D9B8',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  editSuyoQuickAddText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E4D2B',
+  },
+  editSuyoTextArea: {
+    minHeight: 65,
+    textAlignVertical: 'top',
+    paddingTop: 8,
+  },
+  editSuyoActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF4F0',
+  },
+  editSuyoCancelBtn: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  editSuyoCancelBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  editSuyoSaveBtn: {
+    flex: 1.6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E4D2B',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  editSuyoSaveBtnText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
