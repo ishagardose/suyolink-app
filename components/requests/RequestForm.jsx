@@ -48,12 +48,12 @@ const CATEGORY_ICONS = {
 const QUICK_PRESETS = [
   {
     key: 'custom',
-    label: '✨ Custom / Create',
+    label: 'Custom / Create',
     isCreate: true,
   },
   {
     key: 'groceries',
-    label: '🛒 Groceries',
+    label: 'Groceries',
     title: 'Buy groceries at supermarket',
     category: 'Groceries',
     offerAmount: '150.00',
@@ -61,7 +61,7 @@ const QUICK_PRESETS = [
   },
   {
     key: 'documents',
-    label: '📄 Documents',
+    label: 'Documents',
     title: 'Drop off documents - Unit 402',
     category: 'Documents',
     offerAmount: '300.00',
@@ -69,7 +69,7 @@ const QUICK_PRESETS = [
   },
   {
     key: 'bills',
-    label: '🧾 Bills Payment',
+    label: 'Bills Payment',
     title: 'Queue for bills payment',
     category: 'Queuing & Bills',
     offerAmount: '120.00',
@@ -77,7 +77,7 @@ const QUICK_PRESETS = [
   },
   {
     key: 'pickup_deliver',
-    label: '🛵 Pickup & Deliver',
+    label: 'Pickup & Deliver',
     title: 'Pickup & Deliver items',
     category: 'Delivery',
     offerAmount: '180.00',
