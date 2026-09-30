@@ -187,19 +187,21 @@ export default function AccountScreen() {
       >
         {/* MAIN PROFILE CARD (Matches Image 3) */}
         <View style={styles.mainProfileCard}>
-          {/* Avatar Circle */}
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitialsText}>
-              {getInitials(profile.name)}
-            </Text>
+          {/* Circled Profile with Shiny Green Verified Badge */}
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarInitialsText}>
+                {getInitials(profile.name)}
+              </Text>
+            </View>
+            <View style={styles.shinyVerifiedBadge}>
+              <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+            </View>
           </View>
 
-          {/* Name & Blue Verified Badge */}
+          {/* Name */}
           <View style={styles.nameRow}>
             <Text style={styles.nameText}>{profile.name}</Text>
-            <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedBadgeText}>VERIFIED</Text>
-            </View>
           </View>
 
           {/* Username / Handle */}
@@ -488,6 +490,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
   },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 14,
+  },
   avatarCircle: {
     width: 88,
     height: 88,
@@ -497,7 +503,24 @@ const styles = StyleSheet.create({
     borderColor: '#BDDFC9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+  },
+  shinyVerifiedBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 5,
+    elevation: 5,
   },
   avatarInitialsText: {
     fontSize: 28,
@@ -508,7 +531,7 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
     marginBottom: 4,
   },
   nameText: {
@@ -516,18 +539,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#163523',
     letterSpacing: -0.3,
-  },
-  verifiedBadge: {
-    backgroundColor: '#2563EB',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  verifiedBadgeText: {
-    fontSize: 9.5,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
   handleText: {
     fontSize: 13.5,

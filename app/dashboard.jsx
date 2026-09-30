@@ -2538,18 +2538,34 @@ export default function DashboardScreen() {
 
               <View style={styles.walletSummaryRow}>
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>{WALLET_EARNED_SUYOS.length}</Text>
-                  <Text style={styles.walletSummaryLabel}>Accepted Suyos</Text>
+                  <Text style={styles.walletSummaryCount}>₱1,280.00</Text>
+                  <Text style={styles.walletSummaryLabel}>Monthly Income</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>₱630</Text>
+                  <Text style={styles.walletSummaryCount}>₱630.00</Text>
                   <Text style={styles.walletSummaryLabel}>This Week</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>Direct</Text>
-                  <Text style={styles.walletSummaryLabel}>Cash / P2P</Text>
+                  <Text style={styles.walletSummaryCount}>{WALLET_EARNED_SUYOS.length} Suyos</Text>
+                  <Text style={styles.walletSummaryLabel}>Accepted</Text>
+                </View>
+              </View>
+
+              {/* Monthly Income Stats Banner */}
+              <View style={styles.walletMonthlyIncomeCard}>
+                <View style={styles.walletMonthlyIncomeLeft}>
+                  <View style={styles.walletMonthlyIconBox}>
+                    <Ionicons name="trending-up" size={16} color="#059669" />
+                  </View>
+                  <View>
+                    <Text style={styles.walletMonthlyTitle}>Monthly Income (Oct 2026)</Text>
+                    <Text style={styles.walletMonthlySub}>Tracked errand rewards earned this month</Text>
+                  </View>
+                </View>
+                <View style={styles.walletMonthlyBadge}>
+                  <Text style={styles.walletMonthlyBadgeText}>+18.4% growth</Text>
                 </View>
               </View>
 
@@ -4459,9 +4475,9 @@ export default function DashboardScreen() {
                   <Text style={styles.statsTileSub}>142 Reviews</Text>
                 </View>
                 <View style={styles.statsMetricTile}>
-                  <Text style={[styles.statsTileValue, { color: '#D97706' }]}>99.2%</Text>
-                  <Text style={styles.statsTileLabel}>On-Time Arrival</Text>
-                  <Text style={styles.statsTileSub}>Hyperlocal Delivery</Text>
+                  <Text style={[styles.statsTileValue, { color: '#059669' }]}>99.4%</Text>
+                  <Text style={styles.statsTileLabel}>Customer Satisfaction</Text>
+                  <Text style={styles.statsTileSub}>Positive Community Feedback</Text>
                 </View>
               </View>
 
@@ -7573,6 +7589,54 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#D7EBE0',
+  },
+  walletMonthlyIncomeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  walletMonthlyIncomeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  walletMonthlyIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletMonthlyTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 1,
+  },
+  walletMonthlySub: {
+    fontSize: 10.5,
+    color: '#557261',
+    fontWeight: '500',
+  },
+  walletMonthlyBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  walletMonthlyBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#15803D',
   },
   walletPaymentNoticeRow: {
     flexDirection: 'row',
