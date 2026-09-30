@@ -2,6 +2,7 @@ export const CATEGORIES = [
   'Delivery',
   'Groceries',
   'Documents',
+  'Queuing & Bills',
   'Household',
   'Other',
 ];

@@ -23,7 +23,7 @@ export default function DashboardHero({ name }) {
         </ThemedText>
       </View>
       <Image
-        source={require('../../assets/scooter_hero_isometric.jpg')}
+        source={require('../../assets/scooter_courier.png')}
         style={styles.heroImageSticker}
         resizeMode="contain"
       />

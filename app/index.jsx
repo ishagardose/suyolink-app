@@ -279,7 +279,7 @@ export default function App() {
             >
               <Animated.View style={[styles.stickerAnimatedWrapper, { opacity: slideFadeAnim }]}>
                 <Image
-                  source={require('../assets/hunter_green_tracking.jpg')}
+                  source={require('../assets/hunter_green_tracking.png')}
                   style={styles.stickerImage}
                   resizeMode="contain"
                 />
@@ -450,7 +450,7 @@ const createStyles = (colors) => StyleSheet.create({
   },
   whiteSheet: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     overflow: 'hidden',
@@ -496,14 +496,14 @@ const createStyles = (colors) => StyleSheet.create({
   titleText: {
     fontSize: 27,
     fontWeight: '800',
-    color: colors.text,
+    color: '#163523',
     textAlign: 'center',
     letterSpacing: -0.3,
     marginBottom: 10,
   },
   descriptionText: {
     fontSize: 15,
-    color: colors.textSecondary,
+    color: '#52695C',
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 300,
@@ -521,7 +521,7 @@ const createStyles = (colors) => StyleSheet.create({
   },
   paginationDotInactive: {
     width: 14,
-    backgroundColor: colors.border,
+    backgroundColor: '#D8E5DF',
   },
   paginationDotActive: {
     width: 24,
@@ -551,16 +551,16 @@ const createStyles = (colors) => StyleSheet.create({
     letterSpacing: 0.2,
   },
   secondaryButton: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     height: 52,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: '#1E4D2B',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: colors.link,
+    color: '#1E4D2B',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,

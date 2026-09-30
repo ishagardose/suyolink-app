@@ -20,21 +20,21 @@ export default function DashboardHeader({ onOpenSidebar, onNotifications, unread
       </TouchableOpacity>
 
       <View style={styles.headerRightActions}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={`Open notifications, ${unreadCount} unread`}
-          onPress={onNotifications}
-          style={styles.headerIconButton}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name="notifications-outline"
-            size={22}
-            color={colors.onPrimary}
-          />
-          {unreadCount > 0 ? <View style={styles.unreadBadgeDot} /> : null}
-        </TouchableOpacity>
+        {onNotifications && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Open notifications, ${unreadCount} unread`}
+            onPress={onNotifications}
+            style={styles.headerIconButton}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.onPrimary} />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadgeDot} />
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           onPress={onOpenSidebar}
