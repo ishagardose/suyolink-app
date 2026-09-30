@@ -491,7 +491,7 @@ const WALLET_EARNED_SUYOS = [
     title: 'Express parcel delivery to Greenbelt',
     category: 'Delivery',
     icon: 'bicycle',
-    date: 'Oct 25 (W4) · 10:00 AM',
+    date: 'Today (W4) · 10:00 AM',
     requesterName: 'Patricia Mendoza',
     location: 'Greenbelt 5 Concierge',
     earnedAmount: 90,
@@ -570,50 +570,51 @@ const WALLET_INCOME_CHART_PRESETS = {
   monthly: {
     id: 'monthly',
     tabLabel: 'Monthly',
-    title: 'Monthly Income Trend (Oct 2026)',
-    subtitle: 'Weekly progression across 7 accepted suyos',
+    title: 'Monthly Income Trend',
+    subtitle: 'Weekly breakdown for October 2026',
     total: '₱1,280.00',
+    totalNote: 'Total October Income (7 Suyos)',
     growth: '+18.4% vs Sep',
     pts: [
-      { x: 75, y: 125, val: '₱220', label: 'W1: Oct 1-7' },
-      { x: 195, y: 96, val: '₱560', label: 'W2: Oct 8-14' },
-      { x: 315, y: 70, val: '₱890', label: 'W3: Oct 15-21' },
-      { x: 435, y: 36, val: '₱1,280', label: 'W4: This Week', isPeak: true },
+      { x: 95, y: 102, val: '₱220', label: 'W1 (Oct 1–7)' },
+      { x: 205, y: 66, val: '₱340', label: 'W2 (Oct 8–14)' },
+      { x: 315, y: 69, val: '₱330', label: 'W3 (Oct 15–21)' },
+      { x: 425, y: 51, val: '₱390', label: 'W4 (Oct 22–28)', isPeak: true },
     ],
     pathD:
-      'M 75,125 C 135,125 135,96 195,96 C 255,96 255,70 315,70 C 375,70 375,36 435,36',
+      'M 95,102 C 150,102 150,66 205,66 C 260,66 260,69 315,69 C 370,69 370,51 425,51',
     areaD:
-      'M 75,125 C 135,125 135,96 195,96 C 255,96 255,70 315,70 C 375,70 375,36 435,36 L 435,145 L 75,145 Z',
-    yLabels: ['₱1.5k', '₱1.0k', '₱500', '₱0'],
+      'M 95,102 C 150,102 150,66 205,66 C 260,66 260,69 315,69 C 370,69 370,51 425,51 L 425,168 L 95,168 Z',
+    yLabels: ['₱400', '₱300', '₱200', '₱100', '₱0'],
     metrics: [
-      { label: 'This Week (W4)', value: '₱390.00' },
-      { label: 'Avg / Suyo', value: '₱182.86' },
-      { label: 'Month Suyos', value: '7 Suyos' },
+      { label: 'Peak Week (W4)', value: '₱390.00' },
+      { label: 'Weekly Average', value: '₱320.00' },
+      { label: 'Month Completed', value: '7 Suyos' },
     ],
   },
   yearly: {
     id: 'yearly',
     tabLabel: 'Yearly',
-    title: 'Yearly Income Trend (2026 YTD)',
-    subtitle: 'Quarterly & monthly growth to 84 overall suyos',
+    title: 'Yearly Income Trend',
+    subtitle: 'Quarterly breakdown for 2026 YTD',
     total: '₱15,360.00',
+    totalNote: 'Total 2026 Annual Income (84 Suyos)',
     growth: '+34.2% vs 2025',
     pts: [
-      { x: 65, y: 124, val: '₱3.3k', label: 'Q1 (18 Suyos)' },
-      { x: 160, y: 96, val: '₱7.6k', label: 'Q2 (42 Suyos)' },
-      { x: 260, y: 64, val: '₱12.1k', label: 'Q3 (66 Suyos)' },
-      { x: 360, y: 48, val: '₱14.1k', label: 'Sep YTD' },
-      { x: 435, y: 32, val: '₱15,360', label: 'Oct YTD (Peak)', isPeak: true },
+      { x: 95, y: 89, val: '₱3.3k', label: 'Q1 (Jan–Mar)' },
+      { x: 205, y: 65, val: '₱4.3k', label: 'Q2 (Apr–Jun)' },
+      { x: 315, y: 60, val: '₱4.5k', label: 'Q3 (Jul–Sep)', isPeak: true },
+      { x: 425, y: 90, val: '₱3.3k', label: 'Q4 (Oct YTD)' },
     ],
     pathD:
-      'M 65,124 C 112,124 112,96 160,96 C 210,96 210,64 260,64 C 310,64 310,48 360,48 C 397,48 397,32 435,32',
+      'M 95,89 C 150,89 150,65 205,65 C 260,65 260,60 315,60 C 370,60 370,90 425,90',
     areaD:
-      'M 65,124 C 112,124 112,96 160,96 C 210,96 210,64 260,64 C 310,64 310,48 360,48 C 397,48 397,32 435,32 L 435,145 L 65,145 Z',
-    yLabels: ['₱16.0k', '₱11.0k', '₱5.5k', '₱0'],
+      'M 95,89 C 150,89 150,65 205,65 C 260,65 260,60 315,60 C 370,60 370,90 425,90 L 425,168 L 95,168 Z',
+    yLabels: ['₱5.0k', '₱3.7k', '₱2.5k', '₱1.2k', '₱0'],
     metrics: [
-      { label: 'Monthly Avg', value: '₱1,536.00' },
-      { label: 'Avg / Suyo', value: '₱182.85' },
-      { label: 'Overall Suyos', value: '84 Suyos' },
+      { label: 'Peak Quarter (Q3)', value: '₱4,500.00' },
+      { label: 'Monthly Average', value: '₱1,536.00' },
+      { label: 'Overall Completed', value: '84 Suyos' },
     ],
   },
 };
@@ -626,10 +627,10 @@ function WalletIncomeLineGraph() {
     return React.createElement(
       'svg',
       {
-        viewBox: '0 0 490 175',
+        viewBox: '0 0 500 200',
         width: '100%',
-        height: '165',
-        style: { width: '100%', height: 165, overflow: 'visible' },
+        height: '185',
+        style: { width: '100%', height: 185, overflow: 'visible' },
       },
       React.createElement(
         'defs',
@@ -637,30 +638,30 @@ function WalletIncomeLineGraph() {
         React.createElement(
           'linearGradient',
           { id: 'walletIncomeGrad', x1: '0', y1: '0', x2: '0', y2: '1' },
-          React.createElement('stop', { offset: '0%', stopColor: '#10B981', stopOpacity: '0.40' }),
-          React.createElement('stop', { offset: '65%', stopColor: '#10B981', stopOpacity: '0.10' }),
+          React.createElement('stop', { offset: '0%', stopColor: '#10B981', stopOpacity: '0.35' }),
+          React.createElement('stop', { offset: '70%', stopColor: '#10B981', stopOpacity: '0.08' }),
           React.createElement('stop', { offset: '100%', stopColor: '#10B981', stopOpacity: '0.0' })
         )
       ),
       // Y Grid Lines & Labels
       current.yLabels.map((lbl, idx) => {
-        const yPos = 25 + idx * 40;
+        const yPos = 48 + idx * 30;
         return React.createElement(
           'g',
           { key: `y-grid-${idx}` },
           React.createElement('line', {
-            x1: 45,
+            x1: 52,
             y1: yPos,
-            x2: 465,
+            x2: 468,
             y2: yPos,
-            stroke: idx === 3 ? '#CBD5E1' : '#F1F5F9',
-            strokeWidth: idx === 3 ? 1.5 : 1,
-            strokeDasharray: idx === 3 ? undefined : '4,4',
+            stroke: idx === 4 ? '#CBD5E1' : '#F1F5F9',
+            strokeWidth: idx === 4 ? 1.5 : 1,
+            strokeDasharray: idx === 4 ? undefined : '4,4',
           }),
           React.createElement(
             'text',
             {
-              x: 38,
+              x: 46,
               y: yPos + 3.5,
               fill: '#94A3B8',
               fontSize: 10,
@@ -679,7 +680,7 @@ function WalletIncomeLineGraph() {
           x1: pt.x,
           y1: pt.y,
           x2: pt.x,
-          y2: 145,
+          y2: 168,
           stroke: '#E2E8F0',
           strokeWidth: 1.2,
           strokeDasharray: '3,3',
@@ -721,36 +722,63 @@ function WalletIncomeLineGraph() {
           })
         )
       ),
-      // Peak Marker Tooltip
-      current.pts
-        .filter((pt) => pt.isPeak)
-        .map((pt, idx) =>
-          React.createElement(
+      // Point Value Badges (Proper & Understandable: Every node shows its exact value!)
+      current.pts.map((pt, idx) => {
+        if (pt.isPeak) {
+          return React.createElement(
             'g',
-            { key: `peak-${idx}` },
+            { key: `val-badge-${idx}` },
             React.createElement('rect', {
-              x: pt.x - 52,
+              x: pt.x - 44,
               y: pt.y - 25,
-              width: 104,
-              height: 20,
-              rx: 5,
+              width: 88,
+              height: 19,
+              rx: 9.5,
               fill: '#064E3B',
             }),
             React.createElement(
               'text',
               {
                 x: pt.x,
-                y: pt.y - 11,
+                y: pt.y - 12,
                 fill: '#FFFFFF',
-                fontSize: 10,
-                fontWeight: '700',
+                fontSize: 9.5,
+                fontWeight: '800',
                 textAnchor: 'middle',
                 fontFamily: 'sans-serif',
               },
               `${pt.val} Peak`
             )
+          );
+        }
+        return React.createElement(
+          'g',
+          { key: `val-badge-${idx}` },
+          React.createElement('rect', {
+            x: pt.x - 24,
+            y: pt.y - 23,
+            width: 48,
+            height: 16,
+            rx: 8,
+            fill: '#FFFFFF',
+            stroke: '#A7F3D0',
+            strokeWidth: 1.2,
+          }),
+          React.createElement(
+            'text',
+            {
+              x: pt.x,
+              y: pt.y - 11.5,
+              fill: '#065F46',
+              fontSize: 9.5,
+              fontWeight: '700',
+              textAnchor: 'middle',
+              fontFamily: 'sans-serif',
+            },
+            pt.val
           )
-        ),
+        );
+      }),
       // X-Axis Labels
       current.pts.map((pt, idx) =>
         React.createElement(
@@ -758,7 +786,7 @@ function WalletIncomeLineGraph() {
           {
             key: `xlbl-${idx}`,
             x: pt.x,
-            y: 162,
+            y: 188,
             fill: '#64748B',
             fontSize: 9.5,
             fontWeight: '600',
@@ -777,6 +805,11 @@ function WalletIncomeLineGraph() {
         <View style={styles.walletNativeChartGrid}>
           {current.pts.map((pt, idx) => (
             <View key={`n-bar-${idx}`} style={styles.walletNativeBarCol}>
+              <View style={[styles.walletNativeValBadge, pt.isPeak && styles.walletNativeValBadgePeak]}>
+                <Text style={[styles.walletNativeValText, pt.isPeak && styles.walletNativeValTextPeak]}>
+                  {pt.val}{pt.isPeak ? ' Peak' : ''}
+                </Text>
+              </View>
               <View style={[styles.walletNativeNodeDot, pt.isPeak && styles.walletNativeNodeDotPeak]} />
               <View style={styles.walletNativeDropLine} />
               <Text style={styles.walletNativeLabelText}>{pt.label}</Text>
@@ -809,7 +842,10 @@ function WalletIncomeLineGraph() {
 
       {/* 2. Value and Timeframe Controls (Only Monthly & Yearly) */}
       <View style={styles.walletLineAmountRow}>
-        <Text style={styles.walletLineBigAmount}>{current.total}</Text>
+        <View>
+          <Text style={styles.walletLineBigAmount}>{current.total}</Text>
+          <Text style={styles.walletLineTotalNote}>{current.totalNote}</Text>
+        </View>
 
         <View style={styles.walletTimeFilterRow}>
           {[
@@ -2870,22 +2906,23 @@ export default function DashboardScreen() {
 
               <View style={styles.walletSummaryRow}>
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>₱1,280.00</Text>
-                  <Text style={styles.walletSummaryLabel}>Monthly (Oct)</Text>
+                  <Text style={styles.walletSummaryCount}>
+                    ₱{WALLET_EARNED_SUYOS.filter((s) => s.date?.startsWith('Today'))
+                      .reduce((sum, s) => sum + (Number(s.earnedAmount) || 0), 0)
+                      .toFixed(2)}
+                  </Text>
+                  <Text style={styles.walletSummaryLabel}>Today Earnings</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>₱390.00</Text>
-                  <Text style={styles.walletSummaryLabel}>This Week (W4)</Text>
+                  <Text style={styles.walletSummaryCount}>
+                    {WALLET_EARNED_SUYOS.filter((s) => s.date?.startsWith('Today')).length} Suyos
+                  </Text>
+                  <Text style={styles.walletSummaryLabel}>Today Suyos</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>{WALLET_EARNED_SUYOS.length} Suyos</Text>
-                  <Text style={styles.walletSummaryLabel}>Month Suyos</Text>
-                </View>
-                <View style={styles.walletSummaryDivider} />
-                <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>84</Text>
+                  <Text style={styles.walletSummaryCount}>84 Suyos</Text>
                   <Text style={styles.walletSummaryLabel}>Overall Suyos</Text>
                 </View>
               </View>
@@ -7950,32 +7987,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#F8FAF9',
     borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#EDF5F0',
   },
   walletSummaryItem: {
     alignItems: 'center',
     flex: 1,
-    paddingHorizontal: 2,
+    paddingHorizontal: 4,
   },
   walletSummaryCount: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '800',
     color: '#163523',
-    marginBottom: 2,
+    marginBottom: 3,
     textAlign: 'center',
   },
   walletSummaryLabel: {
-    fontSize: 9.5,
+    fontSize: 11,
     color: '#557261',
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
   walletSummaryDivider: {
     width: 1,
-    height: 24,
+    height: 28,
     backgroundColor: '#D7EBE0',
   },
   walletMonthlyIncomeCard: {
@@ -9045,6 +9082,12 @@ const styles = StyleSheet.create({
     color: '#064E3B',
     letterSpacing: -0.5,
   },
+  walletLineTotalNote: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '600',
+    marginTop: 2,
+  },
   walletTimeFilterRow: {
     flexDirection: 'row',
     gap: 4,
@@ -9075,12 +9118,12 @@ const styles = StyleSheet.create({
   },
   walletSvgChartContainer: {
     width: '100%',
-    height: 165,
+    height: 185,
     marginVertical: 4,
   },
   walletNativeChartContainer: {
     width: '100%',
-    height: 155,
+    height: 165,
     marginVertical: 6,
     justifyContent: 'flex-end',
   },
@@ -9088,13 +9131,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    height: 120,
+    height: 125,
     borderBottomWidth: 1,
     borderBottomColor: '#CBD5E1',
     paddingBottom: 4,
   },
   walletNativeBarCol: {
     alignItems: 'center',
+  },
+  walletNativeValBadge: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  walletNativeValBadgePeak: {
+    backgroundColor: '#064E3B',
+    borderColor: '#064E3B',
+  },
+  walletNativeValText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  walletNativeValTextPeak: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   walletNativeNodeDot: {
     width: 10,
