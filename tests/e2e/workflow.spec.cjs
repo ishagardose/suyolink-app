@@ -97,6 +97,8 @@ test('provider starts task and uploads proof to private storage', async ({ page 
     const body = route.request().postDataJSON();
     expect(body.p_storage_path).toContain(`${request.id}/${me}/`);
     request.status = 'awaiting_confirmation';
+    if (!workflow.request_events) workflow.request_events = [];
+    workflow.request_events.push({ id: 'event-proof', request_id: request.id, to_status: request.status, created_at: new Date().toISOString() });
     await route.fulfill({ json: {} });
   });
   await page.goto('/suyo?id=task-1');

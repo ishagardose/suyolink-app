@@ -62,16 +62,29 @@ export function SuyoProvider({ children }) {
     try {
       if (!supabase) throw new Error(authConfigError);
       // Safe listing RPC - no direct unrestricted select('*') on suyo_requests
-      const data = await apiListRequests({
-        query: listFilters.query,
-        category: listFilters.category,
-        status: listFilters.status,
-        scope: listFilters.scope,
-        sort: listFilters.sort,
-        origin: listFilters.origin,
-      });
+      const promises = [
+        apiListRequests({
+          query: listFilters.query,
+          category: listFilters.category,
+          status: listFilters.status,
+          scope: listFilters.scope,
+          sort: listFilters.sort,
+          origin: listFilters.origin,
+        }),
+      ];
+      if (listFilters.scope === 'browse') {
+        promises.push(
+          apiListRequests({ scope: 'posted' }).catch(() => []),
+          apiListRequests({ scope: 'assigned' }).catch(() => [])
+        );
+      }
+      const [data, postedData = [], assignedData = []] = await Promise.all(promises);
       if (run === revision.current && currentUser.current === user.id) {
-        setRequests(data);
+        const mergedMap = new Map();
+        [...data, ...postedData, ...assignedData].forEach((item) => {
+          if (item?.id) mergedMap.set(item.id, item);
+        });
+        setRequests(Array.from(mergedMap.values()));
       }
     } catch (err) {
       if (run === revision.current) {

@@ -15,6 +15,8 @@ import ThemedTextInput from '../components/themed/ThemedTextInput';
 import ProofImage from '../components/requests/ProofImage';
 import SuyoSummary from '../components/suyo/SuyoSummary';
 import PrivateTaskDetails from '../components/suyo/PrivateTaskDetails';
+import ApplicationsPanel from '../components/suyo/ApplicationsPanel';
+import StatusActions from '../components/suyo/StatusActions';
 
 export default function SuyoScreen() {
   const { id } = useLocalSearchParams();
@@ -46,7 +48,6 @@ export default function SuyoScreen() {
   const [reason, setReason] = useState('');
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
-  const [confirmCancel, setConfirmCancel] = useState(false);
 
   React.useEffect(() => {
     if (id) loadDetails(id);
@@ -67,8 +68,6 @@ export default function SuyoScreen() {
     editable={!busy} maxLength={1000} multiline style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, minHeight: 60 }} />;
   const own = request?.requesterId === user?.id;
   const assigned = request?.providerId === user?.id;
-  const requestApplications = applications.filter(item => item.request_id === id);
-  const mine = requestApplications.find(item => item.applicant_id === user?.id);
   const requestProofs = proofs.filter(item => item.request_id === id);
   const rating = ratings.find(item => item.request_id === id);
   const eligible = request?.status === 'open' && Date.parse(request.deadline) > Date.now();
@@ -84,31 +83,25 @@ export default function SuyoScreen() {
         {request.providerId ? <ThemedText>Provider rating: {providerRatings.length ? `${(providerRatings.reduce((total, item) => total + item.score, 0) / providerRatings.length).toFixed(1)} / 5 (${providerRatings.length} reviews)` : 'No ratings yet'}</ThemedText> : null}
         {request.latitude != null ? <ThemedButton title="View task location" variant="secondary" onPress={() => router.push({ pathname: '/map', params: { requestId: id } })} /> : null}
         {request.status === 'open' && !eligible ? <ThemedText tone="danger">Deadline passed. This task is no longer accepting applications.</ThemedText> : null}
-        {!own && mine ? <>
-          <ThemedText>Your application: {mine.status}</ThemedText>
-          {mine.status === 'pending' ? button('Withdraw application', () => mutate('withdraw_application', { p_application_id: mine.id })) : null}
-        </> : null}
-        {!own && !mine && eligible ? button('Apply to this Suyo', () => mutate('apply_to_suyo', { p_request_id: id })) : null}
-        {own ? <>
-          <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Applicants</ThemedText>
-          {!requestApplications.length ? <ThemedText>No applications yet.</ThemedText> : requestApplications.map(application => {
-            const reviews = ratings.filter(item => item.provider_id === application.applicant_id);
-            return <View key={application.id} style={{ padding: 14, gap: 10, backgroundColor: colors.card, borderRadius: 12 }}>
-              <ThemedText>{application.applicant?.full_name || 'Provider'} · {application.status}</ThemedText>
-              <ThemedText>{reviews.length ? `${(reviews.reduce((sum, item) => sum + item.score, 0) / reviews.length).toFixed(1)} / 5 (${reviews.length} reviews)` : 'No ratings yet'}</ThemedText>
-              {application.status === 'pending' && eligible ? <>
-                {button('Accept ' + (application.applicant?.full_name || 'provider'), () => mutate('decide_application', { p_application_id: application.id, p_accept: true }))}
-                {button('Reject ' + (application.applicant?.full_name || 'provider'), () => mutate('decide_application', { p_application_id: application.id, p_accept: false }))}
-              </> : null}
-            </View>;
-          })}
-          {request.status === 'open' ? confirmCancel ? <>
-            <ThemedText>Cancel this request? Pending applications will close.</ThemedText>
-            {button('Confirm cancellation', () => mutate('change_suyo_status', { p_request_id: id, p_status: 'cancelled' }))}
-            <ThemedButton title="Keep request" variant="secondary" disabled={busy} onPress={() => setConfirmCancel(false)} />
-          </> : <ThemedButton title="Cancel request" variant="secondary" onPress={() => setConfirmCancel(true)} /> : null}
-        </> : null}
-        {assigned && request.status === 'assigned' ? button('Start task', () => mutate('change_suyo_status', { p_request_id: id, p_status: 'in_progress' })) : null}
+        <ApplicationsPanel
+          request={request}
+          applications={applications}
+          ratings={ratings}
+          userId={user?.id}
+          busy={busy}
+          disabled={workflowLoading || !!workflowError || !!loadError}
+          onApply={() => act(() => mutate('apply_to_suyo', { p_request_id: id }))}
+          onWithdraw={(appId) => act(() => mutate('withdraw_application', { p_application_id: appId }))}
+          onDecide={(appId, accept) => act(() => mutate('decide_application', { p_application_id: appId, p_accept: accept }))}
+        />
+        <StatusActions
+          request={request}
+          userId={user?.id}
+          busy={busy}
+          disabled={workflowLoading || !!workflowError || !!loadError}
+          onStartTask={() => act(() => mutate('change_suyo_status', { p_request_id: id, p_status: 'in_progress' }))}
+          onCancelRequest={() => act(() => mutate('change_suyo_status', { p_request_id: id, p_status: 'cancelled' }))}
+        />
         {assigned && request.status === 'in_progress' ? <>
           <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Completion proof</ThemedText>
           {button('Choose proof photo', async () => {

@@ -48,6 +48,7 @@ function AppNavigator() {
           <Stack.Screen name="dashboard" />
           <Stack.Screen name="post-suyo" />
           <Stack.Screen name="suyo" />
+          <Stack.Screen name="notifications" />
           <Stack.Screen
             name="map"
             options={{ animation: 'slide_from_bottom' }}

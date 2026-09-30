@@ -17,7 +17,7 @@ export const STATUS_LABELS = {
   open: 'Open',
   assigned: 'Accepted',
   in_progress: 'In progress',
-  awaiting_confirmation: 'Proof submitted',
+  awaiting_confirmation: 'Awaiting confirmation',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };

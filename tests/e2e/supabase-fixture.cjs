@@ -112,6 +112,49 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
       json = null;
     } else if (path === '/auth/v1/resend') {
       json = {};
+    } else if (path === '/rest/v1/rpc/change_suyo_status') {
+      const r = requests.find(item => item.id === body.p_request_id);
+      if (r) {
+        const fromStatus = r.status;
+        r.status = body.p_status;
+        if (!workflow.request_events) workflow.request_events = [];
+        workflow.request_events.push({
+          id: `event-${workflow.request_events.length + 1}`,
+          request_id: r.id,
+          actor_id: user.id,
+          from_status: fromStatus,
+          to_status: r.status,
+          created_at: new Date().toISOString(),
+        });
+      }
+      json = r;
+    } else if (path === '/rest/v1/rpc/submit_suyo_proof') {
+      const r = requests.find(item => item.id === body.p_request_id);
+      if (r) {
+        const fromStatus = r.status;
+        r.status = 'awaiting_confirmation';
+        if (!workflow.request_events) workflow.request_events = [];
+        workflow.request_events.push({
+          id: `event-${workflow.request_events.length + 1}`,
+          request_id: r.id,
+          actor_id: user.id,
+          from_status: fromStatus,
+          to_status: r.status,
+          created_at: new Date().toISOString(),
+        });
+      }
+      const proof = {
+        id: `proof-${(workflow.proofs || []).length + 1}`,
+        request_id: body.p_request_id,
+        provider_id: user.id,
+        storage_path: body.p_storage_path,
+        note: body.p_note || '',
+        status: 'submitted',
+        created_at: new Date().toISOString(),
+      };
+      if (!workflow.proofs) workflow.proofs = [];
+      workflow.proofs.push(proof);
+      json = proof;
     } else if (path === '/auth/v1/logout') {
       return route.fulfill({ status: 204 });
     } else if (path === '/auth/v1/user') json = user;
