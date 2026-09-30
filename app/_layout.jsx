@@ -52,6 +52,7 @@ function AppNavigator() {
           <Stack.Screen name="proof" />
           <Stack.Screen name="review-proof" />
           <Stack.Screen name="rate-suyo" />
+          <Stack.Screen name="transactions" />
           <Stack.Screen
             name="map"
             options={{ animation: 'slide_from_bottom' }}

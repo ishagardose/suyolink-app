@@ -155,6 +155,19 @@ async function mockSupabase(page, { signedIn = false, confirmation = false, reje
       if (!workflow.proofs) workflow.proofs = [];
       workflow.proofs.push(proof);
       json = proof;
+    } else if (path === '/rest/v1/rpc/get_my_transactions') {
+      json = (workflow.transactions || []).map(t => ({
+        request_id: t.request_id,
+        title: t.title,
+        role: t.role,
+        other_user_id: t.other_user_id || user.id,
+        other_user_name: t.other_user_name || 'SuyoLink user',
+        reward_centavos: t.reward_centavos,
+        currency: t.currency || 'PHP',
+        completed_at: t.completed_at,
+        rating_score: t.rating_score ?? null,
+        rating_comment: t.rating_comment ?? null,
+      }));
     } else if (path === '/auth/v1/logout') {
       return route.fulfill({ status: 204 });
     } else if (path === '/auth/v1/user') json = user;

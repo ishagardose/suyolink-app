@@ -6,6 +6,7 @@ import {
   listRequests as apiListRequests,
   getRequestDetails as apiGetRequestDetails,
   postRequest as apiPostRequest,
+  listTransactions as apiListTransactions,
 } from '../data/suyoApi';
 import { hasCoordinates } from '../lib/geo';
 import { AppState } from 'react-native';
@@ -42,6 +43,12 @@ export function SuyoProvider({ children }) {
   });
   const [workflowError, setWorkflowError] = useState('');
   const [workflowLoading, setWorkflowLoading] = useState(true);
+
+  // Transaction history state
+  const [transactions, setTransactions] = useState([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [transactionsError, setTransactionsError] = useState('');
+  const transactionRevision = useRef(0);
 
   const workflowRevision = useRef(0);
   const saving = useRef(false);
@@ -168,16 +175,46 @@ export function SuyoProvider({ children }) {
     }
   }, [user?.id]);
 
+  const reloadTransactions = useCallback(async () => {
+    const id = user?.id;
+    const run = ++transactionRevision.current;
+    if (!id || !supabase) {
+      setTransactions([]);
+      setTransactionsLoading(false);
+      return;
+    }
+    setTransactionsLoading(true);
+    setTransactionsError('');
+    try {
+      const data = await apiListTransactions();
+      if (currentUser.current === id && run === transactionRevision.current) {
+        setTransactions(data);
+      }
+    } catch (err) {
+      if (currentUser.current === id && run === transactionRevision.current) {
+        setTransactionsError(err.message || 'Could not load transactions.');
+      }
+    } finally {
+      if (currentUser.current === id && run === transactionRevision.current) {
+        setTransactionsLoading(false);
+      }
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     setWorkflow({ applications: [], proofs: [], ratings: [], notifications: [], events: [] });
     setWorkflowError('');
     setWorkflowLoading(!!user?.id);
     reloadWorkflow();
+    setTransactions([]);
+    setTransactionsError('');
+    reloadTransactions();
     if (!user?.id) return;
     const refreshData = () => {
       if (AppState.currentState === 'active') {
         reload();
         reloadWorkflow();
+        reloadTransactions();
       }
     };
     const timer = setInterval(refreshData, 30000);
@@ -186,13 +223,14 @@ export function SuyoProvider({ children }) {
     });
     return () => {
       workflowRevision.current++;
+      transactionRevision.current++;
       clearInterval(timer);
       listener.remove();
     };
-  }, [reload, reloadWorkflow, user?.id]);
+  }, [reload, reloadWorkflow, reloadTransactions, user?.id]);
 
   const refresh = async () => {
-    await Promise.all([reload(), reloadWorkflow()]);
+    await Promise.all([reload(), reloadWorkflow(), reloadTransactions()]);
   };
 
   const mutate = async (name, args) => {
@@ -265,6 +303,10 @@ export function SuyoProvider({ children }) {
         ...workflow,
         workflowError,
         workflowLoading,
+        transactions,
+        transactionsLoading,
+        transactionsError,
+        reloadTransactions,
         refresh,
         mutate,
         markRead,
