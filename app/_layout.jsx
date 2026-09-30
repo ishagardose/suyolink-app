@@ -52,6 +52,7 @@ function AppNavigator() {
           <Stack.Screen name="rate-doer" />
           <Stack.Screen name="rate-requester" />
           <Stack.Screen name="requester-fulfill" />
+          <Stack.Screen name="activity" />
         </Stack>
       </>
     );
@@ -95,6 +96,7 @@ function AppNavigator() {
           <Stack.Screen name="rate-doer" />
           <Stack.Screen name="rate-requester" />
           <Stack.Screen name="requester-fulfill" />
+          <Stack.Screen name="activity" />
         </Stack.Protected>
       </Stack>
     </>
