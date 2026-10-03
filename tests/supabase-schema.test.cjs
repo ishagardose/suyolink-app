@@ -153,6 +153,116 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   ok(Number((await row('select total_points from public.my_points')).total_points) === 10, 'Previously awarded points are preserved');
   ok((await row(`select count(*)::int as count from public.notifications where request_id='${deferred.id}' and kind='completed'`)).count === 1, 'Completion still notifies provider');
   await db.exec('reset role');
+
+  // Load new Task 1 migration
+  await db.exec(fs.readFileSync(path.join(__dirname, '../supabase/migrations/202609300001_core_mvp_privacy_transactions.sql'), 'utf8'));
+
+  // 1. Check legacy table data migration: public location reset and coordinates rounded to 2 decimals
+  const legacyReq = await row(`select location, latitude, longitude from public.suyo_requests where id='${pinned.id}'`);
+  ok(legacyReq.location === 'Approximate task area', 'Legacy public location replaced with safe generic area');
+  ok(legacyReq.latitude === 7.07 && legacyReq.longitude === 125.6, 'Coordinates rounded to 2 decimal places');
+
+  // 2. Direct authenticated select on suyo_requests is revoked or restricted, and request_private_details cannot be read directly
+  await actor(D);
+  await denied(`select * from public.request_private_details`, 'Direct reads of private details denied');
+  await denied(`select exact_address, contact_phone from public.suyo_requests`, 'Exact columns cannot be read on suyo_requests');
+
+  // 3. create_suyo_request_v2 creates request and private details atomically
+  await actor(A);
+  const v2Call = `select * from public.create_suyo_request_v2(
+    'Deliver groceries', 'Apples and bananas', 'Groceries', 25000,
+    now() + interval '2 hours', 'Davao City', '123 Private St, Apt 4B', 'Ring bell twice',
+    '+639171234567', 7.073456, 125.612345, 'client-ref-v2-001'
+  )`;
+  const v2Req = await row(v2Call);
+  ok(v2Req.requester_id === A && v2Req.status === 'open', 'v2 request created with open status');
+  ok(v2Req.latitude === 7.07 && v2Req.longitude === 125.61, 'Approximate coordinates rounded to 2 decimal places on public row');
+  ok(v2Req.location === 'Davao City', 'Public location stored as area label');
+
+  // Idempotency: repeated client reference returns existing request without duplicate
+  const v2Retry = await row(v2Call);
+  ok(v2Retry.id === v2Req.id, 'Repeated client reference is idempotent');
+
+  // 4. get_suyo_details role-based visibility
+  // Unrelated user (D) gets null private fields
+  await actor(D);
+  const detailsUnrelated = (await row(`select public.get_suyo_details('${v2Req.id}') as d`)).d;
+  ok(detailsUnrelated.title === 'Deliver groceries', 'Unrelated user sees public title');
+  ok(detailsUnrelated.exact_address === null, 'Unrelated user cannot see exact address');
+  ok(detailsUnrelated.exact_latitude === null, 'Unrelated user cannot see exact latitude');
+  ok(detailsUnrelated.contact_phone === null, 'Unrelated user cannot see contact phone');
+
+  // Provider B applies
+  await actor(B);
+  const v2App = await row(`select * from public.apply_to_suyo('${v2Req.id}', 'I can deliver')`);
+  // Applicant gets null private fields before acceptance
+  const detailsApplicant = (await row(`select public.get_suyo_details('${v2Req.id}') as d`)).d;
+  ok(detailsApplicant.exact_address === null, 'Applicant cannot see exact address');
+  ok(detailsApplicant.contact_phone === null, 'Applicant cannot see contact phone');
+
+  // Requester A sees exact details
+  await actor(A);
+  const detailsRequester = (await row(`select public.get_suyo_details('${v2Req.id}') as d`)).d;
+  ok(detailsRequester.viewer_role === 'requester', 'Requester role identified');
+  ok(detailsRequester.exact_address === '123 Private St, Apt 4B', 'Requester sees exact address');
+  ok(detailsRequester.contact_phone === '+639171234567', 'Requester sees contact phone');
+
+  // Requester A accepts provider B
+  await db.exec(`select public.decide_application('${v2App.id}', true)`);
+
+  // Provider B is now accepted and sees exact details
+  await actor(B);
+  const detailsAccepted = (await row(`select public.get_suyo_details('${v2Req.id}') as d`)).d;
+  ok(detailsAccepted.viewer_role === 'provider', 'Accepted provider role identified');
+  ok(detailsAccepted.exact_address === '123 Private St, Apt 4B', 'Accepted provider sees exact address');
+  ok(detailsAccepted.exact_latitude === 7.073456, 'Accepted provider sees exact latitude');
+  ok(detailsAccepted.exact_longitude === 125.612345, 'Accepted provider sees exact longitude');
+  ok(detailsAccepted.contact_phone === '+639171234567', 'Accepted provider sees contact phone');
+
+  // 5. list_suyo_requests safe listing and sorting
+  const listBrowse = (await db.query(`select * from public.list_suyo_requests('', null, null, 'browse', 'newest', null, null)`)).rows;
+  ok(listBrowse.length > 0, 'list_suyo_requests returns public items');
+  ok(listBrowse.every(item => item.exact_address === undefined), 'Listing does not expose exact_address');
+
+  // 6. Last location saving and reading: only owner can access
+  await actor(A);
+  const savedLoc = await row(`select * from public.save_last_location(7.08, 125.62, 'manual')`);
+  ok(savedLoc.user_id === A && savedLoc.latitude === 7.08 && savedLoc.source === 'manual', 'Owner saves last location');
+  const myLoc = await row(`select * from public.get_my_last_location()`);
+  ok(myLoc.latitude === 7.08, 'Owner retrieves last location');
+
+  await actor(B);
+  const bLoc = await row(`select * from public.get_my_last_location()`);
+  ok(!bLoc || bLoc.latitude === null, 'Other user cannot see another user last location');
+  ok((await row(`select count(*)::int as count from public.profile_last_locations where user_id='${A}'`)).count === 0, 'Cannot read another user last location via RLS');
+
+  // 7. Workflow progression to completion and transaction creation
+  await actor(B);
+  await db.exec(`select public.change_suyo_status('${v2Req.id}', 'in_progress')`);
+  const v2ProofPath = `${v2Req.id}/${B}/v2proof.jpg`;
+  await db.exec(`insert into storage.objects(bucket_id,name,owner_id) values ('suyo-proofs','${v2ProofPath}','${B}')`);
+  const v2Proof = await row(`select * from public.submit_suyo_proof('${v2Req.id}', '${v2ProofPath}', 'Done')`);
+
+  await actor(A);
+  await db.exec(`select public.review_suyo_proof('${v2Proof.id}', true, '')`);
+  // Repeated confirmation is idempotent
+  await db.exec(`select public.review_suyo_proof('${v2Proof.id}', true, '')`);
+
+  // Assert transaction row created
+  const txRows = (await db.query(`select * from public.transactions where request_id='${v2Req.id}'`)).rows;
+  ok(txRows.length === 1, 'Exactly one transaction created upon completion');
+  ok(txRows[0].requester_id === A && txRows[0].provider_id === B && txRows[0].reward_centavos === 25000, 'Transaction has correct amounts and parties');
+
+  // Both users see transactions via get_my_transactions
+  await actor(A);
+  const aTxs = (await db.query(`select * from public.get_my_transactions()`)).rows;
+  ok(aTxs.some(t => t.request_id === v2Req.id && t.role === 'requester'), 'Requester sees completed transaction');
+
+  await actor(B);
+  const bTxs = (await db.query(`select * from public.get_my_transactions()`)).rows;
+  ok(bTxs.some(t => t.request_id === v2Req.id && t.role === 'provider'), 'Provider sees completed transaction');
+
   await db.close();
   console.log('PASS: migration + ' + assertions + ' workflow, RLS, storage-policy, and integrity checks.');
 })().catch((error) => { console.error(error.message); process.exitCode = 1; });
+

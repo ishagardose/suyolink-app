@@ -22,6 +22,27 @@ test('required fields, category, amounts and deadlines reject invalid input', ()
   }
   assert.throws(() => createRequest(draft, null));
 });
+test('private and public location fields and phone are validated', () => {
+  const fullDraft = {
+    ...draft,
+    publicLocation: 'Davao City',
+    exactAddress: '123 Private St',
+    phone: '+639171234567',
+    coordinates: { latitude: 7.07, longitude: 125.6 }
+  };
+  const result = createRequest(fullDraft, user);
+  assert.equal(result.publicLocation, 'Davao City');
+  assert.equal(result.exactAddress, '123 Private St');
+  assert.equal(result.phone, '+639171234567');
+  assert.deepEqual(result.coordinates, { latitude: 7.07, longitude: 125.6 });
+
+  // Missing phone, address, coordinates
+  assert.throws(() => createRequest({ ...fullDraft, phone: '' }, user));
+  assert.throws(() => createRequest({ ...fullDraft, exactAddress: '' }, user));
+  assert.throws(() => createRequest({ ...fullDraft, coordinates: null }, user));
+  assert.throws(() => createRequest({ ...fullDraft, coordinates: { latitude: 95, longitude: 125.6 } }, user));
+});
+
 test('deadline uses local time and validates calendar dates', () => {
   const date = parseDeadline('2099-12-31 18:30');
   assert.equal(date.getHours(), 18);

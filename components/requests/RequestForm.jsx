@@ -24,6 +24,9 @@ const EMPTY = {
   offerAmount: '',
   deadline: '',
   location: '',
+  publicLocation: '',
+  exactAddress: '',
+  phone: '',
   coordinates: null,
   notes: '',
 };
@@ -142,10 +145,23 @@ export default function RequestForm({ onPosted }) {
         </View>
         <DeadlinePicker value={draft.deadline} disabled={busy} onChange={deadline => setDraft(prev => ({ ...prev, deadline }))} />
         <ThemedText tone="textMuted">Choose when the task needs to be finished, in your local time.</ThemedText>
-        {field('location', 'Location', {
-          placeholder: 'Address or meeting point',
+        {field('publicLocation', 'Area or landmark (public)', {
+          placeholder: 'Barangay, district, or public landmark',
           maxLength: 250,
+          value: draft.publicLocation || draft.location,
         })}
+        {field('exactAddress', 'Exact address (accepted provider only)', {
+          placeholder: 'House/unit number, street, private gate instructions',
+          maxLength: 500,
+        })}
+        {field('phone', 'Task contact phone (accepted provider only)', {
+          placeholder: '+63 912 345 6789',
+          keyboardType: 'phone-pad',
+          maxLength: 40,
+        })}
+        <ThemedText tone="textMuted" style={{ fontSize: 13, marginTop: -10 }}>
+          Your exact address and phone number are revealed only to the one provider you approve.
+        </ThemedText>
         <LocationPicker value={draft.coordinates} disabled={busy}
           onChange={(coordinates) => setDraft(previous => ({ ...previous, coordinates }))} />
         {field('notes', 'Additional notes (optional)', {

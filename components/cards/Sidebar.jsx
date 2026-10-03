@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Modal, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ThemedButton from '../themed/ThemedButton';
@@ -11,6 +12,7 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
   const { colors, themeMode, setThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user: userProfile, logout, isProfileReady, profileError } = useAuth();
+  const router = useRouter();
   const [expandedSection, setExpandedSection] = useState(null);
   const [error, setError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
@@ -111,6 +113,25 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                 </View>
                 {error ? <ThemedText accessibilityRole="alert" style={{ color: colors.danger }}>{error}</ThemedText> : null}
 
+
+                <TouchableOpacity
+                  style={styles.sidebarMenuItem}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Transaction History"
+                  onPress={() => { onClose(); router.push('/transactions'); }}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.menuItemIconCircle, { backgroundColor: colors.surfaceAlt }]}>
+                      <Ionicons name="receipt-outline" size={18} color={colors.link} />
+                    </View>
+                    <View style={styles.menuItemTextCol}>
+                      <ThemedText style={styles.menuItemTitle}>Transaction History</ThemedText>
+                      <ThemedText style={styles.menuItemSub}>Earned and spent reward totals</ThemedText>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </TouchableOpacity>
 
                 <View style={styles.sidebarMenuItem}>
                   <View style={styles.menuItemLeft}>

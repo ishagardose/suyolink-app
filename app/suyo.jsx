@@ -13,13 +13,32 @@ import ThemedText from '../components/themed/ThemedText';
 import ThemedButton from '../components/themed/ThemedButton';
 import ThemedTextInput from '../components/themed/ThemedTextInput';
 import ProofImage from '../components/requests/ProofImage';
+import SuyoSummary from '../components/suyo/SuyoSummary';
+import PrivateTaskDetails from '../components/suyo/PrivateTaskDetails';
+import ApplicationsPanel from '../components/suyo/ApplicationsPanel';
+import StatusActions from '../components/suyo/StatusActions';
 
 export default function SuyoScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { requests, applications, proofs, ratings, events, isLoading, error: loadError, workflowError, workflowLoading, refresh, mutate } = useSuyos();
+  const {
+    requests,
+    applications,
+    proofs,
+    ratings,
+    events,
+    isLoading,
+    error: loadError,
+    workflowError,
+    workflowLoading,
+    refresh,
+    mutate,
+    detailsById,
+    loadDetails,
+    detailsLoading,
+  } = useSuyos();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
@@ -29,12 +48,19 @@ export default function SuyoScreen() {
   const [reason, setReason] = useState('');
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const request = requests.find(item => item.id === id);
+
+  React.useEffect(() => {
+    if (id) loadDetails(id);
+  }, [id, loadDetails]);
+
+  const request = detailsById[id] || requests.find(item => item.id === id);
   const act = async action => {
     if (lock.current) return;
     lock.current = true; setBusy(true); setError('');
-    try { await action(); } catch (err) { setError(err.message || 'Something went wrong. Please retry.'); }
+    try {
+      await action();
+      if (id) await loadDetails(id, { force: true });
+    } catch (err) { setError(err.message || 'Something went wrong. Please retry.'); }
     finally { lock.current = false; setBusy(false); }
   };
   const button = (title, action, disabled = false) => <ThemedButton title={title} disabled={busy || disabled || workflowLoading || !!workflowError || !!loadError} onPress={() => act(action)} />;
@@ -42,8 +68,6 @@ export default function SuyoScreen() {
     editable={!busy} maxLength={1000} multiline style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, minHeight: 60 }} />;
   const own = request?.requesterId === user?.id;
   const assigned = request?.providerId === user?.id;
-  const requestApplications = applications.filter(item => item.request_id === id);
-  const mine = requestApplications.find(item => item.applicant_id === user?.id);
   const requestProofs = proofs.filter(item => item.request_id === id);
   const rating = ratings.find(item => item.request_id === id);
   const eligible = request?.status === 'open' && Date.parse(request.deadline) > Date.now();
@@ -53,44 +77,38 @@ export default function SuyoScreen() {
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 50 }}>
       <ThemedButton title="Refresh task" variant="secondary" disabled={busy} onPress={() => act(refresh)} />
       {loadError || workflowError || error ? <ThemedText accessibilityRole="alert" tone="danger">{error || loadError || workflowError}</ThemedText> : null}
-      {!request ? <ThemedText>{isLoading ? 'Loading task…' : 'This task is unavailable or you no longer have access.'}</ThemedText> : <>
-        <ThemedText style={{ fontSize: 24, fontWeight: '800' }}>{request.title}</ThemedText>
-        <ThemedText>{STATUS_LABELS[request.status]} · {formatOffer(request.offerCentavos)}</ThemedText>
-        <ThemedText>{request.details}</ThemedText>
-        <ThemedText>{request.category} · {request.location}</ThemedText>
-        <ThemedText>Deadline: {new Date(request.deadline).toLocaleString()}</ThemedText>
-        <ThemedText>Requested by {request.requesterName}</ThemedText>
-        {request.notes ? <ThemedText>Instructions: {request.notes}</ThemedText> : null}
+      {!request ? <ThemedText>{isLoading || detailsLoading ? 'Loading task…' : 'This task is unavailable or you no longer have access.'}</ThemedText> : <>
+        <SuyoSummary details={request} />
+        <PrivateTaskDetails details={request} />
         {request.providerId ? <ThemedText>Provider rating: {providerRatings.length ? `${(providerRatings.reduce((total, item) => total + item.score, 0) / providerRatings.length).toFixed(1)} / 5 (${providerRatings.length} reviews)` : 'No ratings yet'}</ThemedText> : null}
         {request.latitude != null ? <ThemedButton title="View task location" variant="secondary" onPress={() => router.push({ pathname: '/map', params: { requestId: id } })} /> : null}
         {request.status === 'open' && !eligible ? <ThemedText tone="danger">Deadline passed. This task is no longer accepting applications.</ThemedText> : null}
-        {!own && mine ? <>
-          <ThemedText>Your application: {mine.status}</ThemedText>
-          {mine.status === 'pending' ? button('Withdraw application', () => mutate('withdraw_application', { p_application_id: mine.id })) : null}
-        </> : null}
-        {!own && !mine && eligible ? button('Apply to this Suyo', () => mutate('apply_to_suyo', { p_request_id: id })) : null}
-        {own ? <>
-          <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Applicants</ThemedText>
-          {!requestApplications.length ? <ThemedText>No applications yet.</ThemedText> : requestApplications.map(application => {
-            const reviews = ratings.filter(item => item.provider_id === application.applicant_id);
-            return <View key={application.id} style={{ padding: 14, gap: 10, backgroundColor: colors.card, borderRadius: 12 }}>
-              <ThemedText>{application.applicant?.full_name || 'Provider'} · {application.status}</ThemedText>
-              <ThemedText>{reviews.length ? `${(reviews.reduce((sum, item) => sum + item.score, 0) / reviews.length).toFixed(1)} / 5 (${reviews.length} reviews)` : 'No ratings yet'}</ThemedText>
-              {application.status === 'pending' && eligible ? <>
-                {button('Accept ' + (application.applicant?.full_name || 'provider'), () => mutate('decide_application', { p_application_id: application.id, p_accept: true }))}
-                {button('Reject ' + (application.applicant?.full_name || 'provider'), () => mutate('decide_application', { p_application_id: application.id, p_accept: false }))}
-              </> : null}
-            </View>;
-          })}
-          {request.status === 'open' ? confirmCancel ? <>
-            <ThemedText>Cancel this request? Pending applications will close.</ThemedText>
-            {button('Confirm cancellation', () => mutate('change_suyo_status', { p_request_id: id, p_status: 'cancelled' }))}
-            <ThemedButton title="Keep request" variant="secondary" disabled={busy} onPress={() => setConfirmCancel(false)} />
-          </> : <ThemedButton title="Cancel request" variant="secondary" onPress={() => setConfirmCancel(true)} /> : null}
-        </> : null}
-        {assigned && request.status === 'assigned' ? button('Start task', () => mutate('change_suyo_status', { p_request_id: id, p_status: 'in_progress' })) : null}
+        <ApplicationsPanel
+          request={request}
+          applications={applications}
+          ratings={ratings}
+          userId={user?.id}
+          busy={busy}
+          disabled={workflowLoading || !!workflowError || !!loadError}
+          onApply={() => act(() => mutate('apply_to_suyo', { p_request_id: id }))}
+          onWithdraw={(appId) => act(() => mutate('withdraw_application', { p_application_id: appId }))}
+          onDecide={(appId, accept) => act(() => mutate('decide_application', { p_application_id: appId, p_accept: accept }))}
+        />
+        <StatusActions
+          request={request}
+          userId={user?.id}
+          busy={busy}
+          disabled={workflowLoading || !!workflowError || !!loadError}
+          onStartTask={() => act(() => mutate('change_suyo_status', { p_request_id: id, p_status: 'in_progress' }))}
+          onCancelRequest={() => act(() => mutate('change_suyo_status', { p_request_id: id, p_status: 'cancelled' }))}
+        />
         {assigned && request.status === 'in_progress' ? <>
           <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Completion proof</ThemedText>
+          <ThemedButton
+            title="Open proof submission screen"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/proof', params: { id } })}
+          />
           {button('Choose proof photo', async () => {
             const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
             if (!result.canceled) { setAsset(result.assets[0]); uploaded.current = null; }
@@ -109,6 +127,11 @@ export default function SuyoScreen() {
           {proof.note ? <ThemedText>{proof.note}</ThemedText> : null}
           {proof.rejection_reason ? <ThemedText>Requested changes: {proof.rejection_reason}</ThemedText> : null}
           {own && proof.status === 'submitted' && request.status === 'awaiting_confirmation' ? <>
+            <ThemedButton
+              title="Open full review screen"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/review-proof', params: { id: proof.id, requestId: id } })}
+            />
             {button('Approve completion', () => mutate('review_suyo_proof', { p_proof_id: proof.id, p_accept: true }))}
             {input('Reason for requesting changes', reason, setReason)}
             {button('Request changes', () => mutate('review_suyo_proof', { p_proof_id: proof.id, p_accept: false, p_reason: reason.trim() }), !reason.trim())}
@@ -118,6 +141,11 @@ export default function SuyoScreen() {
           <ThemedText style={{ fontWeight: '700' }}>Rating: {rating.score} / 5</ThemedText><ThemedText>{rating.comment}</ThemedText>
         </> : own ? <>
           <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Rate your provider</ThemedText>
+          <ThemedButton
+            title="Open rating screen"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/rate-suyo', params: { id } })}
+          />
           <View style={{ flexDirection: 'row', gap: 8 }}>{[1, 2, 3, 4, 5].map(value => <ThemedButton key={value} title={String(value)} accessibilityLabel={`${value} stars`}
             accessibilityState={{ selected: score === value }} variant={score === value ? 'primary' : 'secondary'} disabled={busy} onPress={() => setScore(value)} />)}</View>
           {input('Review (optional)', comment, setComment)}

@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { formatOffer, STATUS_LABELS } from '../../data/suyoRequests';
 import ThemedText from '../themed/ThemedText';
 import { distanceKm, formatDistance } from '../../lib/geo';
+import { urgencyFor } from '../../lib/urgency';
 import { useDeviceLocation } from '../../context/LocationContext';
 import { useRouter } from 'expo-router';
 import ThemedButton from '../themed/ThemedButton';
@@ -16,6 +17,7 @@ export default function TaskCard({ suyo }) {
   const distance = distanceKm(position, suyo);
   const [expanded, setExpanded] = useState(false);
   const expired = suyo.status === 'open' && Date.parse(suyo.deadline) <= Date.now();
+  const urgency = urgencyFor(suyo.deadline);
   const meta = (icon, text) => <View style={styles.meta}>
     <Ionicons name={icon} size={14} color={colors.textMuted} />
     <ThemedText style={[styles.metaText, { color: colors.textMuted }]}>{text}</ThemedText>
@@ -23,9 +25,16 @@ export default function TaskCard({ suyo }) {
   return <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <View style={styles.row}>
       <ThemedText style={[styles.category, { color: colors.textMuted }]}>{suyo.category.toUpperCase()}</ThemedText>
-      <View style={[styles.badge, { backgroundColor: colors.surfaceAlt }]}>
-        <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: expired ? colors.danger : colors.accent }} />
-        <ThemedText style={{ fontSize: 10, fontWeight: '700', color: expired ? colors.danger : colors.link }}>{expired ? 'Deadline passed' : STATUS_LABELS[suyo.status]}</ThemedText>
+      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+        {urgency ? (
+          <View style={[styles.badge, { backgroundColor: colors.danger }]}>
+            <ThemedText style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{urgency.label}</ThemedText>
+          </View>
+        ) : null}
+        <View style={[styles.badge, { backgroundColor: colors.surfaceAlt }]}>
+          <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: expired ? colors.danger : colors.accent }} />
+          <ThemedText style={{ fontSize: 10, fontWeight: '700', color: expired ? colors.danger : colors.link }}>{expired ? 'Deadline passed' : STATUS_LABELS[suyo.status]}</ThemedText>
+        </View>
       </View>
     </View>
     <View style={styles.row}>
