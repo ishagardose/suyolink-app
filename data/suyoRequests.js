@@ -127,6 +127,7 @@ export function createRequest(draft, user, now = Date.now()) {
   if (exactAddress) result.exactAddress = exactAddress;
   if (phone) result.phone = phone;
   if (coordinates) result.coordinates = coordinates;
+  if (draft.attachments) result.attachments = draft.attachments;
 
   return result;
 }

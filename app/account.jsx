@@ -91,10 +91,14 @@ export default function AccountScreen() {
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
-  const isOtherUser = params.isOtherUser === 'true';
+  const isOtherUser =
+    params.isOtherUser === 'true' &&
+    !params.name?.includes('(You)') &&
+    params.name !== 'Juan Dela Cruz';
 
   // User details with fallbacks aligned with SuyoLink project style
-  const initialName = params.name || 'Alex Rivera';
+  const rawParamName = params.name ? params.name.replace(/\s*\(You\)$/, '').trim() : '';
+  const initialName = rawParamName || (isOtherUser ? 'Alex Rivera' : 'Juan Dela Cruz');
   const initialHandle =
     params.handle ||
     `@${initialName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
@@ -116,11 +120,12 @@ export default function AccountScreen() {
 
   useEffect(() => {
     if (params.name) {
+      const cleanName = params.name.replace(/\s*\(You\)$/, '').trim();
       setProfile({
-        name: params.name,
+        name: cleanName,
         handle:
           params.handle ||
-          `@${params.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+          `@${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         rating: (params.rating || '4.9').replace(/[★*]/g, '').trim(),
         done: params.suyosDone || params.errandsDone || params.done || (isOtherUser ? '34' : '48'),
         bio:

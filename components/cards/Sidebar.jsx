@@ -124,6 +124,25 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                   style={styles.sidebarMenuItem}
                   activeOpacity={0.75}
                   accessibilityRole="button"
+                  accessibilityLabel="Wallet"
+                  onPress={() => { onClose(); router.push('/wallet'); }}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.menuItemIconCircle, { backgroundColor: '#DCFCE7' }]}>
+                      <Ionicons name="wallet-outline" size={18} color="#059669" />
+                    </View>
+                    <View style={styles.menuItemTextCol}>
+                      <ThemedText style={styles.menuItemTitle}>Wallet</ThemedText>
+                      <ThemedText style={styles.menuItemSub}>Earnings, balance & charts</ThemedText>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.sidebarMenuItem}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
                   accessibilityLabel="Transaction History"
                   onPress={() => { onClose(); router.push('/transactions'); }}
                 >

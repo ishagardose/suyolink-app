@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
@@ -242,6 +242,9 @@ const INITIAL_POSTED_SUYOS = [
     notes: 'Already prepaid, just drop off at counter 2.',
     requesterName: 'Juan Dela Cruz (You)',
   },
+];
+
+const INITIAL_CANCELLED_SUYOS = [
   {
     id: 'POST-003',
     title: 'Pick up documents',
@@ -469,6 +472,84 @@ const INITIAL_ARCHIVED_SUYOS = [
     details: 'Maintenance prescription pickup from pharmacy counter.',
     notes: 'Senior citizen discount book is at pharmacy.',
     requesterName: 'Juan Dela Cruz (You)',
+  },
+];
+
+const INITIAL_DOER_ACCEPTED_SUYOS = [
+  {
+    id: 'DOER-ACC-01',
+    title: 'Express pharmacy pickup at Mercury Drug',
+    category: 'Medicine',
+    icon: 'medkit',
+    location: 'Mercury Drug Legaspi, Makati',
+    distanceText: '1.2 km away',
+    reward: '₱180.00',
+    rewardAmount: 180,
+    status: 'Accepted - In Progress',
+    tag: 'In Progress',
+    acceptedAt: 'Today · 1:15 PM',
+    deadline: 'Today · By 3:00 PM',
+    requesterName: 'Lola Remedios',
+    requesterPhone: '0918 342 9811',
+    details: 'Pick up maintenance medicine (Losartan and Metformin). Senior citizen booklet is at the pharmacy counter.',
+    notes: 'Please call Lola Remedios upon arriving at the building lobby.',
+  },
+  {
+    id: 'DOER-ACC-02',
+    title: 'Drop off sealed documents at Tower 2',
+    category: 'Documents',
+    icon: 'document-text',
+    location: 'Makati CBD, Tower 2 Reception',
+    distanceText: '0.6 km away',
+    reward: '₱120.00',
+    rewardAmount: 120,
+    status: 'Accepted - In Progress',
+    tag: 'In Progress',
+    acceptedAt: 'Today · 2:00 PM',
+    deadline: 'Today · By 4:30 PM',
+    requesterName: 'Patricia Mendoza',
+    requesterPhone: '0922 841 0293',
+    details: 'Drop off sealed envelope to Atty. Gabriel on 12th Floor.',
+    notes: 'Sign recipient visitor log at front desk.',
+  },
+];
+
+const INITIAL_DOER_CANCELLED_SUYOS = [
+  {
+    id: 'DOER-CAN-01',
+    title: 'Buy medicine at Mercury Drug Tagum',
+    category: 'Medicine',
+    icon: 'medkit',
+    location: 'Mercury Drug Pioneer, Tagum City',
+    distanceText: '1.4 km away',
+    reward: '₱160.00',
+    rewardAmount: 160,
+    status: 'Cancelled',
+    tag: 'Cancelled',
+    requesterName: 'Tita Gloria',
+    requesterPhone: '0917 482 9102',
+    cancelledAt: 'Yesterday · 5:20 PM',
+    reason: 'Vehicle broke down on route',
+    details: 'Maintenance vitamins and cough syrup. Senior citizen booklet is at the pharmacy counter.',
+    notes: 'Cancelled due to flat tire. Notified requester immediately.',
+  },
+  {
+    id: 'DOER-CAN-02',
+    title: 'Deliver bakery boxes to Visayan Village',
+    category: 'Food & Pastries',
+    icon: 'fast-food',
+    location: 'Tagum City Commercial Center',
+    distanceText: '2.1 km away',
+    reward: '₱140.00',
+    rewardAmount: 140,
+    status: 'Cancelled',
+    tag: 'Cancelled',
+    requesterName: 'Bakery Co.',
+    requesterPhone: '0922 711 0932',
+    cancelledAt: 'Oct 1 · 10:45 AM',
+    reason: 'Store closed early',
+    details: 'Pick up 2 pastry boxes and drop off at Visayan Village.',
+    notes: 'Requester cancelled order because store kitchen had closed.',
   },
 ];
 
@@ -1265,6 +1346,7 @@ function SwipeableNotificationItem({
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const searchParams = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 16);
   const [activeTab, setActiveTab] = useState('home');
@@ -1307,15 +1389,16 @@ export default function DashboardScreen() {
   const [selectedUrgency, setSelectedUrgency] = useState('All');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // MySuyo Tab Navigation & Management state (Posted, Accepted, Completed, Archived)
+  // MySuyo Tab Navigation & Management state (Posted, Accepted, Completed, Cancelled, Archived)
   const [postedSuyos, setPostedSuyos] = useState(() => INITIAL_POSTED_SUYOS);
   const [acceptedSuyos, setAcceptedSuyos] = useState(() => INITIAL_ACCEPTED_SUYOS);
   const [completedSuyos, setCompletedSuyos] = useState(() => INITIAL_COMPLETED_SUYOS);
+  const [cancelledSuyos, setCancelledSuyos] = useState(() => INITIAL_CANCELLED_SUYOS);
   const [archivedSuyos, setArchivedSuyos] = useState(() => INITIAL_ARCHIVED_SUYOS);
-  const [mySuyoNavTab, setMySuyoNavTab] = useState('posted'); // 'posted' | 'accepted' | 'completed' | 'archived'
+  const [mySuyoNavTab, setMySuyoNavTab] = useState('posted'); // 'posted' | 'accepted' | 'completed' | 'cancelled' | 'archived'
   const [isMySuyoEditMode, setIsMySuyoEditMode] = useState(false);
   const [selectedMySuyoIdsToDelete, setSelectedMySuyoIdsToDelete] = useState([]);
-  const [selectedSuyoContext, setSelectedSuyoContext] = useState('available'); // 'available' | 'posted' | 'accepted' | 'completed' | 'archived'
+  const [selectedSuyoContext, setSelectedSuyoContext] = useState('available'); // 'available' | 'posted' | 'accepted' | 'completed' | 'cancelled' | 'archived'
   const [selectedDoerProfile, setSelectedDoerProfile] = useState(null);
   const [isEditingSuyoModalOpen, setIsEditingSuyoModalOpen] = useState(false);
   const [editingSuyoData, setEditingSuyoData] = useState({
@@ -1326,6 +1409,16 @@ export default function DashboardScreen() {
     rewardAmount: 150,
     context: 'posted',
   });
+
+  // Doer Suyo Hub state (Suyos done as a doer: Accepted, Completed, Cancelled)
+  const [doerAcceptedSuyos, setDoerAcceptedSuyos] = useState(() => INITIAL_DOER_ACCEPTED_SUYOS);
+  const [doerCompletedSuyos, setDoerCompletedSuyos] = useState(() => WALLET_EARNED_SUYOS);
+  const [doerCancelledSuyos, setDoerCancelledSuyos] = useState(() => INITIAL_DOER_CANCELLED_SUYOS);
+  const [doerNavTab, setDoerNavTab] = useState('accepted'); // 'accepted' | 'completed' | 'cancelled'
+  const [selectedDoerSuyo, setSelectedDoerSuyo] = useState(null);
+  const [doerCancelModalItem, setDoerCancelModalItem] = useState(null);
+  const [isDoerCancelledEditMode, setIsDoerCancelledEditMode] = useState(false);
+  const [selectedDoerCancelledIds, setSelectedDoerCancelledIds] = useState([]);
 
   // Selected Suyo Details Modal
   const [selectedSuyo, setSelectedSuyo] = useState(null);
@@ -1439,6 +1532,7 @@ export default function DashboardScreen() {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
+    toastAnim.setValue(0);
     setToastConfig({ message, icon });
     Animated.spring(toastAnim, {
       toValue: 1,
@@ -1458,15 +1552,77 @@ export default function DashboardScreen() {
     }, 2800);
   };
 
+  const renderFooterToast = (overrideStyle = null) => {
+    if (!toastConfig) return null;
+    return (
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.globalPoppingToastWrapper,
+          {
+            bottom: 74 + bottomInset,
+            opacity: toastAnim,
+            transform: [
+              {
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [24, 0],
+                }),
+              },
+              {
+                scale: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.92, 1],
+                }),
+              },
+            ],
+          },
+          overrideStyle,
+        ]}
+      >
+        <View style={styles.poppingToastContent}>
+          <View style={styles.poppingToastIconCircle}>
+            <Ionicons
+              name={
+                toastConfig.icon === 'heart'
+                  ? 'heart'
+                  : toastConfig.icon === 'heart-dislike'
+                  ? 'heart-dislike'
+                  : toastConfig.icon === 'bookmark'
+                  ? 'bookmark'
+                  : toastConfig.icon === 'trash-outline' || toastConfig.icon === 'trash'
+                  ? 'trash'
+                  : toastConfig.icon === 'paper-plane'
+                  ? 'paper-plane'
+                  : toastConfig.icon === 'close-circle'
+                  ? 'close-circle'
+                  : 'checkmark-circle'
+              }
+              size={15}
+              color="#FFFFFF"
+            />
+          </View>
+          <Text style={styles.poppingToastText}>{toastConfig.message}</Text>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  useEffect(() => {
+    if (searchParams?.justPosted === 'true') {
+      triggerToast('suyo is successfully posted', 'paper-plane');
+    }
+  }, [searchParams?.justPosted]);
+
   const toggleFavoriteSuyo = (suyo) => {
     if (!suyo) return;
     const isFav = favoriteSuyoIds.includes(suyo.id);
     if (isFav) {
       setFavoriteSuyoIds((prev) => prev.filter((id) => id !== suyo.id));
-      triggerToast('Suyo removed from favorites', 'heart-dislike');
+      triggerToast('suyo is removed from favourite', 'heart-dislike');
     } else {
       setFavoriteSuyoIds((prev) => [...prev, suyo.id]);
-      triggerToast('Suyo saved to favorites', 'heart');
+      triggerToast('suyo is successfully added to favourite', 'heart');
     }
   };
 
@@ -1499,6 +1655,7 @@ export default function DashboardScreen() {
       Boolean(suyo.doer && (suyo.requesterName?.includes('(You)') || suyo.isAcceptedByMe));
 
     const isCompleted = completedSuyos.some((c) => c.id === suyo.id);
+    const isCancelled = cancelledSuyos.some((can) => can.id === suyo.id) || suyo.status === 'Cancelled';
     const isArchived = archivedSuyos.some((ar) => ar.id === suyo.id);
 
     if (isPosted) {
@@ -1512,6 +1669,10 @@ export default function DashboardScreen() {
     } else if (isCompleted) {
       const matched = completedSuyos.find((c) => c.id === suyo.id) || suyo;
       setSelectedSuyoContext('completed');
+      setSelectedSuyo(matched);
+    } else if (isCancelled) {
+      const matched = cancelledSuyos.find((can) => can.id === suyo.id) || suyo;
+      setSelectedSuyoContext('cancelled');
       setSelectedSuyo(matched);
     } else if (isArchived) {
       const matched = archivedSuyos.find((ar) => ar.id === suyo.id) || suyo;
@@ -1735,17 +1896,12 @@ export default function DashboardScreen() {
 
   const handleConfirmDeleteMySuyo = () => {
     if (selectedMySuyoIdsToDelete.length === 0) return;
-    const count = selectedMySuyoIdsToDelete.length;
     if (mySuyoNavTab === 'posted') {
       setPostedSuyos((prev) =>
         prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
       );
-    } else if (mySuyoNavTab === 'accepted') {
-      setAcceptedSuyos((prev) =>
-        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
-      );
-    } else if (mySuyoNavTab === 'completed') {
-      setCompletedSuyos((prev) =>
+    } else if (mySuyoNavTab === 'cancelled') {
+      setCancelledSuyos((prev) =>
         prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
       );
     } else if (mySuyoNavTab === 'archived') {
@@ -1755,12 +1911,24 @@ export default function DashboardScreen() {
     }
     setSelectedMySuyoIdsToDelete([]);
     setIsMySuyoEditMode(false);
-    triggerToast(
-      count === 1
-        ? '1 suyo removed from history'
-        : `${count} suyos removed from history`,
-      'trash'
+    triggerToast('suyo is successfully deleted', 'trash-outline');
+  };
+
+  // Edit feature for Cancelled Doer Suyos
+  const handleToggleDoerCancelledSelect = (id) => {
+    setSelectedDoerCancelledIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  };
+
+  const handleConfirmDeleteDoerCancelled = () => {
+    if (selectedDoerCancelledIds.length === 0) return;
+    setDoerCancelledSuyos((prev) =>
+      prev.filter((item) => !selectedDoerCancelledIds.includes(item.id))
+    );
+    setSelectedDoerCancelledIds([]);
+    setIsDoerCancelledEditMode(false);
+    triggerToast('suyo is successfully deleted', 'trash-outline');
   };
 
   // Feature: Increase / Boost Reward (Supports resetting with +0)
@@ -1805,22 +1973,22 @@ export default function DashboardScreen() {
 
   // Feature: Cancel Suyo
   const handleCancelSuyo = (suyoId) => {
-    setPostedSuyos((prev) =>
-      prev.map((s) =>
-        s.id === suyoId
-          ? { ...s, status: 'Cancelled', tag: 'Cancelled', needsBoost: false }
-          : s
-      )
-    );
-    if (selectedSuyo && selectedSuyo.id === suyoId) {
-      setSelectedSuyo((prev) => ({
-        ...prev,
+    const target = postedSuyos.find((s) => s.id === suyoId) || selectedSuyo;
+    if (target) {
+      const cancelledItem = {
+        ...target,
         status: 'Cancelled',
         tag: 'Cancelled',
         needsBoost: false,
-      }));
+        cancelledAt: 'Today',
+      };
+      setCancelledSuyos((prev) => [cancelledItem, ...prev.filter((s) => s.id !== suyoId)]);
+      setPostedSuyos((prev) => prev.filter((s) => s.id !== suyoId));
     }
-    triggerToast('Suyo marked as cancelled', 'close-circle');
+    if (selectedSuyo && selectedSuyo.id === suyoId) {
+      setSelectedSuyo(null);
+    }
+    triggerToast('suyo is successfully cancelled', 'close-circle');
   };
 
   // Feature: Open Edit Suyo
@@ -1880,7 +2048,8 @@ export default function DashboardScreen() {
 
   // Feature: Save completed suyo to Archive for future repeat requests
   const handleSaveToArchive = (suyo) => {
-    const isAlreadyArchived = archivedSuyos.some((a) => a.title === suyo.title);
+    if (!suyo) return;
+    const isAlreadyArchived = archivedSuyos.some((a) => a.id === suyo.id || a.title === suyo.title);
     if (!isAlreadyArchived) {
       const template = {
         ...suyo,
@@ -1891,7 +2060,7 @@ export default function DashboardScreen() {
       };
       setArchivedSuyos((prev) => [template, ...prev]);
     }
-    triggerToast('Saved to Archive for future repeat requests', 'bookmark');
+    triggerToast('suyo is successfully archive', 'bookmark');
   };
 
   // Feature: Repeat request from completed or archived
@@ -1913,7 +2082,7 @@ export default function DashboardScreen() {
     setPostedSuyos((prev) => [newPostedSuyo, ...prev]);
     setSelectedSuyo(null);
     setMySuyoNavTab('posted');
-    triggerToast('Suyo re-posted! Couriers are now being notified.', 'bicycle');
+    triggerToast('suyo is successfully posted', 'paper-plane');
   };
 
   // Functional Notifications state
@@ -2096,7 +2265,7 @@ export default function DashboardScreen() {
   // Dynamic header title
   const availableHeaderTitle = useMemo(() => {
     if (!isFiltering) {
-      return 'Available Suyo';
+      return 'Available Suyos';
     }
     if (searchQuery.trim()) {
       return `${filteredSuyos.length} result${filteredSuyos.length === 1 ? '' : 's'} for "${searchQuery.trim()}"`;
@@ -2316,10 +2485,17 @@ export default function DashboardScreen() {
 
           {/* === AVAILABLE SUYO HEADER === */}
           <View style={styles.sectionHeaderRow}>
-            <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={styles.sectionHeading} numberOfLines={1}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, paddingRight: 8 }}>
+              <Text style={[styles.sectionHeading, { marginBottom: 0 }]} numberOfLines={1}>
                 {availableHeaderTitle}
               </Text>
+              {!isFiltering && (
+                <View style={styles.availableCountBadge}>
+                  <Text style={styles.availableCountBadgeText}>
+                    {availableSuyosBase.length}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {isFiltering ? (
@@ -2534,7 +2710,38 @@ export default function DashboardScreen() {
                   )}
                 </TouchableOpacity>
 
-                {/* 4. Archived Tab */}
+                {/* 4. Cancelled Tab */}
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setMySuyoNavTab('cancelled');
+                    setIsMySuyoEditMode(false);
+                    setSelectedMySuyoIdsToDelete([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      mySuyoNavTab === 'cancelled' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Cancelled
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      mySuyoNavTab === 'cancelled' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({cancelledSuyos.length})
+                  </Text>
+                  {mySuyoNavTab === 'cancelled' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+
+                {/* 5. Archived Tab */}
                 <TouchableOpacity
                   style={styles.mySuyoTextNavItem}
                   activeOpacity={0.7}
@@ -2577,6 +2784,8 @@ export default function DashboardScreen() {
                     ? 'Accepted Suyos'
                     : mySuyoNavTab === 'completed'
                     ? 'Completed Suyos'
+                    : mySuyoNavTab === 'cancelled'
+                    ? 'Cancelled Suyos'
                     : 'Archived Suyos'}
                 </Text>
                 <Text style={styles.mySuyoSubBarSubtitle}>
@@ -2586,28 +2795,24 @@ export default function DashboardScreen() {
                     ? 'Couriers currently fulfilling these suyos'
                     : mySuyoNavTab === 'completed'
                     ? 'Successfully fulfilled suyos from past to present'
+                    : mySuyoNavTab === 'cancelled'
+                    ? 'Tap Edit to delete unwanted cancelled suyos'
                     : 'Saved templates for quick 1-tap repeating'}
                 </Text>
               </View>
 
-              {((mySuyoNavTab === 'posted'
-                ? postedSuyos
-                : mySuyoNavTab === 'accepted'
-                ? acceptedSuyos
-                : mySuyoNavTab === 'completed'
-                ? completedSuyos
-                : archivedSuyos).length > 0) && (
+              {/* REMOVE Edit feature from accepted, completed, AND posted! Allow on cancelled nav to delete unwanted suyos */}
+              {(mySuyoNavTab === 'cancelled' || mySuyoNavTab === 'archived') &&
+                ((mySuyoNavTab === 'cancelled'
+                  ? cancelledSuyos
+                  : archivedSuyos).length > 0) && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   {isMySuyoEditMode && (
                     <TouchableOpacity
                       onPress={() => {
                         const currentList =
-                          mySuyoNavTab === 'posted'
-                            ? postedSuyos
-                            : mySuyoNavTab === 'accepted'
-                            ? acceptedSuyos
-                            : mySuyoNavTab === 'completed'
-                            ? completedSuyos
+                          mySuyoNavTab === 'cancelled'
+                            ? cancelledSuyos
                             : archivedSuyos;
                         if (selectedMySuyoIdsToDelete.length === currentList.length) {
                           setSelectedMySuyoIdsToDelete([]);
@@ -2619,12 +2824,8 @@ export default function DashboardScreen() {
                     >
                       <Text style={styles.mySuyoSelectAllText}>
                         {selectedMySuyoIdsToDelete.length ===
-                        (mySuyoNavTab === 'posted'
-                          ? postedSuyos
-                          : mySuyoNavTab === 'accepted'
-                          ? acceptedSuyos
-                          : mySuyoNavTab === 'completed'
-                          ? completedSuyos
+                        (mySuyoNavTab === 'cancelled'
+                          ? cancelledSuyos
                           : archivedSuyos).length
                           ? 'Deselect all'
                           : 'Select all'}
@@ -2658,6 +2859,8 @@ export default function DashboardScreen() {
                     ? acceptedSuyos
                     : mySuyoNavTab === 'completed'
                     ? completedSuyos
+                    : mySuyoNavTab === 'cancelled'
+                    ? cancelledSuyos
                     : archivedSuyos;
 
                 if (currentList.length === 0) {
@@ -2671,6 +2874,8 @@ export default function DashboardScreen() {
                             ? 'bicycle-outline'
                             : mySuyoNavTab === 'completed'
                             ? 'ribbon-outline'
+                            : mySuyoNavTab === 'cancelled'
+                            ? 'close-circle-outline'
                             : 'bookmark-outline'
                         }
                         size={40}
@@ -2683,6 +2888,8 @@ export default function DashboardScreen() {
                           ? 'No suyos in progress'
                           : mySuyoNavTab === 'completed'
                           ? 'No completed suyos yet'
+                          : mySuyoNavTab === 'cancelled'
+                          ? 'No cancelled suyos'
                           : 'No archived templates'}
                       </Text>
                       <Text style={styles.mySuyoEmptySub}>
@@ -2692,6 +2899,8 @@ export default function DashboardScreen() {
                           ? "When a courier accepts one of your posted suyos, it will appear here so you can view the doer profile and track live progress."
                           : mySuyoNavTab === 'completed'
                           ? "Finished suyos will appear here with the courier who completed them."
+                          : mySuyoNavTab === 'cancelled'
+                          ? "You have not cancelled any of your requested suyos."
                           : "Save completed or frequent suyos to your archive so you can repeat them with a single tap!"}
                       </Text>
                     </View>
@@ -2883,9 +3092,481 @@ export default function DashboardScreen() {
           </View>
         )}
 
+        {/* === DOER SUYO HUB SCREEN (SUYOS DONE AS A DOER) === */}
+        {activeTab === 'doer' && (
+          <View style={styles.doerMainWrapper}>
+            {/* 1. Hero Banner - Placed and styled identically to MySuyo screen */}
+            <View style={styles.mySuyoHeroSection}>
+              <View style={styles.mySuyoHeroTextCol}>
+                <Text style={styles.mySuyoHeroSuper}>DOER SUYO HUB</Text>
+                <Text style={styles.mySuyoHeroTitle}>Suyos Done as Doer</Text>
+                <Text style={styles.mySuyoHeroSub}>
+                  Manage active accepted suyos and review your completed history
+                </Text>
+              </View>
+              <View style={styles.mySuyoHeroBadge}>
+                <Ionicons name="bicycle-outline" size={24} color="#1E4D2B" />
+              </View>
+            </View>
+
+            {/* 2. Modern Text Navigation: Accepted, Completed, Cancelled (Identical to MySuyo screen) */}
+            <View style={styles.mySuyoTextNavWrapper}>
+              <View style={styles.mySuyoTextNavRow}>
+                {/* Accepted Tab */}
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setDoerNavTab('accepted');
+                    setIsDoerCancelledEditMode(false);
+                    setSelectedDoerCancelledIds([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      doerNavTab === 'accepted' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Accepted
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      doerNavTab === 'accepted' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({doerAcceptedSuyos.length})
+                  </Text>
+                  {doerNavTab === 'accepted' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Completed Tab */}
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setDoerNavTab('completed');
+                    setIsDoerCancelledEditMode(false);
+                    setSelectedDoerCancelledIds([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      doerNavTab === 'completed' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Completed
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      doerNavTab === 'completed' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({doerCompletedSuyos.length})
+                  </Text>
+                  {doerNavTab === 'completed' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Cancelled Tab */}
+                <TouchableOpacity
+                  style={styles.mySuyoTextNavItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setDoerNavTab('cancelled');
+                    setIsDoerCancelledEditMode(false);
+                    setSelectedDoerCancelledIds([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavTitle,
+                      doerNavTab === 'cancelled' && styles.mySuyoTextNavTitleActive,
+                    ]}
+                  >
+                    Cancelled
+                  </Text>
+                  <Text
+                    style={[
+                      styles.mySuyoTextNavCount,
+                      doerNavTab === 'cancelled' && styles.mySuyoTextNavCountActive,
+                    ]}
+                  >
+                    ({doerCancelledSuyos.length})
+                  </Text>
+                  {doerNavTab === 'cancelled' && (
+                    <View style={styles.mySuyoTextNavUnderline} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 3. Sub-bar: Title & Subtitle on Left, Edit feature on Right (for Cancelled tab only, matching sample) */}
+            <View style={styles.mySuyoSubBar}>
+              {/* Title & subtitle on the left side */}
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <Text style={styles.mySuyoSubBarTitle}>
+                  {doerNavTab === 'accepted'
+                    ? 'Accepted Suyos'
+                    : doerNavTab === 'completed'
+                    ? 'Completed Suyos'
+                    : 'Cancelled Suyos'}
+                </Text>
+                <Text style={styles.mySuyoSubBarSubtitle}>
+                  {doerNavTab === 'accepted'
+                    ? 'Couriers currently fulfilling these suyos'
+                    : doerNavTab === 'completed'
+                    ? 'Successfully fulfilled suyos history'
+                    : 'Tap Edit to delete unwanted cancelled suyos'}
+                </Text>
+              </View>
+
+              {/* Edit feature placed on the RIGHT side - ONLY for Cancelled tab */}
+              {doerNavTab === 'cancelled' && doerCancelledSuyos.length > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  {isDoerCancelledEditMode && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (selectedDoerCancelledIds.length === doerCancelledSuyos.length) {
+                          setSelectedDoerCancelledIds([]);
+                        } else {
+                          setSelectedDoerCancelledIds(doerCancelledSuyos.map((item) => item.id));
+                        }
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.mySuyoSelectAllText}>
+                        {selectedDoerCancelledIds.length === doerCancelledSuyos.length
+                          ? 'Deselect all'
+                          : 'Select all'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsDoerCancelledEditMode((prev) => !prev);
+                      setSelectedDoerCancelledIds([]);
+                    }}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.mySuyoFadingEditText}>
+                      {isDoerCancelledEditMode ? 'Cancel' : 'Edit'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* 3. Tab Content */}
+            {/* --- TAB A: ACCEPTED SUYOS (With Cancel as Doer!) --- */}
+            {doerNavTab === 'accepted' && (
+              <View style={styles.doerListContainer}>
+                {doerAcceptedSuyos.length === 0 ? (
+                  <View style={styles.doerEmptyCard}>
+                    <View style={styles.doerEmptyIconCircle}>
+                      <Ionicons name="bicycle-outline" size={28} color="#8CA395" />
+                    </View>
+                    <Text style={styles.doerEmptyTitle}>No Active Accepted Suyos</Text>
+                    <Text style={styles.doerEmptySub}>
+                      Browse the public dashboard to accept and fulfill available suyos from nearby requesters.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.doerBrowseBtn}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveTab('home')}
+                    >
+                      <Ionicons name="search" size={15} color="#FFFFFF" />
+                      <Text style={styles.doerBrowseBtnText}>Browse Available Suyos</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.doerInfoCallout}>
+                      <Ionicons name="information-circle-outline" size={16} color="#059669" />
+                      <Text style={styles.doerInfoCalloutText}>
+                        You are assigned as the doer. You can proceed to fulfillment or cancel if unable to complete.
+                      </Text>
+                    </View>
+
+                    {doerAcceptedSuyos.map((suyo) => (
+                      <TouchableOpacity
+                        key={suyo.id}
+                        style={styles.doerAcceptedCard}
+                        activeOpacity={0.88}
+                        onPress={() => setSelectedDoerSuyo(suyo)}
+                      >
+                        {/* Top row: Category tag & Reward */}
+                        <View style={styles.doerCardTopRow}>
+                          <View style={styles.doerCategoryChip}>
+                            <Ionicons name={suyo.icon || 'receipt'} size={13} color="#1E4D2B" />
+                            <Text style={styles.doerCategoryChipText}>{suyo.category}</Text>
+                          </View>
+                          <View style={styles.doerRewardBadge}>
+                            <Text style={styles.doerRewardText}>+{suyo.reward}</Text>
+                          </View>
+                        </View>
+
+                        {/* Title */}
+                        <Text style={styles.doerCardTitle}>{suyo.title}</Text>
+
+                        {/* Requester Info */}
+                        <View style={styles.doerRequesterRow}>
+                          <Ionicons name="person-circle-outline" size={15} color="#557261" />
+                          <Text style={styles.doerRequesterText}>
+                            Requester: <Text style={{ fontWeight: '700', color: '#163523' }}>{suyo.requesterName}</Text>
+                          </Text>
+                          {suyo.requesterPhone && (
+                            <TouchableOpacity
+                              style={styles.doerCallMiniBtn}
+                              activeOpacity={0.7}
+                              onPress={(e) => {
+                                e?.stopPropagation?.();
+                                Linking.openURL(`tel:${suyo.requesterPhone}`);
+                              }}
+                            >
+                              <Ionicons name="call" size={11} color="#059669" />
+                              <Text style={styles.doerCallMiniBtnText}>Call</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+
+                        {/* Location & Time */}
+                        <View style={styles.doerLocationRow}>
+                          <Ionicons name="location-outline" size={14} color="#8CA395" />
+                          <Text style={styles.doerLocationText} numberOfLines={1}>{suyo.location}</Text>
+                          <Text style={styles.doerDot}>•</Text>
+                          <Ionicons name="time-outline" size={14} color="#8CA395" />
+                          <Text style={styles.doerDeadlineText}>{suyo.deadline}</Text>
+                        </View>
+
+                        {/* Tap hint */}
+                        <View style={styles.doerTapDetailsHintRow}>
+                          <Ionicons name="information-circle-outline" size={12} color="#059669" />
+                          <Text style={styles.doerTapDetailsHintText}>Tap tile to view details & requester profile</Text>
+                          <Ionicons name="chevron-forward" size={12} color="#059669" />
+                        </View>
+
+                        {/* Action Buttons: Continue Suyo & Cancel as Doer */}
+                        <View style={styles.doerCardActionRow}>
+                          <TouchableOpacity
+                            style={styles.doerContinueBtn}
+                            activeOpacity={0.8}
+                            onPress={(e) => {
+                              e?.stopPropagation?.();
+                              router.push({
+                                pathname: '/fulfill',
+                                params: {
+                                  id: suyo.id,
+                                  title: suyo.title,
+                                  category: suyo.category,
+                                  location: suyo.location,
+                                  distanceText: suyo.distanceText,
+                                  reward: suyo.reward,
+                                  requesterName: suyo.requesterName,
+                                  requesterPhone: suyo.requesterPhone,
+                                  details: suyo.details,
+                                },
+                              });
+                            }}
+                          >
+                            <Ionicons name="bicycle" size={15} color="#FFFFFF" />
+                            <Text style={styles.doerContinueBtnText}>Continue Suyo</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.doerCancelBtn}
+                            activeOpacity={0.75}
+                            onPress={(e) => {
+                              e?.stopPropagation?.();
+                              setDoerCancelModalItem(suyo);
+                            }}
+                          >
+                            <Ionicons name="close-circle-outline" size={15} color="#DC2626" />
+                            <Text style={styles.doerCancelBtnText}>Cancel as Doer</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* --- TAB B: COMPLETED SUYOS (Doer Completed History) --- */}
+            {doerNavTab === 'completed' && (
+              <View style={styles.doerListContainer}>
+                {doerCompletedSuyos.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.doerCompletedCard}
+                    activeOpacity={0.88}
+                    onPress={() => setSelectedDoerSuyo(item)}
+                  >
+                    <View style={styles.doerCompletedLeft}>
+                      <View style={styles.doerCompletedIconCircle}>
+                        <Ionicons name={item.icon || 'checkmark-done'} size={18} color="#059669" />
+                      </View>
+                      <View style={styles.doerCompletedTextCol}>
+                        <Text style={styles.doerCompletedTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={styles.doerCompletedRequester}>From: {item.requesterName}</Text>
+                        <View style={styles.doerCompletedMetaRow}>
+                          <Ionicons name="time-outline" size={12} color="#8CA395" />
+                          <Text style={styles.doerCompletedDate}>{item.date}</Text>
+                          <Text style={styles.doerDot}>•</Text>
+                          <Text style={styles.doerCompletedLocation} numberOfLines={1}>{item.location}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.doerCompletedRight}>
+                      <Text style={styles.doerCompletedEarned}>+₱{Number(item.earnedAmount).toFixed(2)}</Text>
+                      <View style={styles.doerCompletedRatingBadge}>
+                        <Ionicons name="star" size={10} color="#F59E0B" />
+                        <Text style={styles.doerCompletedRatingText}>5.0★</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* --- TAB C: CANCELLED SUYOS --- */}
+            {doerNavTab === 'cancelled' && (
+              <View style={styles.doerListContainer}>
+                {doerCancelledSuyos.length === 0 ? (
+                  <View style={styles.doerEmptyCard}>
+                    <View style={styles.doerEmptyIconCircle}>
+                      <Ionicons name="shield-checkmark-outline" size={28} color="#059669" />
+                    </View>
+                    <Text style={styles.doerEmptyTitle}>No Cancelled Suyos</Text>
+                    <Text style={styles.doerEmptySub}>
+                      Your completion rate is high! You have not cancelled any accepted suyos.
+                    </Text>
+                  </View>
+                ) : (
+                  doerCancelledSuyos.map((item) => {
+                    const isSelected = selectedDoerCancelledIds.includes(item.id);
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[
+                          styles.doerCancelledCard,
+                          isDoerCancelledEditMode && isSelected && styles.mySuyoCardItemSelected,
+                        ]}
+                        activeOpacity={0.88}
+                        onPress={() => {
+                          if (isDoerCancelledEditMode) {
+                            handleToggleDoerCancelledSelect(item.id);
+                          } else {
+                            setSelectedDoerSuyo(item);
+                          }
+                        }}
+                      >
+                        <View style={styles.doerCancelledTopRow}>
+                          <Text style={styles.doerCancelledTitle} numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <View style={styles.doerCancelledBadge}>
+                              <Text style={styles.doerCancelledBadgeText}>Cancelled</Text>
+                            </View>
+                            {isDoerCancelledEditMode && (
+                              <View
+                                style={[
+                                  styles.mySuyoSelectionCircle,
+                                  isSelected && styles.mySuyoSelectionCircleSelected,
+                                ]}
+                              >
+                                {isSelected && (
+                                  <Ionicons name="checkmark" size={11} color="#FFFFFF" />
+                                )}
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <Text style={styles.doerCancelledSub}>Requester: {item.requesterName} • {item.cancelledAt || 'Recently'}</Text>
+                        <View style={styles.doerCancelledNotice}>
+                          <Ionicons name="return-up-back" size={13} color="#6B7280" />
+                          <Text style={styles.doerCancelledNoticeText}>
+                            Released back to public board for other couriers.
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+
+                {/* Bottom Edit Action Bar when in Edit Mode */}
+                {isDoerCancelledEditMode && (
+                  <View style={styles.mySuyoEditFloatingBar}>
+                    <TouchableOpacity
+                      style={styles.mySuyoCancelEditBtn}
+                      onPress={() => {
+                        setIsDoerCancelledEditMode(false);
+                        setSelectedDoerCancelledIds([]);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.mySuyoCancelEditText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.mySuyoConfirmDeleteBtn,
+                        selectedDoerCancelledIds.length === 0 &&
+                          styles.mySuyoConfirmDeleteBtnDisabled,
+                      ]}
+                      onPress={handleConfirmDeleteDoerCancelled}
+                      disabled={selectedDoerCancelledIds.length === 0}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={14}
+                        color={
+                          selectedDoerCancelledIds.length > 0 ? '#FFFFFF' : '#8CA395'
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.mySuyoConfirmDeleteBtnText,
+                          selectedDoerCancelledIds.length === 0 &&
+                            styles.mySuyoConfirmDeleteBtnTextDisabled,
+                        ]}
+                      >
+                        {selectedDoerCancelledIds.length > 0
+                          ? `Remove Selected (${selectedDoerCancelledIds.length})`
+                          : 'Select items to remove'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
         {/* === WALLET SCREEN (ACCEPTED SUYO EARNINGS LIST) === */}
         {(activeTab === 'wallet' || activeTab === 'activity') && (
           <View style={styles.walletMainWrapper}>
+            {/* Top Back Nav when opened from Sidebar */}
+            <TouchableOpacity
+              style={styles.walletReturnHeaderBtn}
+              activeOpacity={0.75}
+              onPress={() => setActiveTab('home')}
+            >
+              <Ionicons name="arrow-back" size={16} color="#1E4D2B" />
+              <Text style={styles.walletReturnHeaderText}>Back to Dashboard</Text>
+            </TouchableOpacity>
+
             {/* 1. Wallet Balance Hero Header */}
             <View style={styles.walletHeroCard}>
               <View style={styles.walletHeroTopRow}>
@@ -3139,7 +3820,7 @@ export default function DashboardScreen() {
           onPress={() => setActiveTab('mysuyo')}
         >
           <Ionicons
-            name={activeTab === 'mysuyo' ? 'bicycle' : 'bicycle-outline'}
+            name={activeTab === 'mysuyo' ? 'receipt' : 'receipt-outline'}
             size={22}
             color={activeTab === 'mysuyo' ? '#1E4D2B' : '#8FA497'}
           />
@@ -3176,20 +3857,20 @@ export default function DashboardScreen() {
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
-          onPress={() => setActiveTab('wallet')}
+          onPress={() => setActiveTab('doer')}
         >
           <Ionicons
-            name={activeTab === 'wallet' ? 'wallet' : 'wallet-outline'}
+            name={activeTab === 'doer' ? 'bicycle' : 'bicycle-outline'}
             size={22}
-            color={activeTab === 'wallet' ? '#1E4D2B' : '#8FA497'}
+            color={activeTab === 'doer' ? '#1E4D2B' : '#8FA497'}
           />
           <Text
             style={[
               styles.navItemText,
-              activeTab === 'wallet' && styles.navItemTextActive,
+              activeTab === 'doer' && styles.navItemTextActive,
             ]}
           >
-            Wallet
+            Doer Suyo
           </Text>
         </TouchableOpacity>
 
@@ -3225,39 +3906,6 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Floating Toast Notification on Dashboard */}
-      {toastConfig && !selectedSuyo && !isFavoritesModalOpen && (
-        <Animated.View
-          style={[
-            styles.dashboardToastBubble,
-            {
-              bottom: (hasActiveSuyo ? 145 : 85) + bottomInset,
-              opacity: toastAnim,
-              transform: [
-                {
-                  translateY: toastAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Ionicons
-            name={
-              toastConfig.icon === 'heart'
-                ? 'heart'
-                : toastConfig.icon === 'heart-dislike'
-                ? 'heart-dislike'
-                : 'information-circle'
-            }
-            size={16}
-            color="#27854D"
-          />
-          <Text style={styles.dashboardToastText}>{toastConfig.message}</Text>
-        </Animated.View>
-      )}
 
       {/* ========================================================== */}
       {/* 5. FILTER MODAL                                            */}
@@ -3625,85 +4273,121 @@ export default function DashboardScreen() {
                   </View>
                 </TouchableOpacity>
               ) : (
-                /* Requester Info Row */
-                <View style={styles.detailRequestorRow}>
-                  <TouchableOpacity
-                    style={styles.detailRequestorLeft}
-                    activeOpacity={0.75}
-                    onPress={() => {
-                      setSelectedSuyo(null);
-                      if (selectedSuyoContext === 'posted') {
-                        router.push('/profile');
-                      } else {
-                        const reqName = selectedSuyo.requesterName || 'Maria Clarissa';
-                        const reqRating = (selectedSuyo.requesterRating || '4.9★').replace(/[★*]/g, '').trim();
-                        const reqDone = (selectedSuyo.completedCount || '15 completed').replace(/[^0-9]/g, '') || '15';
-                        const reqPhone = selectedSuyo.requesterPhone || '0928 341 5520';
+                /* Requester Info Row - Fix: user's own cancelled/posted suyo shows Edit instead of Call */
+                (() => {
+                  const isOwnSuyo =
+                    selectedSuyoContext === 'posted' ||
+                    selectedSuyoContext === 'cancelled' ||
+                    selectedSuyoContext === 'archived' ||
+                    selectedSuyo?.isOwner ||
+                    selectedSuyo?.requesterName === userProfile?.name ||
+                    selectedSuyo?.requesterName?.includes('(You)') ||
+                    selectedSuyo?.requesterName === 'You';
 
-                        router.push({
-                          pathname: '/profile',
-                          params: {
-                            name: reqName,
-                            rating: reqRating,
-                            done: reqDone,
-                            phone: reqPhone,
-                            isOtherUser: 'true',
-                          },
-                        });
-                      }
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel="View profile"
-                  >
-                    <View style={styles.detailAvatarCircle}>
-                      <Text style={styles.detailAvatarInitials}>
-                        {selectedSuyo.requesterInitials ||
-                          getInitials(
-                            selectedSuyo.requesterName || userProfile?.name || 'Juan Dela Cruz'
-                          )}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRequestorTextCol}>
-                      <Text style={styles.detailRequestorName}>
-                        {selectedSuyoContext === 'posted'
-                          ? `${userProfile?.name || 'Juan Dela Cruz'} (You)`
-                          : selectedSuyo.requesterName || 'Maria Clarissa'}
-                      </Text>
-                      <Text style={styles.detailRequestorMeta}>
-                        Requestor · {selectedSuyo.requesterRating || '4.9★'}  -  {(selectedSuyo.completedCount || '15 completed').replace(/[()]/g, '')}
-                      </Text>
-                      <View style={styles.detailRequestorPhoneRow}>
-                        <Ionicons name="call" size={11} color="#6D8777" />
-                        <Text style={styles.detailRequestorPhoneText}>
-                          {selectedSuyoContext === 'posted'
-                            ? userProfile?.phone || '+63 917 123 4567'
-                            : selectedSuyo.requesterPhone || '0928 341 5520'}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  {/* Add functional call button ONLY for public/available modal (matching 1st image), NOT in MySuyo modals */}
-                  {selectedSuyoContext !== 'posted' &&
-                    selectedSuyoContext !== 'accepted' &&
-                    selectedSuyoContext !== 'completed' &&
-                    selectedSuyoContext !== 'archived' && (
+                  return (
+                    <View style={styles.detailRequestorRow}>
                       <TouchableOpacity
-                        style={styles.detailRequestorCallBtn}
-                        activeOpacity={0.7}
-                        onPress={() =>
-                          handleCallDoer(
-                            selectedSuyo.requesterPhone || '0917 842 1983',
-                            selectedSuyo.requesterName || 'Atty. Rafael Cruz'
-                          )
-                        }
+                        style={styles.detailRequestorLeft}
+                        activeOpacity={0.75}
+                        onPress={() => {
+                          setSelectedSuyo(null);
+                          if (isOwnSuyo) {
+                            router.push({
+                              pathname: '/profile',
+                              params: { isOtherUser: 'false' },
+                            });
+                          } else {
+                            const reqName = selectedSuyo.requesterName || 'Maria Clarissa';
+                            const reqRating = (selectedSuyo.requesterRating || '4.9★').replace(/[★*]/g, '').trim();
+                            const reqDone = (selectedSuyo.completedCount || '15 completed').replace(/[^0-9]/g, '') || '15';
+                            const reqPhone = selectedSuyo.requesterPhone || '0928 341 5520';
+
+                            router.push({
+                              pathname: '/profile',
+                              params: {
+                                name: reqName,
+                                rating: reqRating,
+                                done: reqDone,
+                                phone: reqPhone,
+                                isOtherUser: 'true',
+                              },
+                            });
+                          }
+                        }}
                         accessibilityRole="button"
-                        accessibilityLabel="Call requester"
+                        accessibilityLabel={isOwnSuyo ? 'View and edit profile' : 'View profile'}
                       >
-                        <Ionicons name="call" size={18} color="#1E4D2B" />
+                        <View style={styles.detailAvatarCircle}>
+                          <Text style={styles.detailAvatarInitials}>
+                            {isOwnSuyo
+                              ? getInitials(userProfile?.name || 'Juan Dela Cruz')
+                              : selectedSuyo.requesterInitials ||
+                                getInitials(
+                                  selectedSuyo.requesterName || userProfile?.name || 'Juan Dela Cruz'
+                                )}
+                          </Text>
+                        </View>
+                        <View style={styles.detailRequestorTextCol}>
+                          <Text style={styles.detailRequestorName}>
+                            {isOwnSuyo
+                              ? `${userProfile?.name || 'Juan Dela Cruz'} (You)`
+                              : selectedSuyo.requesterName || 'Maria Clarissa'}
+                          </Text>
+                          <Text style={styles.detailRequestorMeta}>
+                            {isOwnSuyo
+                              ? `Requester (You) · ${userProfile?.rating || '5.0★'}`
+                              : `Requestor · ${selectedSuyo.requesterRating || '4.9★'}  -  ${(selectedSuyo.completedCount || '15 completed').replace(/[()]/g, '')}`}
+                          </Text>
+                          <View style={styles.detailRequestorPhoneRow}>
+                            <Ionicons name="call" size={11} color="#6D8777" />
+                            <Text style={styles.detailRequestorPhoneText}>
+                              {isOwnSuyo
+                                ? userProfile?.phone || '+63 917 123 4567'
+                                : selectedSuyo.requesterPhone || '0928 341 5520'}
+                            </Text>
+                          </View>
+                        </View>
                       </TouchableOpacity>
-                    )}
-                </View>
+
+                      {/* If user's own profile (like cancelled or posted suyo), show EDIT button instead of CALL button! */}
+                      {isOwnSuyo ? (
+                        <TouchableOpacity
+                          style={styles.detailRequestorEditBtn}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setSelectedSuyo(null);
+                            router.push({
+                              pathname: '/profile',
+                              params: { isOtherUser: 'false' },
+                            });
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Edit profile"
+                        >
+                          <Ionicons name="pencil" size={17} color="#1E4D2B" />
+                        </TouchableOpacity>
+                      ) : (
+                        /* Only for other users in public available feed, show functional CALL button */
+                        selectedSuyoContext === 'available' && (
+                          <TouchableOpacity
+                            style={styles.detailRequestorCallBtn}
+                            activeOpacity={0.7}
+                            onPress={() =>
+                              handleCallDoer(
+                                selectedSuyo.requesterPhone || '0917 842 1983',
+                                selectedSuyo.requesterName || 'Atty. Rafael Cruz'
+                              )
+                            }
+                            accessibilityRole="button"
+                            accessibilityLabel="Call requester"
+                          >
+                            <Ionicons name="call" size={18} color="#1E4D2B" />
+                          </TouchableOpacity>
+                        )
+                      )}
+                    </View>
+                  );
+                })()
               )}
 
               <View style={styles.detailDivider} />
@@ -3737,6 +4421,44 @@ export default function DashboardScreen() {
                 {selectedSuyo.details}
                 {selectedSuyo.notes ? ` ${selectedSuyo.notes}` : ''}
               </Text>
+
+              {/* Attached Photos & Files Section */}
+              {selectedSuyo.attachments && selectedSuyo.attachments.length > 0 && (
+                <View style={styles.detailAttachmentsSection}>
+                  <View style={styles.detailAttachmentsHeaderRow}>
+                    <Ionicons name="attach" size={15} color="#1E4D2B" />
+                    <Text style={styles.detailAttachmentsHeading}>
+                      Attached Photos & Files ({selectedSuyo.attachments.length})
+                    </Text>
+                  </View>
+
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.detailAttachmentsScroll}>
+                    {selectedSuyo.attachments.map((att, idx) => {
+                      const isImg = att.type === 'image';
+                      return (
+                        <View key={att.id || idx} style={styles.detailAttachmentChip}>
+                          {isImg ? (
+                            <View style={styles.detailAttachmentImageWrap}>
+                              <Image source={{ uri: att.uri }} style={styles.detailAttachmentThumb} />
+                              <View style={styles.detailAttachmentTag}>
+                                <Ionicons name="image" size={10} color="#FFFFFF" />
+                                <Text style={styles.detailAttachmentTagText}>Photo</Text>
+                              </View>
+                            </View>
+                          ) : (
+                            <View style={styles.detailAttachmentDocWrap}>
+                              <Ionicons name="document-text" size={18} color="#B45309" />
+                              <Text style={styles.detailAttachmentDocName} numberOfLines={1}>
+                                {att.name || 'Document'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* FEATURE: Prompt to Increase Reward if Waiting Long in Posted Nav */}
               {selectedSuyoContext === 'posted' && selectedSuyo.status !== 'Cancelled' && (
@@ -3901,15 +4623,64 @@ export default function DashboardScreen() {
                 )}
 
                 {/* COMPLETED NAV BUTTONS (Save to Archive, Repeat Suyo) */}
-                {selectedSuyoContext === 'completed' && (
+                {selectedSuyoContext === 'completed' && (() => {
+                  const isArchived =
+                    selectedSuyo &&
+                    archivedSuyos.some(
+                      (a) => a.id === selectedSuyo.id || a.title === selectedSuyo.title
+                    );
+                  return (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.detailArchiveSuyoBtn,
+                          isArchived && styles.detailArchiveSuyoBtnYellow,
+                        ]}
+                        onPress={() => handleSaveToArchive(selectedSuyo)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name={isArchived ? 'bookmark' : 'bookmark-outline'}
+                          size={15}
+                          color={isArchived ? '#78350F' : '#163523'}
+                        />
+                        <Text
+                          style={[
+                            styles.detailArchiveSuyoBtnText,
+                            isArchived && styles.detailArchiveSuyoBtnTextYellow,
+                          ]}
+                        >
+                          {isArchived ? 'Archived' : 'Archive'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.detailRepeatSuyoBtn}
+                        onPress={() => handleRepeatRequest(selectedSuyo)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="refresh" size={15} color="#FFFFFF" />
+                        <Text style={styles.detailRepeatSuyoBtnText}>Repeat Suyo</Text>
+                      </TouchableOpacity>
+                    </>
+                  );
+                })()}
+
+                {/* CANCELLED NAV BUTTONS (Delete unwanted suyo & Re-post Suyo) */}
+                {selectedSuyoContext === 'cancelled' && (
                   <>
                     <TouchableOpacity
-                      style={styles.detailArchiveSuyoBtn}
-                      onPress={() => handleSaveToArchive(selectedSuyo)}
+                      style={styles.detailCancelSuyoBtn}
+                      onPress={() => {
+                        const idToDelete = selectedSuyo.id;
+                        setCancelledSuyos((prev) => prev.filter((s) => s.id !== idToDelete));
+                        setSelectedSuyo(null);
+                        triggerToast('suyo is successfully deleted', 'trash-outline');
+                      }}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="bookmark-outline" size={15} color="#163523" />
-                      <Text style={styles.detailArchiveSuyoBtnText}>Archive</Text>
+                      <Ionicons name="trash-outline" size={15} color="#DC2626" />
+                      <Text style={styles.detailCancelSuyoBtnText}>Delete</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -3918,7 +4689,7 @@ export default function DashboardScreen() {
                       activeOpacity={0.8}
                     >
                       <Ionicons name="refresh" size={15} color="#FFFFFF" />
-                      <Text style={styles.detailRepeatSuyoBtnText}>Repeat Suyo</Text>
+                      <Text style={styles.detailRepeatSuyoBtnText}>Re-post Suyo</Text>
                     </TouchableOpacity>
                   </>
                 )}
@@ -3955,6 +4726,30 @@ export default function DashboardScreen() {
                       const taskToFulfill = selectedSuyo;
                       setSelectedSuyo(null);
                       setOpenedFromFavorites(false);
+                      if (taskToFulfill) {
+                        setDoerAcceptedSuyos((prev) => {
+                          if (prev.some((s) => s.id === taskToFulfill.id)) return prev;
+                          return [
+                            {
+                              id: taskToFulfill.id,
+                              title: taskToFulfill.title,
+                              category: taskToFulfill.category || 'General',
+                              icon: taskToFulfill.icon || 'bicycle',
+                              location: taskToFulfill.location || 'Tagum City',
+                              distanceText: taskToFulfill.distanceText || '0.8 km away',
+                              reward: taskToFulfill.reward || '₱150',
+                              requesterName: taskToFulfill.requesterName || 'Community Member',
+                              requesterPhone: taskToFulfill.requesterPhone || '09564781552',
+                              deadline: taskToFulfill.timeBadge || 'Within 2 hours',
+                              acceptedAt: 'Today · Just now',
+                              details: taskToFulfill.details || 'Fulfill this suyo request according to requester requirements.',
+                              notes: taskToFulfill.notes || 'Handle with care.',
+                              status: 'Accepted · In Progress',
+                            },
+                            ...prev,
+                          ];
+                        });
+                      }
                       router.push({
                         pathname: '/fulfill',
                         params: {
@@ -3977,6 +4772,386 @@ export default function DashboardScreen() {
                   </TouchableOpacity>
                 )}
               </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ========================================================== */}
+      {/* 6C. DOER CANCELLATION CONFIRMATION MODAL                   */}
+      {/* ========================================================== */}
+      {doerCancelModalItem && (
+        <Modal
+          visible={!!doerCancelModalItem}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setDoerCancelModalItem(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.doerCancelModalCard}>
+              <View style={styles.doerCancelIconCircle}>
+                <Ionicons name="warning-outline" size={26} color="#DC2626" />
+              </View>
+              <Text style={styles.doerCancelModalTitle}>Cancel Accepted Suyo?</Text>
+              <Text style={styles.doerCancelModalSub}>
+                Are you sure you want to cancel "{doerCancelModalItem.title}"? It will be immediately released back to the public available board so other couriers can fulfill it.
+              </Text>
+              <View style={styles.doerCancelActionRow}>
+                <TouchableOpacity
+                  style={styles.doerCancelKeepBtn}
+                  activeOpacity={0.7}
+                  onPress={() => setDoerCancelModalItem(null)}
+                >
+                  <Text style={styles.doerCancelKeepBtnText}>Keep Suyo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.doerCancelConfirmBtn}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    const itemToCancel = doerCancelModalItem;
+                    setDoerCancelModalItem(null);
+                    if (selectedDoerSuyo?.id === itemToCancel.id) {
+                      setSelectedDoerSuyo(null);
+                    }
+                    // Remove from accepted, add to cancelled
+                    setDoerAcceptedSuyos((prev) => prev.filter((s) => s.id !== itemToCancel.id));
+                    setDoerCancelledSuyos((prev) => [
+                      {
+                        ...itemToCancel,
+                        status: 'Cancelled by Doer',
+                        cancelledAt: 'Today · Just now',
+                        cancelReason: 'Cancelled by Doer · Released back to board',
+                      },
+                      ...prev,
+                    ]);
+                    triggerToast('Suyo cancelled and returned to public board', 'alert');
+                  }}
+                >
+                  <Text style={styles.doerCancelConfirmBtnText}>Yes, Cancel Suyo</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ========================================================== */}
+      {/* 6D. DOER SUYO DETAILS MODAL                                */}
+      {/* ========================================================== */}
+      {selectedDoerSuyo && (
+        <Modal
+          visible={!!selectedDoerSuyo}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setSelectedDoerSuyo(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.doerDetailModalCard}>
+              {/* Header */}
+              <View style={styles.doerDetailHeader}>
+                <View style={styles.doerDetailHeaderLeft}>
+                  <View style={styles.doerDetailCategoryCircle}>
+                    <Ionicons name={selectedDoerSuyo.icon || 'bicycle'} size={17} color="#1E4D2B" />
+                  </View>
+                  <View style={{ gap: 2 }}>
+                    <Text style={styles.doerDetailCategoryText}>
+                      {selectedDoerSuyo.category || 'Doer Task Details'}
+                    </Text>
+                    <Text style={styles.doerDetailDateText}>
+                      {selectedDoerSuyo.acceptedAt || selectedDoerSuyo.date || 'Today'}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setSelectedDoerSuyo(null)}
+                  style={styles.doerDetailCloseBtn}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={18} color="#163523" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+                {/* Title */}
+                <Text style={styles.doerDetailTitle}>{selectedDoerSuyo.title}</Text>
+
+                {/* Status & Payout Card */}
+                <View style={styles.doerDetailSummaryCard}>
+                  <View style={styles.doerDetailStatusBadge}>
+                    <Ionicons
+                      name={
+                        selectedDoerSuyo.status === 'Completed'
+                          ? 'checkmark-done-circle'
+                          : selectedDoerSuyo.status === 'Cancelled'
+                          ? 'close-circle'
+                          : 'checkmark-circle'
+                      }
+                      size={14}
+                      color={
+                        selectedDoerSuyo.status === 'Completed'
+                          ? '#059669'
+                          : selectedDoerSuyo.status === 'Cancelled'
+                          ? '#DC2626'
+                          : '#0284C7'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.doerDetailStatusBadgeText,
+                        {
+                          color:
+                            selectedDoerSuyo.status === 'Completed'
+                              ? '#059669'
+                              : selectedDoerSuyo.status === 'Cancelled'
+                              ? '#DC2626'
+                              : '#0284C7',
+                        },
+                      ]}
+                    >
+                      {selectedDoerSuyo.status || 'Accepted'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.doerDetailPayoutBox}>
+                    <Text style={styles.doerDetailPayoutLabel}>PAYOUT</Text>
+                    <Text style={styles.doerDetailPayoutValue}>
+                      +{selectedDoerSuyo.reward || `₱${selectedDoerSuyo.earnedAmount || 150}`}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Clickable Requester Profile Tile (Navigates directly to /profile screen without modal, matching MySuyo area) */}
+                <TouchableOpacity
+                  style={styles.doerRequesterCard}
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    const isOwn =
+                      selectedDoerSuyo.requesterName === userProfile?.name ||
+                      selectedDoerSuyo.requesterName?.includes('(You)') ||
+                      selectedDoerSuyo.requesterName === 'You';
+
+                    setSelectedDoerSuyo(null);
+                    if (isOwn) {
+                      router.push({
+                        pathname: '/profile',
+                        params: {
+                          isOtherUser: 'false',
+                          name: userProfile?.name || 'Juan Dela Cruz',
+                          phone: userProfile?.phone || '+63 917 123 4567',
+                        },
+                      });
+                    } else {
+                      const reqName = selectedDoerSuyo.requesterName || 'Community Member';
+                      const reqRating = (selectedDoerSuyo.requesterRating || '4.9★').replace(/[★*]/g, '').trim();
+                      const reqDone = (selectedDoerSuyo.completedCount || selectedDoerSuyo.suyosPosted || '42 completed').replace(/[^0-9]/g, '') || '42';
+                      const reqPhone = selectedDoerSuyo.requesterPhone || '+63 917 888 2341';
+
+                      router.push({
+                        pathname: '/profile',
+                        params: {
+                          name: reqName,
+                          rating: reqRating,
+                          done: reqDone,
+                          phone: reqPhone,
+                          location: selectedDoerSuyo.location || 'Tagum City',
+                          isOtherUser: 'true',
+                        },
+                      });
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="View requester profile"
+                >
+                  <View style={styles.doerRequesterCardTop}>
+                    <Text style={styles.doerRequesterSectionLabel}>REQUESTED BY</Text>
+                    <View style={styles.doerRequesterViewProfilePill}>
+                      <Text style={styles.doerRequesterViewProfileText}>View Profile</Text>
+                      <Ionicons name="chevron-forward" size={10} color="#059669" />
+                    </View>
+                  </View>
+
+                  <View style={styles.doerRequesterCardMainRow}>
+                    <View style={styles.doerRequesterAvatar}>
+                      <Text style={styles.doerRequesterAvatarText}>
+                        {getInitials(selectedDoerSuyo.requesterName || 'Community Member')}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, paddingRight: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={styles.doerRequesterName} numberOfLines={1}>
+                          {selectedDoerSuyo.requesterName || 'Community Member'}
+                        </Text>
+                        <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                      </View>
+                      <Text style={styles.doerRequesterSubMeta}>
+                        {selectedDoerSuyo.requesterRating || '4.9★'} · Prompt Payer
+                      </Text>
+                    </View>
+
+                    {(() => {
+                      const isOwn =
+                        selectedDoerSuyo.requesterName === userProfile?.name ||
+                        selectedDoerSuyo.requesterName?.includes('(You)') ||
+                        selectedDoerSuyo.requesterName === 'You';
+
+                      if (isOwn) {
+                        return (
+                          <TouchableOpacity
+                            style={[styles.doerRequesterCallPill, { backgroundColor: '#1E4D2B' }]}
+                            activeOpacity={0.8}
+                            onPress={(e) => {
+                              e?.stopPropagation?.();
+                              setSelectedDoerSuyo(null);
+                              router.push({
+                                pathname: '/profile',
+                                params: {
+                                  isOtherUser: 'false',
+                                  name: userProfile?.name || 'Juan Dela Cruz',
+                                  phone: userProfile?.phone || '+63 917 123 4567',
+                                },
+                              });
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Edit profile"
+                          >
+                            <Ionicons name="pencil" size={12} color="#FFFFFF" />
+                            <Text style={styles.doerRequesterCallPillText}>Edit</Text>
+                          </TouchableOpacity>
+                        );
+                      }
+
+                      if (selectedDoerSuyo.requesterPhone) {
+                        return (
+                          <TouchableOpacity
+                            style={styles.doerRequesterCallPill}
+                            activeOpacity={0.8}
+                            onPress={(e) => {
+                              e?.stopPropagation?.();
+                              Linking.openURL(`tel:${selectedDoerSuyo.requesterPhone}`);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Call requester"
+                          >
+                            <Ionicons name="call" size={12} color="#FFFFFF" />
+                            <Text style={styles.doerRequesterCallPillText}>Call</Text>
+                          </TouchableOpacity>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </View>
+                </TouchableOpacity>
+
+                {/* Key Info Grid: Location & Deadline (Divided cleanly with dedicated icon bubbles) */}
+                <View style={styles.doerInfoGridRow}>
+                  {/* Location Tile */}
+                  <View style={styles.doerInfoGridTile}>
+                    <View style={styles.doerInfoGridTileHeader}>
+                      <View style={[styles.doerInfoIconCircle, { backgroundColor: '#E0F2FE' }]}>
+                        <Ionicons name="location-sharp" size={13} color="#0284C7" />
+                      </View>
+                      <Text style={styles.doerInfoGridLabel}>LOCATION</Text>
+                    </View>
+                    <Text style={styles.doerInfoGridValue} numberOfLines={2}>
+                      {selectedDoerSuyo.location || 'Tagum City'}
+                    </Text>
+                  </View>
+
+                  {/* Deadline / Time Tile */}
+                  <View style={styles.doerInfoGridTile}>
+                    <View style={styles.doerInfoGridTileHeader}>
+                      <View style={[styles.doerInfoIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="time" size={13} color="#D97706" />
+                      </View>
+                      <Text style={styles.doerInfoGridLabel}>DEADLINE</Text>
+                    </View>
+                    <Text style={styles.doerInfoGridValue} numberOfLines={2}>
+                      {selectedDoerSuyo.deadline || selectedDoerSuyo.due || 'Flexible time'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Task Description Section */}
+                <View style={styles.doerTaskDescCard}>
+                  <View style={styles.doerSectionHeaderRow}>
+                    <View style={[styles.doerInfoIconCircle, { backgroundColor: '#E8F5EE' }]}>
+                      <Ionicons name="reader-outline" size={13} color="#1E4D2B" />
+                    </View>
+                    <Text style={styles.doerSectionHeaderText}>TASK DESCRIPTION</Text>
+                  </View>
+                  <Text style={styles.doerTaskDescBody}>
+                    {selectedDoerSuyo.details || 'Fulfill this suyo request according to requester requirements.'}
+                  </Text>
+                </View>
+
+                {/* Special Instructions (Notes) */}
+                {selectedDoerSuyo.notes ? (
+                  <View style={styles.doerNotesCard}>
+                    <View style={styles.doerSectionHeaderRow}>
+                      <View style={[styles.doerInfoIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="bulb-outline" size={13} color="#B45309" />
+                      </View>
+                      <Text style={[styles.doerSectionHeaderText, { color: '#B45309' }]}>
+                        SPECIAL INSTRUCTIONS
+                      </Text>
+                    </View>
+                    <Text style={styles.doerNotesBody}>{selectedDoerSuyo.notes}</Text>
+                  </View>
+                ) : null}
+
+                {/* Attached Photos & Files Section */}
+                {selectedDoerSuyo.attachments && selectedDoerSuyo.attachments.length > 0 && (
+                  <View style={styles.doerAttachmentsCard}>
+                    <View style={styles.doerSectionHeaderRow}>
+                      <View style={[styles.doerInfoIconCircle, { backgroundColor: '#E8F5EE' }]}>
+                        <Ionicons name="attach" size={13} color="#1E4D2B" />
+                      </View>
+                      <Text style={styles.doerSectionHeaderText}>
+                        ATTACHED PHOTOS & FILES ({selectedDoerSuyo.attachments.length})
+                      </Text>
+                    </View>
+
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.detailAttachmentsScroll}
+                    >
+                      {selectedDoerSuyo.attachments.map((att, idx) => {
+                        const isImg = att.type === 'image';
+                        return (
+                          <View key={att.id || idx} style={styles.detailAttachmentChip}>
+                            {isImg ? (
+                              <View style={styles.detailAttachmentImageWrap}>
+                                <Image source={{ uri: att.uri }} style={styles.detailAttachmentThumb} />
+                                <View style={styles.detailAttachmentTag}>
+                                  <Ionicons name="image" size={10} color="#FFFFFF" />
+                                  <Text style={styles.detailAttachmentTagText}>Photo</Text>
+                                </View>
+                              </View>
+                            ) : (
+                              <View style={styles.detailAttachmentDocWrap}>
+                                <Ionicons name="document-text" size={18} color="#B45309" />
+                                <Text style={styles.detailAttachmentDocName} numberOfLines={1}>
+                                  {att.name || 'Document'}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* Informational Callout Banner (NO BUTTONS, exactly as user requested) */}
+                <View style={styles.doerModalInfoHint}>
+                  <Ionicons name="information-circle" size={15} color="#059669" />
+                  <Text style={styles.doerModalInfoHintText}>
+                    Review the details above to decide whether to continue or cancel this suyo on your main Doer Suyo card.
+                  </Text>
+                </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -4091,6 +5266,8 @@ export default function DashboardScreen() {
           </View>
         </Modal>
       )}
+
+
 
       {/* ========================================================== */}
       {/* 6C. EDIT SUYO MODAL                                        */}
@@ -5061,32 +6238,33 @@ export default function DashboardScreen() {
             <View style={styles.sidebarDivider} />
             <Text style={styles.sidebarSectionTitle}>Menu & Preferences</Text>
 
-            {/* Statistics Nav Item in Sidebar */}
+
+            {/* Wallet Nav Item in Sidebar (Transferred from dashboard nav) */}
             <TouchableOpacity
               style={styles.sidebarMenuItem}
               activeOpacity={0.75}
               onPress={() => {
                 closeSidebar();
-                setIsStatisticsModalOpen(true);
+                setActiveTab('wallet');
               }}
             >
               <View style={styles.menuItemLeft}>
                 <View
                   style={[
                     styles.menuItemIconCircle,
-                    { backgroundColor: '#E0F2FE' },
+                    { backgroundColor: '#DCFCE7' },
                   ]}
                 >
                   <Ionicons
-                    name="stats-chart-outline"
+                    name="wallet-outline"
                     size={18}
-                    color="#0284C7"
+                    color="#059669"
                   />
                 </View>
                 <View style={styles.menuItemTextCol}>
-                  <Text style={styles.menuItemTitle}>Statistics</Text>
+                  <Text style={styles.menuItemTitle}>Wallet</Text>
                   <Text style={styles.menuItemSub}>
-                    Suyo analytics & performance
+                    Earnings, balance & charts
                   </Text>
                 </View>
               </View>
@@ -5275,6 +6453,21 @@ export default function DashboardScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Universal Floating Toast Modal: Visible on top of ANY open modal at the footer area */}
+      {toastConfig && (
+        <Modal
+          visible={!!toastConfig}
+          transparent={true}
+          animationType="none"
+          statusBarTranslucent={true}
+          onRequestClose={() => setToastConfig(null)}
+        >
+          <View style={styles.toastModalBackdrop} pointerEvents="box-none">
+            {renderFooterToast({ position: 'absolute', bottom: 74 + bottomInset })}
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -5516,6 +6709,21 @@ const styles = StyleSheet.create({
   nearestHeaderText: {
     fontSize: 12,
     fontWeight: '700',
+    color: '#1E4D2B',
+  },
+  availableCountBadge: {
+    backgroundColor: '#EAF4EF',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1E5D9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  availableCountBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
     color: '#1E4D2B',
   },
   clearFiltersPill: {
@@ -6354,6 +7562,17 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: '#EBF5EE',
+    borderWidth: 1.5,
+    borderColor: '#C2E0CC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  detailRequestorEditBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E8F5EE',
     borderWidth: 1.5,
     borderColor: '#C2E0CC',
     alignItems: 'center',
@@ -7599,26 +8818,362 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  dashboardToastBubble: {
+  /* Popping toast notification (prominent & visible outside & inside modals at footer) */
+  globalPoppingToastWrapper: {
     position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(235, 247, 240, 0.94)',
-    borderRadius: 22,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    left: 16,
+    right: 16,
+    zIndex: 999999,
+    elevation: 999999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  poppingToastContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    zIndex: 150,
-    elevation: 8,
-    borderWidth: 1.2,
-    borderColor: 'rgba(39, 133, 77, 0.28)',
-    maxWidth: '92%',
+    backgroundColor: '#142E1F',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 20,
+    borderWidth: 1.5,
+    borderColor: '#22C55E',
+    gap: 10,
+    maxWidth: SCREEN_WIDTH * 0.92,
   },
-  dashboardToastText: {
+  poppingToastIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  poppingToastText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+
+  /* Polished Modal for Doer Suyo details */
+  doerDetailModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    width: Math.min(SCREEN_WIDTH * 0.92, 440),
+    maxHeight: Dimensions.get('window').height * 0.78,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  doerDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF3EE',
+    marginBottom: 12,
+  },
+  doerDetailHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  doerDetailCategoryCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E8F5EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerDetailCategoryText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  doerDetailDateText: {
+    fontSize: 11,
+    color: '#718C7D',
+    fontWeight: '500',
+  },
+  doerDetailCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerDetailTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#163523',
+    lineHeight: 22,
+    marginBottom: 10,
+  },
+  doerDetailSummaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    marginBottom: 12,
+  },
+  doerDetailStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  doerDetailStatusBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  doerDetailPayoutBox: {
+    alignItems: 'flex-end',
+  },
+  doerDetailPayoutLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#166534',
+    letterSpacing: 0.5,
+  },
+  doerDetailPayoutValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#15803D',
+  },
+  doerRequesterCard: {
+    backgroundColor: '#F7FCF9',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#CDE5D6',
+    marginBottom: 12,
+  },
+  doerRequesterCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  doerRequesterSectionLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#607B6C',
+    letterSpacing: 0.6,
+  },
+  doerRequesterViewProfilePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 8,
+    gap: 2,
+  },
+  doerRequesterViewProfileText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  doerRequesterCardMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  doerRequesterAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#1E4D2B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerRequesterAvatarText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  doerRequesterName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  doerRequesterSubMeta: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  doerRequesterCallPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#059669',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    gap: 4,
+  },
+  doerRequesterCallPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  doerInfoGridRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  doerInfoGridTile: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  doerInfoGridTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  doerInfoIconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerInfoGridLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  doerInfoGridValue: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#163523',
+    color: '#1E293B',
+    lineHeight: 16,
+  },
+  doerTaskDescCard: {
+    backgroundColor: '#F8FAF8',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E6EEE8',
+    marginBottom: 10,
+  },
+  doerSectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  doerSectionHeaderText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#425C4D',
+    letterSpacing: 0.5,
+  },
+  doerTaskDescBody: {
+    fontSize: 12.5,
+    color: '#27382F',
+    lineHeight: 18,
+  },
+  doerNotesCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginBottom: 10,
+  },
+  doerNotesBody: {
+    fontSize: 12.5,
+    color: '#78350F',
+    lineHeight: 18,
+  },
+  doerAttachmentsCard: {
+    backgroundColor: '#F8FAF8',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E6EEE8',
+    marginBottom: 10,
+  },
+  doerModalInfoHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 10,
+    borderRadius: 10,
+    gap: 8,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  doerModalInfoHintText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#166534',
+    lineHeight: 15,
+  },
+  doerTapDetailsHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FAF3',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 4,
+    gap: 6,
+  },
+  doerTapDetailsHintText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#059669',
+  },
+
+  /* Yellow Archive Button Styles */
+  detailArchiveSuyoBtnYellow: {
+    backgroundColor: '#FDE047',
+    borderColor: '#EAB308',
+    borderWidth: 1.5,
+  },
+  detailArchiveSuyoBtnTextYellow: {
+    color: '#78350F',
+    fontWeight: '800',
   },
 
   /* Unread Badge Number Text */
@@ -9218,6 +10773,661 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '600',
     marginTop: 1,
+  },
+
+  /* Wallet Return Header Button (when opened from sidebar) */
+  walletReturnHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    backgroundColor: '#EAF4EF',
+    borderRadius: 10,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  walletReturnHeaderText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E4D2B',
+  },
+
+  /* Doer Suyo Hub Styles */
+  doerMainWrapper: {
+    flex: 1,
+    backgroundColor: '#FAFCFA',
+  },
+  doerHeroSection: {
+    backgroundColor: '#1E4D2B',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+  },
+  doerHeroTextCol: {
+    marginBottom: 0,
+  },
+  doerHeroBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  doerHeroIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerHeroSuper: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#86EFAC',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  doerHeroTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  doerHeroSub: {
+    fontSize: 12,
+    color: '#C2DEC9',
+    lineHeight: 16,
+  },
+  doerQuickStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  doerQuickStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  doerQuickStatVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  doerQuickStatLbl: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#D1FAE5',
+    marginTop: 2,
+  },
+  doerQuickStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  /* Modern Text Navigation for Doer Hub */
+  doerTextNavWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECF4EF',
+  },
+  doerTextNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 28,
+  },
+  doerTextNavItem: {
+    paddingVertical: 8,
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  doerTextNavTitle: {
+    fontSize: 15.5,
+    fontWeight: '600',
+    color: '#7E9789',
+    letterSpacing: -0.2,
+  },
+  doerTextNavTitleActive: {
+    fontWeight: '800',
+    color: '#163523',
+  },
+  doerTextNavCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8FA497',
+  },
+  doerTextNavCountActive: {
+    color: '#1E4D2B',
+  },
+  doerTextNavUnderline: {
+    position: 'absolute',
+    bottom: -2,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    borderRadius: 1.5,
+    backgroundColor: '#1E4D2B',
+  },
+
+  /* List Container & Cards */
+  doerListContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 28,
+  },
+  doerInfoCallout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E8F5EE',
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#CDE5D7',
+  },
+  doerInfoCalloutText: {
+    fontSize: 11.5,
+    color: '#163523',
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 16,
+  },
+  doerAcceptedCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1.2,
+    borderColor: '#D7E9DE',
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  doerCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  doerCategoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EAF4EF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
+  },
+  doerCategoryChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1E4D2B',
+  },
+  doerRewardBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  doerRewardText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#15803D',
+  },
+  doerCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#163523',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  doerRequesterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  doerRequesterText: {
+    fontSize: 12,
+    color: '#52695C',
+    flex: 1,
+  },
+  doerCallMiniBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  doerCallMiniBtnText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  doerLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 12,
+  },
+  doerLocationText: {
+    fontSize: 11.5,
+    color: '#658172',
+    fontWeight: '500',
+    maxWidth: '55%',
+  },
+  doerDot: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  doerDeadlineText: {
+    fontSize: 11.5,
+    color: '#D97706',
+    fontWeight: '700',
+  },
+  doerCardActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF5F1',
+  },
+  doerContinueBtn: {
+    flex: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#1E4D2B',
+    borderRadius: 11,
+    paddingVertical: 10,
+  },
+  doerContinueBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  doerCancelBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 11,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  doerCancelBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+
+  /* Completed Cards */
+  doerCompletedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2ECE6',
+  },
+  doerCompletedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+    paddingRight: 8,
+  },
+  doerCompletedIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doerCompletedTextCol: {
+    flex: 1,
+  },
+  doerCompletedTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  doerCompletedRequester: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#52695C',
+    marginBottom: 2,
+  },
+  doerCompletedMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  doerCompletedDate: {
+    fontSize: 10.5,
+    color: '#8CA395',
+  },
+  doerCompletedLocation: {
+    fontSize: 10.5,
+    color: '#8CA395',
+    flex: 1,
+  },
+  doerCompletedRight: {
+    alignItems: 'flex-end',
+    gap: 3,
+  },
+  doerCompletedEarned: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  doerCompletedRatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  doerCompletedRatingText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+
+  /* Cancelled Cards */
+  doerCancelledCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 13,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  doerCancelledTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  doerCancelledTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#475569',
+    flex: 1,
+    paddingRight: 8,
+  },
+  doerCancelledBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  doerCancelledBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  doerCancelledSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 6,
+  },
+  doerCancelledNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  doerCancelledNoticeText: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontStyle: 'italic',
+  },
+
+  /* Empty State */
+  doerEmptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#E2ECE6',
+    marginTop: 8,
+  },
+  doerEmptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F0F7F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  doerEmptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 6,
+  },
+  doerEmptySub: {
+    fontSize: 12,
+    color: '#658172',
+    textAlign: 'center',
+    lineHeight: 17,
+    marginBottom: 16,
+  },
+  doerBrowseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1E4D2B',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  doerBrowseBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  /* Cancel Confirmation Modal */
+  doerCancelModalCard: {
+    width: '100%',
+    maxWidth: 350,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 8,
+  },
+  doerCancelIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  doerCancelModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#991B1B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  doerCancelModalSub: {
+    fontSize: 12.5,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 18,
+  },
+  doerCancelActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  doerCancelKeepBtn: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  doerCancelKeepBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  doerCancelConfirmBtn: {
+    flex: 1.3,
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  doerCancelConfirmBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  /* Detail Cancel / Fulfill Buttons */
+  detailCancelDoerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  detailCancelDoerBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+
+  /* Attached Photos & Files in Details Modal */
+  detailAttachmentsSection: {
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: '#F8FAF9',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2ECE6',
+  },
+  detailAttachmentsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  detailAttachmentsHeading: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  detailAttachmentsScroll: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  detailAttachmentChip: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  detailAttachmentImageWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#E2E8F0',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  detailAttachmentThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  detailAttachmentTag: {
+    position: 'absolute',
+    bottom: 3,
+    left: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  detailAttachmentTagText: {
+    fontSize: 8.5,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  detailAttachmentDocWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFDF5',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxWidth: 160,
+  },
+  detailAttachmentDocName: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#92400E',
+    flex: 1,
   },
 });
 

@@ -24,7 +24,7 @@ export default function PostSuyoScreen() {
         <Text style={styles.navBarTitle}>Post a Suyo</Text>
         <View style={{ width: 38 }} />
       </View>
-      <RequestForm onPosted={() => router.replace('/dashboard')} />
+      <RequestForm onPosted={() => router.replace({ pathname: '/dashboard', params: { justPosted: 'true' } })} />
     </SafeAreaView>
   );
 }

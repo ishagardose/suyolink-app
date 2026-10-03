@@ -10,8 +10,12 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSuyos } from '../../context/SuyoContext';
 import { CATEGORIES } from '../../data/suyoRequests';
@@ -34,6 +38,7 @@ const EMPTY = {
   phone: '',
   coordinates: null,
   notes: '',
+  attachments: [],
 };
 
 const CATEGORY_ICONS = {
@@ -123,12 +128,161 @@ export default function RequestForm({ onPosted }) {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isClockOpen, setIsClockOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [attachmentLoading, setAttachmentLoading] = useState(false);
 
   const scrollViewRef = useRef(null);
   const contactInputRef = useRef(null);
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
   const submitting = useRef(false);
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || isNaN(bytes)) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handlePickFromCamera = async () => {
+    try {
+      if ((draft.attachments || []).length >= 5) {
+        Alert.alert('Limit Reached', 'You can attach up to 5 photos or files.');
+        return;
+      }
+      setAttachmentLoading(true);
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please allow camera access in your device settings to take photos for your suyo request.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const newAttachment = {
+          id: 'cam-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+          uri: asset.uri,
+          name: asset.fileName || `camera_photo_${Date.now()}.jpg`,
+          type: 'image',
+          mimeType: asset.mimeType || 'image/jpeg',
+          size: asset.fileSize,
+        };
+        setDraft((prev) => ({
+          ...prev,
+          attachments: [...(prev.attachments || []), newAttachment].slice(0, 5),
+        }));
+      }
+    } catch (err) {
+      console.warn('Camera pick error:', err);
+      Alert.alert('Camera Error', 'Could not open camera. Please try selecting from the photo gallery.');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  };
+
+  const handlePickFromGallery = async () => {
+    try {
+      if ((draft.attachments || []).length >= 5) {
+        Alert.alert('Limit Reached', 'You can attach up to 5 photos or files.');
+        return;
+      }
+      setAttachmentLoading(true);
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          'Gallery Permission Required',
+          'Please allow photo library access to choose photos for your suyo request.'
+        );
+        return;
+      }
+
+      const maxAllowed = 5 - (draft.attachments?.length || 0);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: maxAllowed,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newItems = result.assets.map((asset, index) => ({
+          id: 'gal-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2, 6),
+          uri: asset.uri,
+          name: asset.fileName || `gallery_image_${Date.now()}_${index + 1}.jpg`,
+          type: 'image',
+          mimeType: asset.mimeType || 'image/jpeg',
+          size: asset.fileSize,
+        }));
+
+        setDraft((prev) => ({
+          ...prev,
+          attachments: [...(prev.attachments || []), ...newItems].slice(0, 5),
+        }));
+      }
+    } catch (err) {
+      console.warn('Gallery pick error:', err);
+      Alert.alert('Gallery Error', 'Could not open photo gallery. Please try again.');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  };
+
+  const handleAttachFiles = async () => {
+    try {
+      if ((draft.attachments || []).length >= 5) {
+        Alert.alert('Limit Reached', 'You can attach up to 5 photos or files.');
+        return;
+      }
+      setAttachmentLoading(true);
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newFiles = result.assets.map((asset, index) => {
+          const isImg =
+            asset.mimeType?.startsWith('image/') ||
+            /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(asset.name || '');
+          return {
+            id: 'doc-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2, 6),
+            uri: asset.uri,
+            name: asset.name || `attached_file_${Date.now()}_${index + 1}`,
+            type: isImg ? 'image' : 'file',
+            mimeType: asset.mimeType || 'application/octet-stream',
+            size: asset.size,
+          };
+        });
+
+        setDraft((prev) => ({
+          ...prev,
+          attachments: [...(prev.attachments || []), ...newFiles].slice(0, 5),
+        }));
+      }
+    } catch (err) {
+      console.warn('Document picker error:', err);
+      Alert.alert('File Picker Error', 'Could not attach selected file. Please try again.');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  };
+
+  const handleRemoveAttachment = (idToRemove) => {
+    setDraft((prev) => ({
+      ...prev,
+      attachments: (prev.attachments || []).filter((item) => item.id !== idToRemove),
+    }));
+  };
 
   const handleSelectPreset = (preset) => {
     if (preset.isCreate) {
@@ -254,6 +408,7 @@ export default function RequestForm({ onPosted }) {
         phone: draft.contactPhone.trim() || draft.phone || 'N/A',
         coordinates: draft.coordinates || { latitude: 7.4475, longitude: 125.8078 },
         deadline: combinedDeadline,
+        attachments: draft.attachments || [],
         notes: draft.contactPhone
           ? `Contact Phone: ${draft.contactPhone.trim()}\n${draft.notes || ''}`.trim()
           : draft.notes,
@@ -442,7 +597,157 @@ export default function RequestForm({ onPosted }) {
             </View>
           </View>
 
-          {/* CARD 2: REWARD OFFER */}
+          {/* CARD 2: PHOTOS & FILE ATTACHMENTS (CAMERA, GALLERY, DOCUMENTS) */}
+          <View style={styles.card}>
+            <View style={styles.cardHeaderRow}>
+              <Ionicons name="images-outline" size={18} color="#1E4D2B" />
+              <View style={styles.attachCardHeaderTitleRow}>
+                <Text style={styles.cardTitle}>Photos & File Attachments</Text>
+                <View style={styles.attachCountBadge}>
+                  <Text style={styles.attachCountText}>
+                    {(draft.attachments || []).length}/5 Attached
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.cardSubText}>
+              Attach photos from your camera or gallery (e.g. items to buy, receipts, parcel, location) or attach files/documents.
+            </Text>
+
+            {/* Three Action Pickers: Camera, Gallery, Files */}
+            <View style={styles.attachActionRow}>
+              {/* 1. Camera */}
+              <TouchableOpacity
+                style={[
+                  styles.attachActionBtn,
+                  styles.attachActionBtnCamera,
+                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
+                ]}
+                activeOpacity={0.75}
+                onPress={handlePickFromCamera}
+                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
+              >
+                <View style={[styles.attachActionIconCircle, { backgroundColor: '#DCFCE7' }]}>
+                  <Ionicons name="camera" size={19} color="#15803D" />
+                </View>
+                <Text style={[styles.attachActionBtnText, { color: '#15803D' }]}>Take Photo</Text>
+                <Text style={styles.attachActionBtnSub}>Camera</Text>
+              </TouchableOpacity>
+
+              {/* 2. Gallery */}
+              <TouchableOpacity
+                style={[
+                  styles.attachActionBtn,
+                  styles.attachActionBtnGallery,
+                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
+                ]}
+                activeOpacity={0.75}
+                onPress={handlePickFromGallery}
+                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
+              >
+                <View style={[styles.attachActionIconCircle, { backgroundColor: '#E0F2FE' }]}>
+                  <Ionicons name="images" size={19} color="#0369A1" />
+                </View>
+                <Text style={[styles.attachActionBtnText, { color: '#0369A1' }]}>Gallery</Text>
+                <Text style={styles.attachActionBtnSub}>Photos</Text>
+              </TouchableOpacity>
+
+              {/* 3. Files */}
+              <TouchableOpacity
+                style={[
+                  styles.attachActionBtn,
+                  styles.attachActionBtnFiles,
+                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
+                ]}
+                activeOpacity={0.75}
+                onPress={handleAttachFiles}
+                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
+              >
+                <View style={[styles.attachActionIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                  <Ionicons name="document-attach" size={19} color="#B45309" />
+                </View>
+                <Text style={[styles.attachActionBtnText, { color: '#B45309' }]}>Attach File</Text>
+                <Text style={styles.attachActionBtnSub}>PDF/Docs</Text>
+              </TouchableOpacity>
+            </View>
+
+            {attachmentLoading && (
+              <View style={styles.attachmentLoadingRow}>
+                <ActivityIndicator size="small" color="#1E4D2B" />
+                <Text style={styles.attachmentLoadingText}>Processing attachment...</Text>
+              </View>
+            )}
+
+            {/* List of Attached Items */}
+            {draft.attachments && draft.attachments.length > 0 && (
+              <View style={styles.attachmentListWrapper}>
+                <View style={styles.attachListHeaderRow}>
+                  <Text style={styles.attachmentListTitle}>
+                    Attached Items ({draft.attachments.length}):
+                  </Text>
+                  <Text style={styles.attachTapHint}>Tap photo to preview</Text>
+                </View>
+
+                <View style={styles.attachmentListGrid}>
+                  {draft.attachments.map((item) => {
+                    const isImg = item.type === 'image';
+                    return (
+                      <View key={item.id} style={isImg ? styles.attachImageItemCard : styles.attachDocItemCard}>
+                        {isImg ? (
+                          <View style={styles.attachImageItemInner}>
+                            <TouchableOpacity
+                              activeOpacity={0.85}
+                              onPress={() => setPreviewImage(item.uri)}
+                              style={styles.attachImageThumbWrapper}
+                            >
+                              <Image source={{ uri: item.uri }} style={styles.attachImageThumb} resizeMode="cover" />
+                              <View style={styles.attachImageBadge}>
+                                <Ionicons name="eye" size={10} color="#FFFFFF" />
+                                <Text style={styles.attachImageBadgeText}>View</Text>
+                              </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.attachRemoveBtn}
+                              activeOpacity={0.7}
+                              onPress={() => handleRemoveAttachment(item.id)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Ionicons name="close" size={11} color="#FFFFFF" />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <View style={styles.attachDocCardContent}>
+                            <View style={styles.attachDocIconCircle}>
+                              <Ionicons name="document-text" size={18} color="#B45309" />
+                            </View>
+                            <View style={styles.attachDocMeta}>
+                              <Text style={styles.attachDocName} numberOfLines={1}>
+                                {item.name}
+                              </Text>
+                              <Text style={styles.attachDocSize}>
+                                {formatFileSize(item.size) || 'Attached document'}
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.attachDocRemoveBtn}
+                              activeOpacity={0.7}
+                              onPress={() => handleRemoveAttachment(item.id)}
+                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                            >
+                              <Ionicons name="trash-outline" size={15} color="#DC2626" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* CARD 3: REWARD OFFER */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Ionicons name="cash-outline" size={18} color="#1E4D2B" />
@@ -707,7 +1012,7 @@ export default function RequestForm({ onPosted }) {
             />
           </View>
 
-          {/* CARD 5: CONTACT INFO & SPECIAL INSTRUCTIONS */}
+          {/* CARD 6: CONTACT INFO & SPECIAL INSTRUCTIONS */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Ionicons name="call-outline" size={18} color="#1E4D2B" />
@@ -858,6 +1163,14 @@ export default function RequestForm({ onPosted }) {
                 <Text style={styles.summaryLabel}>Deadline:</Text>
                 <Text style={styles.summaryValue}>{draft.deadlineDate} {draft.deadlineTime}</Text>
               </View>
+              {draft.attachments && draft.attachments.length > 0 && (
+                <View style={styles.summaryRowItem}>
+                  <Text style={styles.summaryLabel}>Attachments:</Text>
+                  <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '700' }]}>
+                    {draft.attachments.length} item{draft.attachments.length > 1 ? 's' : ''} ({draft.attachments.filter((a) => a.type === 'image').length} photo{draft.attachments.filter((a) => a.type === 'image').length === 1 ? '' : 's'}, {draft.attachments.filter((a) => a.type === 'file').length} doc{draft.attachments.filter((a) => a.type === 'file').length === 1 ? '' : 's'})
+                  </Text>
+                </View>
+              )}
             </View>
 
             <TouchableOpacity
@@ -903,6 +1216,34 @@ export default function RequestForm({ onPosted }) {
           }
         }}
       />
+
+      {/* ========================================================== */}
+      {/* FULLSCREEN IMAGE PREVIEW MODAL                             */}
+      {/* ========================================================== */}
+      {previewImage && (
+        <Modal
+          visible={!!previewImage}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setPreviewImage(null)}
+        >
+          <View style={styles.imagePreviewModalBackdrop}>
+            <TouchableOpacity
+              style={styles.imagePreviewCloseBtn}
+              onPress={() => setPreviewImage(null)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="close" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.imagePreviewFull}
+              resizeMode="contain"
+            />
+          </View>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -1425,5 +1766,243 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+
+  /* PHOTOS & FILE ATTACHMENTS STYLES */
+  attachCardHeaderTitleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  attachCountBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  attachCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  attachActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  attachActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    backgroundColor: '#FFFFFF',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  attachActionBtnDisabled: {
+    opacity: 0.45,
+  },
+  attachActionBtnCamera: {
+    borderColor: '#C6EAD3',
+    backgroundColor: '#F6FCF8',
+  },
+  attachActionBtnGallery: {
+    borderColor: '#BAE6FD',
+    backgroundColor: '#F0F9FF',
+  },
+  attachActionBtnFiles: {
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFFDF5',
+  },
+  attachActionIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  attachActionBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 1,
+  },
+  attachActionBtnSub: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  attachmentLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  attachmentLoadingText: {
+    fontSize: 12,
+    color: '#1E4D2B',
+    fontWeight: '600',
+  },
+  attachmentListWrapper: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ECF4EF',
+  },
+  attachListHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  attachmentListTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  attachTapHint: {
+    fontSize: 10.5,
+    color: '#658172',
+    fontStyle: 'italic',
+  },
+  attachmentListGrid: {
+    gap: 8,
+  },
+  attachImageItemCard: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  attachImageItemInner: {
+    position: 'relative',
+    width: 90,
+    height: 90,
+  },
+  attachImageThumbWrapper: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1.2,
+    borderColor: '#CBD5E1',
+    position: 'relative',
+  },
+  attachImageThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  attachImageBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  attachImageBadgeText: {
+    fontSize: 9,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  attachRemoveBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#DC2626',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    zIndex: 10,
+  },
+  attachDocItemCard: {
+    backgroundColor: '#FAFDFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D4E2DA',
+    padding: 10,
+  },
+  attachDocCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  attachDocIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachDocMeta: {
+    flex: 1,
+  },
+  attachDocName: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  attachDocSize: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  attachDocRemoveBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* FULLSCREEN IMAGE PREVIEW */
+  imagePreviewModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  imagePreviewCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  imagePreviewFull: {
+    width: '100%',
+    height: '80%',
   },
 });
