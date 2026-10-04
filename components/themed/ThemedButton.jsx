@@ -4,11 +4,11 @@ import { useTheme } from '../../theme/ThemeContext';
 import ThemedText from './ThemedText';
 export default function ThemedButton({ title, variant = 'primary', loading = false, disabled = false, style, textStyle, accessibilityState, ...props }) {
   const { colors } = useTheme();
-  const foreground = variant === 'primary' ? colors.onPrimary : colors.link;
+  const foreground = variant === 'primary' || variant === 'danger' ? colors.onPrimary : colors.link;
   return (
     <TouchableOpacity {...props} accessibilityRole="button" accessibilityState={{ ...accessibilityState, disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading} activeOpacity={0.8}
-      style={[styles.button, { backgroundColor: variant === 'primary' ? colors.primary : colors.surfaceAlt,
+      style={[styles.button, { backgroundColor: variant === 'danger' ? colors.danger : variant === 'primary' ? colors.primary : colors.surfaceAlt,
         opacity: disabled || loading ? 0.65 : 1 }, style]}>
       {loading ? <ActivityIndicator color={foreground} /> : <ThemedText style={[styles.text, { color: foreground }, textStyle]}>{title}</ThemedText>}
     </TouchableOpacity>

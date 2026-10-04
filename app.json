@@ -46,7 +46,8 @@
         {
           "locationWhenInUsePermission": "Allow SuyoLink to use your location to place a task pin and show nearby request distances."
         }
-      ]
+      ],
+      "expo-notifications"
     ]
   }
 }

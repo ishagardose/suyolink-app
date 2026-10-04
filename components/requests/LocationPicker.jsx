@@ -9,12 +9,6 @@ export default function LocationPicker({ value, onChange, disabled }) {
   const { position, locate, loading, error } = useDeviceLocation();
   const { colors, isDark } = useTheme();
 
-  useEffect(() => {
-    if (position && !value && !disabled) {
-      onChange(position);
-    }
-  }, [position, value, disabled, onChange]);
-
   const handleUseCurrentLocation = async () => {
     const next = await locate();
     if (next) {

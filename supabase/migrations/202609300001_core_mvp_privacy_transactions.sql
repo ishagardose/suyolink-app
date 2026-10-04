@@ -5,9 +5,9 @@ begin;
 create table if not exists public.request_private_details (
   request_id uuid primary key references public.suyo_requests(id) on delete cascade,
   exact_address text not null check (char_length(btrim(exact_address)) between 1 and 500),
-  exact_latitude double precision not null check (exact_latitude between -90 and 90),
-  exact_longitude double precision not null check (exact_longitude between -180 and 180),
-  contact_phone text not null check (char_length(btrim(contact_phone)) between 1 and 40),
+  exact_latitude double precision check (exact_latitude between -90 and 90),
+  exact_longitude double precision check (exact_longitude between -180 and 180),
+  contact_phone text check (char_length(btrim(contact_phone)) between 1 and 40),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -75,16 +75,17 @@ insert into public.request_private_details(request_id, exact_address, exact_lati
 select
   r.id,
   coalesce(nullif(btrim(r.location), ''), 'Approximate task area'),
-  coalesce(r.latitude, 0.0),
-  coalesce(r.longitude, 0.0),
-  'N/A'
+  r.latitude,
+  r.longitude,
+  nullif(substring(r.notes from 'Contact Phone: ([^\n\r]+)'), '')
 from public.suyo_requests r
 where not exists (select 1 from public.request_private_details d where d.request_id = r.id)
 on conflict (request_id) do nothing;
 
 -- Sanitize public suyo_requests: generic public location and rounded coordinates
 update public.suyo_requests
-set location = 'Approximate task area',
+set notes = regexp_replace(notes, '(^|[\n\r])Contact Phone: [^\n\r]*', '', 'g'),
+    location = 'Approximate task area',
     latitude = case when latitude is not null then round(latitude::numeric, 2)::double precision else null end,
     longitude = case when longitude is not null then round(longitude::numeric, 2)::double precision else null end;
 
@@ -131,7 +132,7 @@ begin
   if p_deadline is null or p_deadline <= now() then raise exception 'Deadline must be in the future.'; end if;
   if p_offer_centavos is null or p_offer_centavos not between 1 and 100000000
     then raise exception 'Offer must be between 1 and 100,000,000 centavos.'; end if;
-  if p_category not in ('Delivery','Groceries','Documents','Household','Other')
+  if p_category not in ('Delivery','Groceries','Documents','Queuing & Bills','Household','Other')
     then raise exception 'Invalid category.'; end if;
 
   -- Idempotency check

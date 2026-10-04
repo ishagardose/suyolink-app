@@ -25,6 +25,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.12",
     "expo-location": "~19.0.8",
+    "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
@@ -43,6 +44,8 @@
   "private": true,
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.3"
   }
 }

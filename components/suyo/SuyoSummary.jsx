@@ -1,3 +1,5 @@
+import { useDeviceLocation } from '../../context/LocationContext';
+import { distanceKm } from '../../lib/geo';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
@@ -7,7 +9,9 @@ import { urgencyFor } from '../../lib/urgency';
 
 export default function SuyoSummary({ details }) {
   const { colors } = useTheme();
+  const { position } = useDeviceLocation();
   if (!details) return null;
+  const km = distanceKm(position, details);
 
   const urgency = urgencyFor(details.deadline);
 
@@ -46,7 +50,7 @@ export default function SuyoSummary({ details }) {
 
       <View style={[styles.metaSection, { borderTopColor: colors.border }]}>
         <ThemedText tone="textMuted" style={styles.metaItem}>
-          Area: {details.location}
+          Area: {details.location}{km != null ? ` - approximately ${km.toFixed(1)} km away` : ''}
         </ThemedText>
         <ThemedText tone="textMuted" style={styles.metaItem}>
           Deadline: {new Date(details.deadline).toLocaleString()}

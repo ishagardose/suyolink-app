@@ -6,7 +6,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import ThemedText from '../themed/ThemedText';
 import ThemedButton from '../themed/ThemedButton';
 export default function Notifications() {
-  const { notifications, markRead } = useSuyos();
+  const { notifications, markRead, workflowError, workflowLoading, refresh } = useSuyos();
   const { colors } = useTheme();
   const router = useRouter();
   const [error, setError] = useState('');
@@ -15,7 +15,8 @@ export default function Notifications() {
     <ThemedText style={{ fontSize: 22, fontWeight: '800' }}>Notifications</ThemedText>
     <ThemedText tone="textMuted">Application decisions and task updates appear here.</ThemedText>
     {error ? <ThemedText accessibilityRole="alert" tone="danger">{error}</ThemedText> : null}
-    {!notifications.length ? <ThemedText>No notifications yet.</ThemedText> : notifications.map(item => <View key={item.id}
+    {workflowError ? <><ThemedText tone="danger" accessibilityRole="alert">{workflowError}</ThemedText><ThemedButton title="Retry" onPress={refresh} /></> : null}
+    {workflowLoading ? <ThemedText>Loading notifications...</ThemedText> : !notifications.length ? <ThemedText>No notifications yet.</ThemedText> : notifications.map(item => <View key={item.id}
       style={{ padding: 16, gap: 10, borderRadius: 14, borderWidth: 1, borderColor: item.read_at ? colors.border : colors.primary, backgroundColor: colors.card }}>
       {!item.read_at ? <ThemedText style={{ fontWeight: '700' }}>Unread</ThemedText> : null}
       <ThemedText>{item.body}</ThemedText>

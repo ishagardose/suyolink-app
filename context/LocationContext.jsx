@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { useAuth } from './AuthContext';
 import { hasCoordinates } from '../lib/geo';
 import { saveLastLocation, getLastLocation } from '../data/suyoApi';
@@ -84,9 +84,8 @@ export function LocationProvider({ children }) {
   };
 
   const openSettings = () => {
-    if (Linking.openSettings) {
-      Linking.openSettings();
-    }
+    if (Platform.OS === 'web') { setError('Use your browser site settings to allow location, or choose a map pin below.'); return; }
+    Linking.openSettings().catch(() => setError('Open your device settings and enable location for SuyoLink.'));
   };
 
   const locate = async () => {
@@ -130,16 +129,9 @@ export function LocationProvider({ children }) {
     if (!hasCoordinates(point)) throw new Error('Choose a location on the map first.');
     const next = { latitude: point.latitude, longitude: point.longitude };
 
-    // Cache locally
+    // Persist first so a failed server save is visible and can be retried.
+    await saveLastLocation({ latitude: next.latitude, longitude: next.longitude, source: source === 'gps' ? 'device' : source });
     await AsyncStorage.setItem(locationStorageKey(id), JSON.stringify({ position: next, source }));
-
-    // Synchronize to server
-    try {
-      await saveLastLocation({ latitude: next.latitude, longitude: next.longitude, source });
-    } catch (err) {
-      // Don't crash if offline/network error, but report error if save failed
-      console.warn('Failed to sync last location to server:', err.message);
-    }
 
     if (id !== accountId.current) return false;
     // A GPS request started earlier must not overwrite a manually chosen area.

@@ -75,3 +75,9 @@ Desktop.ini
 # Keep local Supabase artifacts ignored, but version the database migrations.
 /supabase/*
 !/supabase/migrations/
+
+# Version deployable push worker and setup instructions.
+!/supabase/functions/
+!/supabase/config.toml
+!/supabase/DEPLOYMENT.md
+/dist-dynamic/

@@ -53,6 +53,7 @@ export function SuyoProvider({ children }) {
   const workflowRevision = useRef(0);
   const saving = useRef(false);
   const revision = useRef(0);
+  useEffect(() => { setDetailsById({}); setDetailsError(''); }, [user?.id]);
   const currentUser = useRef(user?.id);
   currentUser.current = user?.id;
 
@@ -77,6 +78,7 @@ export function SuyoProvider({ children }) {
           scope: listFilters.scope,
           sort: listFilters.sort,
           origin: listFilters.origin,
+          radiusKm: listFilters.radiusKm,
         }),
       ];
       if (listFilters.scope === 'browse') {
@@ -95,7 +97,7 @@ export function SuyoProvider({ children }) {
       }
     } catch (err) {
       if (run === revision.current) {
-        setError('Could not load requests. Check your connection and retry.');
+        setError(err.message || 'Could not load requests. Check your connection and retry.');
       }
     } finally {
       if (run === revision.current) setIsLoading(false);
@@ -117,10 +119,12 @@ export function SuyoProvider({ children }) {
       if (!force && detailsById[requestId]) {
         return detailsById[requestId];
       }
+      const requestedBy = user?.id;
       setDetailsLoading(true);
       setDetailsError('');
       try {
         const details = await apiGetRequestDetails(requestId);
+        if (currentUser.current !== requestedBy) return null;
         setDetailsById((prev) => ({ ...prev, [requestId]: details }));
         return details;
       } catch (err) {
@@ -130,7 +134,7 @@ export function SuyoProvider({ children }) {
         setDetailsLoading(false);
       }
     },
-    [detailsById]
+    [detailsById, user?.id]
   );
 
   const reloadWorkflow = useCallback(async () => {
@@ -240,6 +244,7 @@ export function SuyoProvider({ children }) {
       await refresh();
       throw new Error(actionError.message);
     }
+    setDetailsById({});
     await refresh();
     return data;
   };
@@ -270,7 +275,7 @@ export function SuyoProvider({ children }) {
         clientReference: draft.clientReference,
         publicLocation: validated.publicLocation || validated.location,
         exactAddress: draft.exactAddress || validated.location,
-        phone: draft.phone || 'N/A',
+        phone: draft.phone,
         coordinates: draft.coordinates,
       });
       const request = {

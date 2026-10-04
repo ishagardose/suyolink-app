@@ -1,3 +1,4 @@
+import { unregisterPush } from '../lib/pushNotifications';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { supabase, authConfigError } from '../lib/supabase';
@@ -94,6 +95,7 @@ export function AuthProvider({ children }) {
         }
       },
       logout: async () => {
+        await unregisterPush();
         const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) throw error;
       },
