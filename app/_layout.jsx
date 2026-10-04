@@ -7,10 +7,14 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SuyoProvider } from '../context/SuyoContext';
 import { LocationProvider, useDeviceLocation } from '../context/LocationContext';
 
+// ⚠️ DEV PREVIEW: set to false to restore normal login-required auth flow
+const DEV_PREVIEW = true;
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppNavigator() {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn: _isLoggedIn, isLoading } = useAuth();
+  const isLoggedIn = DEV_PREVIEW ? true : _isLoggedIn;
   const { isReady: locationReady, hasSavedLocation } = useDeviceLocation();
   const router = useRouter();
   const segments = useSegments();
@@ -25,6 +29,35 @@ function AppNavigator() {
   }, [ready, isLoggedIn, locationReady, hasSavedLocation, segments, router]);
   // Restore local state before evaluating guards, including for deep links.
   if (!ready) return null;
+  // DEV PREVIEW: skip splash + auth and go straight to dashboard
+  if (DEV_PREVIEW) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <Stack
+          initialRouteName="dashboard"
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
+          <Stack.Screen name="dashboard" />
+          <Stack.Screen name="post-suyo" />
+          <Stack.Screen name="suyo" />
+          <Stack.Screen name="map" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="account" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="fulfill" />
+          <Stack.Screen name="submit-proof" />
+          <Stack.Screen name="rate-doer" />
+          <Stack.Screen name="rate-requester" />
+          <Stack.Screen name="requester-fulfill" />
+          <Stack.Screen name="activity" />
+          <Stack.Screen name="wallet" />
+        </Stack>
+      </>
+    );
+  }
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -57,6 +90,15 @@ function AppNavigator() {
             name="map"
             options={{ animation: 'slide_from_bottom' }}
           />
+          <Stack.Screen name="account" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="fulfill" />
+          <Stack.Screen name="submit-proof" />
+          <Stack.Screen name="rate-doer" />
+          <Stack.Screen name="rate-requester" />
+          <Stack.Screen name="requester-fulfill" />
+          <Stack.Screen name="activity" />
+          <Stack.Screen name="wallet" />
         </Stack.Protected>
       </Stack>
     </>

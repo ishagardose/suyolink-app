@@ -273,7 +273,11 @@ export function SuyoProvider({ children }) {
         phone: draft.phone || 'N/A',
         coordinates: draft.coordinates,
       });
-      const request = { ...created, requesterName: user.name };
+      const request = {
+        ...created,
+        requesterName: user.name,
+        attachments: validated.attachments || created.attachments || [],
+      };
       if (currentUser.current === user.id) {
         setRequests((previous) => [
           request,

@@ -17,11 +17,11 @@ export default function DashboardSearch({ value, onChangeText }) {
       />
       <ThemedTextInput
         style={styles.searchInput}
-        placeholder="Search tasks or locations..."
-        accessibilityLabel="Search tasks"
+        placeholder="Search suyos..."
+        accessibilityLabel="Search suyos"
         value={value}
         onChangeText={onChangeText}
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={colors.textMuted || '#688676'}
       />
     </View>
   );
