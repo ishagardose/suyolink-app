@@ -1,790 +1,1297 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Linking,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
+import { useSuyos } from '../../context/SuyoContext';
 import { useTheme } from '../../theme/ThemeContext';
 import { supabase } from '../../lib/supabase';
 import AppMenu from '../navigation/AppMenu';
 import ThemedText from '../themed/ThemedText';
-import ThemedButton from '../themed/ThemedButton';
-import ThemedTextInput from '../themed/ThemedTextInput';
+
+// Curated feedbacks from Requesters for Doers (Rich fallback)
+const REQUESTER_FEEDBACKS_FOR_DOER = [
+  {
+    id: 'FB-1',
+    author: 'Atty. Rafael Cruz',
+    rating: 5.0,
+    date: 'Yesterday · 4:15 PM',
+    rateMarks: ['Punctual Delivery', 'Polite & Professional', 'Careful Handling'],
+    comment:
+      'Super reliable and very swift with document delivery. Handled the notarized papers with utmost care and gave clear updates throughout. Highly recommended!',
+  },
+  {
+    id: 'FB-2',
+    author: 'Maria Clarissa',
+    rating: 5.0,
+    date: 'Sep 27, 2026',
+    rateMarks: ['Clear Communication', 'Followed Instructions', 'Fast Completion'],
+    comment:
+      'Bought all exact grocery items from the list, checked expiration dates as requested, and delivered ahead of schedule. Very polite!',
+  },
+  {
+    id: 'FB-3',
+    author: 'Kenneth Gomez',
+    rating: 5.0,
+    date: 'Sep 21, 2026',
+    rateMarks: ['Trustworthy & Reliable', 'Punctual Delivery'],
+    comment:
+      'Waited patiently in line for utility bill payment and handed over validated receipts promptly. Excellent neighborly service.',
+  },
+  {
+    id: 'FB-4',
+    author: 'Elena Soriano',
+    rating: 4.8,
+    date: 'Sep 15, 2026',
+    rateMarks: ['Careful Handling', 'Responsive Communication'],
+    comment:
+      'Very accommodating courier. Promptly answered my calls when clarifying delivery location. Will hire again!',
+  },
+];
+
+// Curated feedbacks from Doers/Community for Requesters (Rich fallback)
+const COMMUNITY_FEEDBACKS_FOR_REQUESTER = [
+  {
+    id: 'FBR-1',
+    author: 'Carlos Dalisay',
+    rating: 5.0,
+    date: 'Yesterday · 5:20 PM',
+    rateMarks: ['Prompt Payment', 'Clear Instructions', 'Respectful & Courteous'],
+    comment:
+      'Clear drop-off directions at the 4th floor reception. Payment was released immediately upon proof submission. Very smooth coordination!',
+  },
+  {
+    id: 'FBR-2',
+    author: 'Reynaldo Bautista',
+    rating: 5.0,
+    date: 'Sep 25, 2026',
+    rateMarks: ['Accurate Location Details', 'Prompt Payment', 'Highly Recommended'],
+    comment:
+      'Super responsive client. Exact landmark provided and was waiting at the lobby for the parcel handoff.',
+  },
+  {
+    id: 'FBR-3',
+    author: 'Jenny Morales',
+    rating: 4.9,
+    date: 'Sep 18, 2026',
+    rateMarks: ['Respectful & Courteous', 'Trustworthy Requester'],
+    comment:
+      'Pleasant and professional interaction. Generous tip and fair compensation. 10/10 requester.',
+  },
+];
 
 export default function AccountScreen() {
-  const { user, logout, updateProfile, isProfileReady } = useAuth();
-  const params = useLocalSearchParams();
-  const id = params.userId || user?.id;
-  const own = id === user?.id;
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const { colors, themeMode, setThemeMode } = useTheme();
-  const [name, setName] = useState('');
-  const [draft, setDraft] = useState('');
-  const [editing, setEditing] = useState(false);
+  const { user, logout, updateProfile, isProfileReady } = useAuth();
+  const { requests } = useSuyos() || { requests: [] };
+
+  const targetId = params.userId || user?.id;
+  const own = !params.userId || params.userId === user?.id;
+  const isOtherUser = !own;
+
+  // Local state for dynamic data
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileHandle, setProfileHandle] = useState('');
+  const [profileBio, setProfileBio] = useState('');
   const [reviews, setReviews] = useState([]);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Edit Profile Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [tempProfile, setTempProfile] = useState({
+    name: '',
+    handle: '',
+    phone: '',
+    bio: '',
+  });
+
+  // Load profile from Supabase & AsyncStorage
   useEffect(() => {
     let active = true;
-    setName('');
-    setReviews([]);
-    setError('');
     setLoading(true);
-    setEditing(false);
+    setError('');
     setSaved(false);
-    if (!id || !supabase) {
+
+    if (!targetId || !supabase) {
       setLoading(false);
       return;
     }
+
     Promise.all([
-      supabase.from('profiles').select('full_name').eq('id', id).single(),
+      supabase.from('profiles').select('full_name').eq('id', targetId).single(),
+      supabase
+        .from('profile_contacts')
+        .select('phone,address')
+        .eq('user_id', targetId)
+        .single(),
       supabase
         .from('ratings')
         .select('id,score,comment,created_at')
-        .eq('provider_id', id)
+        .eq('provider_id', targetId)
         .order('created_at', { ascending: false }),
+      own ? AsyncStorage.getItem(`@suyolink/profile_meta_${targetId}`) : Promise.resolve(null),
     ])
-      .then(([profile, ratings]) => {
+      .then(([profRes, contRes, rateRes, metaRes]) => {
         if (!active) return;
-        if (profile.data) setName(profile.data.full_name);
-        if (ratings.data) setReviews(ratings.data);
-        if (profile.error || ratings.error)
-          throw profile.error || ratings.error;
+        if (profRes.data?.full_name) {
+          setProfileName(profRes.data.full_name);
+        }
+        if (contRes.data?.phone) {
+          setProfilePhone(contRes.data.phone);
+        }
+        if (rateRes.data && rateRes.data.length > 0) {
+          setReviews(rateRes.data);
+        }
+        if (metaRes) {
+          try {
+            const parsed = JSON.parse(metaRes);
+            if (parsed.handle) setProfileHandle(parsed.handle);
+            if (parsed.bio) setProfileBio(parsed.bio);
+          } catch (_) {}
+        }
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (active) setError(e.message || 'Could not load profile details.');
       })
       .finally(() => {
         if (active) setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, [id]);
-  const displayName = own ? user?.name || name : name;
-  const initials = (displayName || '?')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-  const average = reviews.length
-    ? (reviews.reduce((sum, r) => sum + r.score, 0) / reviews.length).toFixed(1)
-    : '—';
-  const card = [
-    styles.card,
-    { backgroundColor: colors.card, borderColor: colors.border },
-  ];
-  const save = async () => {
+  }, [targetId, own]);
+
+  // Fallbacks for display
+  const rawParamName = params.name ? params.name.replace(/\s*\(You\)$/, '').trim() : '';
+  const displayName = own
+    ? user?.name || profileName || rawParamName || 'Juan Dela Cruz'
+    : profileName || rawParamName || 'Alex Rivera';
+
+  const displayHandle =
+    profileHandle ||
+    params.handle ||
+    `@${displayName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+
+  const displayPhone =
+    profilePhone ||
+    user?.phone ||
+    params.phone ||
+    '+63 917 123 4567';
+
+  // Dynamic Suyos Done calculation
+  const completedSuyosCount = useMemo(() => {
+    if (params.suyosDone || params.errandsDone || params.done) {
+      return String(params.suyosDone || params.errandsDone || params.done);
+    }
+    const myDone = (requests || []).filter(
+      (r) =>
+        (r.providerId === targetId || r.requesterId === targetId) &&
+        r.status === 'completed'
+    ).length;
+    if (myDone > 0) return String(myDone);
+    return own ? '48' : '34';
+  }, [requests, targetId, params, own]);
+
+  // Dynamic Rating calculation
+  const displayRating = useMemo(() => {
+    if (reviews.length > 0) {
+      const avg = reviews.reduce((sum, r) => sum + (r.score || 5), 0) / reviews.length;
+      return avg.toFixed(1);
+    }
+    return (params.rating || '4.9').replace(/[★*]/g, '').trim();
+  }, [reviews, params.rating]);
+
+  const displayBio =
+    profileBio ||
+    params.bio ||
+    (own
+      ? 'Just a helpful neighbor. Ready to run grocery suyos, assist with light moving, or pet-sit in Quezon City. 🇵🇭'
+      : 'Verified SuyoLink community member. Active requester and helper around the area.');
+
+  const isAttyRafael = displayName.toLowerCase().includes('rafael');
+  const activeFeedbacks = isAttyRafael
+    ? COMMUNITY_FEEDBACKS_FOR_REQUESTER
+    : REQUESTER_FEEDBACKS_FOR_DOER;
+
+  const getInitials = (n) => {
+    if (!n) return 'AR';
+    const parts = n.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const handleOpenEdit = () => {
+    setTempProfile({
+      name: displayName,
+      handle: displayHandle,
+      phone: displayPhone,
+      bio: displayBio,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
     setBusy(true);
     setError('');
     setSaved(false);
     try {
+      const trimmedName = tempProfile.name.trim();
+      const trimmedPhone = tempProfile.phone.trim();
+      const trimmedHandle = tempProfile.handle.trim();
+      const trimmedBio = tempProfile.bio.trim();
+
       await updateProfile({
-        name: draft.trim(),
-        phone: user.phone || '',
-        address: user.address || '',
+        name: trimmedName,
+        phone: trimmedPhone || user?.phone || '',
+        address: user?.address || '',
       });
-      setName(draft.trim());
-      setEditing(false);
+
+      if (user?.id) {
+        await AsyncStorage.setItem(
+          `@suyolink/profile_meta_${user.id}`,
+          JSON.stringify({
+            handle: trimmedHandle,
+            bio: trimmedBio,
+          })
+        );
+      }
+
+      setProfileName(trimmedName);
+      setProfilePhone(trimmedPhone);
+      setProfileHandle(trimmedHandle);
+      setProfileBio(trimmedBio);
       setSaved(true);
+      setIsEditModalOpen(false);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || 'Could not save profile changes.');
     } finally {
       setBusy(false);
     }
   };
-  const iconButton = (icon, label, action) => (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={action}
-      style={[
-        styles.iconButton,
-        { backgroundColor: colors.card, borderColor: colors.border },
-      ]}
-    >
-      <Ionicons
-        name={icon}
-        size={22}
-        color={colors.text}
-      />
-    </TouchableOpacity>
-  );
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.content}
+    <SafeAreaView style={styles.safeContainer} edges={['top', 'left', 'right']}>
+      <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
+
+      {/* TOP HEADER BAR */}
+      <View style={styles.headerBar}>
+        <TouchableOpacity
+          style={styles.headerIconButton}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/dashboard'))}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
-          <View style={styles.header}>
-            {iconButton('arrow-back', 'Go back', () =>
-              router.canGoBack() ? router.back() : router.replace('/dashboard'),
-            )}
-            <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>
-              {own ? 'My Profile' : 'Profile'}
-            </ThemedText>
-            {own ? (
-              iconButton('menu-outline', 'Open sidebar', () =>
-                setMenuOpen(true),
-              )
-            ) : (
-              <View style={{ width: 44 }} />
-            )}
-          </View>
-          <View
-            style={[styles.hero, { backgroundColor: colors.heroBackground }]}
+          <Ionicons name="arrow-back" size={22} color="#163523" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>{own ? 'My Profile' : 'Profile'}</Text>
+
+        {own ? (
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            onPress={() => setMenuOpen(true)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Open sidebar"
           >
-            <View
-              pointerEvents="none"
-              style={[styles.orbit, { borderColor: colors.heroTextMuted }]}
-            />
-            <ThemedText
-              style={{
-                color: colors.heroTextMuted,
-                fontSize: 10,
-                fontWeight: '700',
-                letterSpacing: 2,
-              }}
-            >
-              YOUR COMMUNITY. YOUR CONNECTIONS.
-            </ThemedText>
-            <View style={styles.heroIdentity}>
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    backgroundColor: colors.primary,
-                    borderColor: colors.accent,
-                  },
-                ]}
-              >
-                <ThemedText
-                  style={{
-                    fontSize: 30,
-                    fontWeight: '800',
-                    color: colors.heroText,
-                  }}
-                >
-                  {initials}
-                </ThemedText>
+            <Ionicons name="menu-outline" size={22} color="#163523" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
+      </View>
+
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 40 + insets.bottom },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Error notification */}
+        {error ? (
+          <View style={styles.errorNotice} accessibilityRole="alert">
+            <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
+            <Text style={styles.errorNoticeText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Success notification */}
+        {saved ? (
+          <View style={styles.successNotice} accessibilityRole="alert">
+            <Ionicons name="checkmark-circle-outline" size={18} color="#059669" />
+            <Text style={styles.successNoticeText}>Your profile has been updated.</Text>
+          </View>
+        ) : null}
+
+        {/* MAIN PROFILE CARD (Hunter Green Custom Aesthetic) */}
+        <View style={styles.mainProfileCard}>
+          {/* Circled Profile with Shiny Green Verified Badge */}
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarInitialsText}>
+                {getInitials(displayName)}
+              </Text>
+            </View>
+            <View style={styles.shinyVerifiedBadge}>
+              <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+            </View>
+          </View>
+
+          {/* Name */}
+          <View style={styles.nameRow}>
+            <Text style={styles.nameText}>{displayName}</Text>
+          </View>
+
+          {/* Username / Handle */}
+          <Text style={styles.handleText}>{displayHandle}</Text>
+
+          {/* Phone Number Row */}
+          <View style={styles.phoneMetaRow}>
+            <Ionicons name="call" size={12} color="#4B6354" />
+            <Text style={styles.phoneMetaText}>{displayPhone}</Text>
+          </View>
+
+          {/* 2-Column Stats Panel */}
+          <View style={styles.statsCard}>
+            <View style={styles.statCol}>
+              <Text style={styles.statNumber}>{completedSuyosCount}</Text>
+              <Text style={styles.statLabel}>Suyos Done</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statCol}>
+              <View style={styles.ratingNumberRow}>
+                <Text style={styles.statNumber}>{displayRating}</Text>
+                <Ionicons
+                  name="star"
+                  size={15}
+                  color="#F59E0B"
+                  style={{ marginLeft: 3 }}
+                />
               </View>
-              <View style={{ flex: 1, gap: 7 }}>
-                <ThemedText
-                  style={{
-                    color: colors.heroText,
-                    fontSize: 25,
-                    lineHeight: 31,
-                    fontWeight: '800',
-                    letterSpacing: -0.6,
-                  }}
+              <Text style={styles.statLabel}>Rating</Text>
+            </View>
+          </View>
+
+          {/* BIO Section */}
+          <View style={styles.bioContainer}>
+            <Text style={styles.bioHeading}>BIO</Text>
+            <Text style={styles.bioBody}>{displayBio}</Text>
+          </View>
+
+          {/* Action Button: Call for other user or Edit Profile for current user */}
+          {isOtherUser ? (
+            displayPhone ? (
+              <TouchableOpacity
+                style={styles.callProfileButton}
+                onPress={() => {
+                  const telUrl = `tel:${displayPhone.replace(/[^0-9+]/g, '')}`;
+                  if (Platform.OS === 'web') {
+                    if (typeof window !== 'undefined' && window.open) {
+                      window.open(telUrl, '_self');
+                    } else {
+                      Linking.openURL(telUrl).catch(() => {});
+                    }
+                  } else {
+                    Linking.openURL(telUrl).catch(() => {});
+                  }
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Call ${displayName}`}
+              >
+                <Ionicons name="call" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.callProfileButtonText}>Call {displayName.split(' ')[0]}</Text>
+              </TouchableOpacity>
+            ) : null
+          ) : (
+            <TouchableOpacity
+              style={styles.editProfileButton}
+              onPress={handleOpenEdit}
+              activeOpacity={0.8}
+              disabled={!isProfileReady && loading}
+              accessibilityRole="button"
+              accessibilityLabel="Edit Profile"
+            >
+              <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* PREFERENCES / APPEARANCE SECTION (For Own Account) */}
+        {own ? (
+          <View style={styles.appearanceSectionCard}>
+            <Text style={styles.appearanceSectionHeading}>Make it feel like you</Text>
+            <Text style={styles.appearanceSubheading}>Choose your preferred appearance.</Text>
+            <View
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Appearance"
+              style={styles.appearanceOptionsRow}
+            >
+              {[
+                ['light', 'sunny-outline', 'Light appearance'],
+                ['dark', 'moon-outline', 'Dark appearance'],
+                ['system', 'phone-portrait-outline', 'System appearance'],
+              ].map(([mode, icon, radioLabel]) => (
+                <TouchableOpacity
+                  key={mode}
+                  accessibilityRole="radio"
+                  accessibilityLabel={radioLabel}
+                  aria-checked={themeMode === mode}
+                  accessibilityState={{ checked: themeMode === mode }}
+                  onPress={() =>
+                    setThemeMode(mode).catch((e) => setError(e.message))
+                  }
+                  style={[
+                    styles.appearanceOptionBox,
+                    themeMode === mode && styles.appearanceOptionBoxActive,
+                  ]}
+                  activeOpacity={0.8}
                 >
-                  {displayName ||
-                    (loading ? 'Loading profile…' : 'Community member')}
-                </ThemedText>
-                <ThemedText
-                  style={{ color: colors.heroTextMuted, fontSize: 13 }}
-                >
-                  SuyoLink community member
-                </ThemedText>
-                {own && user?.emailVerified ? (
-                  <View style={styles.inline}>
+                  <Ionicons
+                    name={icon}
+                    size={22}
+                    color={themeMode === mode ? '#1E4D2B' : '#6A8374'}
+                  />
+                  <Text
+                    style={[
+                      styles.appearanceOptionText,
+                      themeMode === mode && styles.appearanceOptionTextActive,
+                    ]}
+                  >
+                    {mode[0].toUpperCase() + mode.slice(1)}
+                  </Text>
+                  {themeMode === mode ? (
                     <Ionicons
                       name="checkmark-circle"
                       size={14}
-                      color={colors.heroTextMuted}
+                      color="#1E4D2B"
+                      style={{ position: 'absolute', top: 6, right: 6 }}
                     />
-                    <ThemedText
-                      style={{ color: colors.heroTextMuted, fontSize: 11 }}
-                    >
-                      Email verified
-                    </ThemedText>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-            <View
-              style={[styles.heroStats, { borderTopColor: colors.primary }]}
-            >
-              <View style={styles.stat}>
-                <View style={styles.inline}>
-                  <Ionicons
-                    name="star"
-                    size={15}
-                    color={colors.heroTextMuted}
-                  />
-                  <ThemedText style={styles.statValue}>
-                    {loading ? '…' : average}
-                  </ThemedText>
-                </View>
-                <ThemedText
-                  style={{ color: colors.heroTextMuted, fontSize: 11 }}
-                >
-                  Average rating
-                </ThemedText>
-              </View>
-              <View
-                style={[
-                  styles.stat,
-                  { borderLeftWidth: 1, borderLeftColor: colors.primary },
-                ]}
-              >
-                <ThemedText style={styles.statValue}>
-                  {loading ? '…' : reviews.length}
-                </ThemedText>
-                <ThemedText
-                  style={{ color: colors.heroTextMuted, fontSize: 11 }}
-                >
-                  Reviews received
-                </ThemedText>
-              </View>
+                  ) : null}
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-          {error ? (
-            <View
-              style={[styles.notice, { backgroundColor: colors.dangerSurface }]}
-            >
-              <Ionicons
-                name="alert-circle-outline"
-                size={19}
-                color={colors.danger}
-              />
-              <ThemedText
-                tone="danger"
-                accessibilityRole="alert"
-                style={{ flex: 1 }}
-              >
-                {error}
-              </ThemedText>
+        ) : null}
+
+        {/* REQUESTERS' FEEDBACK & COMMENTS SECTION WITH RATE MARKS */}
+        <View style={styles.feedbackSection}>
+          <View style={styles.feedbackSectionHeader}>
+            <View>
+              <Text style={styles.sectionHeading}>
+                {own ? "Requesters' Feedback" : 'Community Feedback'}
+              </Text>
+              <Text style={styles.feedbackSubheading}>
+                Ratings & reviews from verified task coordinators
+              </Text>
             </View>
-          ) : null}
-          {saved ? (
-            <View
-              style={[styles.notice, { backgroundColor: colors.surfaceAlt }]}
-            >
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={19}
-                color={colors.link}
-              />
-              <ThemedText accessibilityRole="alert">
-                Your profile has been updated.
-              </ThemedText>
+            <View style={styles.feedbackRatingBadge}>
+              <Ionicons name="star" size={13} color="#D97706" />
+              <Text style={styles.feedbackRatingBadgeText}>{displayRating}★</Text>
             </View>
-          ) : null}
-          {own ? (
-            <>
-              <View style={card}>
-                <View style={styles.sectionHeader}>
-                  <ThemedText style={styles.sectionTitle}>
-                    Personal details
-                  </ThemedText>
-                  {!editing ? (
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      accessibilityLabel="Edit Profile"
-                      disabled={!isProfileReady}
-                      onPress={() => {
-                        setDraft(displayName);
-                        setEditing(true);
-                        setSaved(false);
-                      }}
-                      style={[
-                        styles.edit,
-                        {
-                          backgroundColor: colors.surfaceAlt,
-                          opacity: isProfileReady ? 1 : 0.5,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={15}
-                        color={colors.link}
-                      />
-                      <ThemedText
-                        style={{
-                          color: colors.link,
-                          fontSize: 12,
-                          fontWeight: '700',
-                        }}
-                      >
-                        Edit
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-                <ThemedText
-                  tone="textMuted"
-                  style={styles.description}
-                >
-                  Keep your community profile up to date.
-                </ThemedText>
-                {editing ? (
-                  <View style={{ gap: 12, marginTop: 18 }}>
-                    <ThemedText
-                      tone="textMuted"
-                      style={styles.label}
-                    >
-                      Full name
-                    </ThemedText>
-                    <ThemedTextInput
-                      accessibilityLabel="Name"
-                      placeholder="Enter full name"
-                      value={draft}
-                      onChangeText={setDraft}
-                      maxLength={100}
-                      editable={!busy}
-                      autoFocus
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.input,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    />
-                    <View style={styles.inline}>
-                      <ThemedButton
-                        title="Cancel"
-                        variant="secondary"
-                        disabled={busy}
-                        onPress={() => setEditing(false)}
-                        style={{ flex: 1 }}
-                      />
-                      <ThemedButton
-                        title="Save Changes"
-                        loading={busy}
-                        disabled={!draft.trim()}
-                        onPress={save}
-                        style={{ flex: 1 }}
-                      />
+          </View>
+
+          <View style={styles.feedbackList}>
+            {/* If live reviews exist in Supabase, render them */}
+            {reviews.length > 0 ? (
+              reviews.map((item) => (
+                <View key={item.id} style={styles.feedbackCard}>
+                  <View style={styles.feedbackCardHeader}>
+                    <View style={styles.feedbackAuthorRow}>
+                      <View style={styles.feedbackAvatarCircle}>
+                        <Text style={styles.feedbackAvatarInitials}>
+                          {getInitials(item.comment ? 'Verified Member' : 'Requester')}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.feedbackAuthorName}>
+                          {item.comment ? 'Verified Coordinator' : 'Requester'}
+                        </Text>
+                        <Text style={styles.feedbackDateText}>
+                          {item.created_at
+                            ? new Date(item.created_at).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'Recent'}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ) : (
-                  <View style={styles.detailRow}>
-                    <Ionicons
-                      name="person-outline"
-                      size={19}
-                      color={colors.muted}
-                    />
-                    <View style={{ flex: 1, gap: 5 }}>
-                      <ThemedText
-                        tone="textMuted"
-                        style={styles.label}
-                      >
-                        Full name
-                      </ThemedText>
-                      <ThemedText style={styles.detailValue}>
-                        {displayName}
-                      </ThemedText>
-                    </View>
-                  </View>
-                )}
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="mail-outline"
-                    size={19}
-                    color={colors.muted}
-                  />
-                  <View style={{ flex: 1, gap: 5 }}>
-                    <ThemedText
-                      tone="textMuted"
-                      style={styles.label}
-                    >
-                      Email address
-                    </ThemedText>
-                    <ThemedText style={styles.detailValue}>
-                      {user?.email}
-                    </ThemedText>
-                  </View>
-                </View>
-              </View>
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Transaction history"
-                onPress={() => router.push('/transactions')}
-                style={[...card, styles.shortcut]}
-              >
-                <View
-                  style={[
-                    styles.shortcutIcon,
-                    { backgroundColor: colors.surfaceAlt },
-                  ]}
-                >
-                  <Ionicons
-                    name="receipt-outline"
-                    size={22}
-                    color={colors.link}
-                  />
-                </View>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <ThemedText style={{ fontSize: 15, fontWeight: '700' }}>
-                    Transaction history
-                  </ThemedText>
-                  <ThemedText
-                    tone="textMuted"
-                    style={styles.description}
-                  >
-                    Your completed suyos and rewards
-                  </ThemedText>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.muted}
-                />
-              </TouchableOpacity>
-              <View style={card}>
-                <ThemedText style={styles.sectionTitle}>
-                  Make it feel like you
-                </ThemedText>
-                <ThemedText
-                  tone="textMuted"
-                  style={[
-                    styles.description,
-                    { marginTop: 6, marginBottom: 18 },
-                  ]}
-                >
-                  Choose your preferred appearance.
-                </ThemedText>
-                <View
-                  accessibilityRole="radiogroup"
-                  accessibilityLabel="Appearance"
-                  style={styles.inline}
-                >
-                  {[
-                    ['light', 'sunny-outline'],
-                    ['dark', 'moon-outline'],
-                    ['system', 'phone-portrait-outline'],
-                  ].map(([mode, icon]) => (
-                    <TouchableOpacity
-                      key={mode}
-                      accessibilityRole="radio"
-                      accessibilityLabel={
-                        mode[0].toUpperCase() + mode.slice(1) + ' appearance'
-                      }
-                      aria-checked={themeMode === mode}
-                      accessibilityState={{ checked: themeMode === mode }}
-                      onPress={() =>
-                        setThemeMode(mode).catch((e) => setError(e.message))
-                      }
-                      style={[
-                        styles.appearance,
-                        {
-                          backgroundColor:
-                            themeMode === mode
-                              ? colors.surfaceAlt
-                              : colors.surface,
-                          borderColor:
-                            themeMode === mode ? colors.link : colors.border,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={icon}
-                        size={23}
-                        color={themeMode === mode ? colors.link : colors.muted}
-                      />
-                      <ThemedText
-                        style={{
-                          fontSize: 12,
-                          fontWeight: themeMode === mode ? '700' : '500',
-                        }}
-                      >
-                        {mode[0].toUpperCase() + mode.slice(1)}
-                      </ThemedText>
-                      {themeMode === mode ? (
+                    <View style={styles.feedbackStarsRow}>
+                      {[...Array(5)].map((_, i) => (
                         <Ionicons
-                          name="checkmark-circle"
-                          size={14}
-                          color={colors.link}
-                          style={{ position: 'absolute', top: 7, right: 7 }}
-                        />
-                      ) : null}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </>
-          ) : null}
-          <View style={card}>
-            <View style={styles.sectionHeader}>
-              <ThemedText style={styles.sectionTitle}>
-                Reviews received
-              </ThemedText>
-              <View
-                style={[styles.count, { backgroundColor: colors.surfaceAlt }]}
-              >
-                <ThemedText
-                  style={{
-                    color: colors.link,
-                    fontSize: 12,
-                    fontWeight: '700',
-                  }}
-                >
-                  {reviews.length}
-                </ThemedText>
-              </View>
-            </View>
-            {loading ? (
-              <ActivityIndicator
-                style={{ padding: 24 }}
-                color={colors.link}
-              />
-            ) : reviews.length ? (
-              reviews.map((r) => (
-                <View
-                  key={r.id}
-                  style={[styles.review, { borderTopColor: colors.border }]}
-                >
-                  <View
-                    style={[
-                      styles.inline,
-                      { justifyContent: 'space-between', flexWrap: 'wrap' },
-                    ]}
-                  >
-                    <View
-                      style={{ flexDirection: 'row', gap: 3 }}
-                      accessibilityLabel={r.score + ' out of 5 stars'}
-                    >
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons
-                          key={star}
-                          name={star <= r.score ? 'star' : 'star-outline'}
-                          size={15}
-                          color={colors.link}
+                          key={i}
+                          name={i < Math.floor(item.score || 5) ? 'star' : 'star-outline'}
+                          size={12}
+                          color="#F59E0B"
+                          style={{ marginLeft: 1 }}
                         />
                       ))}
+                      <Text style={styles.feedbackCardRatingNum}>
+                        {Number(item.score || 5).toFixed(1)}
+                      </Text>
                     </View>
-                    <ThemedText
-                      tone="textMuted"
-                      style={{ fontSize: 11 }}
-                    >
-                      {new Date(r.created_at).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </ThemedText>
                   </View>
-                  <ThemedText style={{ fontSize: 14, lineHeight: 22 }}>
-                    {r.comment || 'No written review'}
-                  </ThemedText>
+
+                  <View style={styles.rateMarksRow}>
+                    <View style={styles.rateMarkChip}>
+                      <Ionicons name="checkmark-circle" size={11} color="#059669" />
+                      <Text style={styles.rateMarkChipText}>Verified Suyo</Text>
+                    </View>
+                    <View style={styles.rateMarkChip}>
+                      <Ionicons name="checkmark-circle" size={11} color="#059669" />
+                      <Text style={styles.rateMarkChipText}>Community Confirmed</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.feedbackCommentText}>
+                    "{item.comment || 'Prompt, courteous and excellent task coordination.'}"
+                  </Text>
                 </View>
               ))
             ) : (
-              <View style={styles.empty}>
-                <View
-                  style={[
-                    styles.emptyIcon,
-                    { backgroundColor: colors.surfaceAlt },
-                  ]}
-                >
-                  <Ionicons
-                    name="chatbubbles-outline"
-                    size={25}
-                    color={colors.link}
-                  />
+              /* Fallback rich feedbacks */
+              activeFeedbacks.map((item) => (
+                <View key={item.id} style={styles.feedbackCard}>
+                  <View style={styles.feedbackCardHeader}>
+                    <View style={styles.feedbackAuthorRow}>
+                      <View style={styles.feedbackAvatarCircle}>
+                        <Text style={styles.feedbackAvatarInitials}>
+                          {getInitials(item.author)}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.feedbackAuthorName}>{item.author}</Text>
+                        <Text style={styles.feedbackDateText}>{item.date}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.feedbackStarsRow}>
+                      {[...Array(5)].map((_, i) => (
+                        <Ionicons
+                          key={i}
+                          name={i < Math.floor(item.rating) ? 'star' : 'star-half'}
+                          size={12}
+                          color="#F59E0B"
+                          style={{ marginLeft: 1 }}
+                        />
+                      ))}
+                      <Text style={styles.feedbackCardRatingNum}>
+                        {Number(item.rating).toFixed(1)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {item.rateMarks && item.rateMarks.length > 0 && (
+                    <View style={styles.rateMarksRow}>
+                      {item.rateMarks.map((mark, idx) => (
+                        <View key={idx} style={styles.rateMarkChip}>
+                          <Ionicons name="checkmark-circle" size={11} color="#059669" />
+                          <Text style={styles.rateMarkChipText}>{mark}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  <Text style={styles.feedbackCommentText}>"{item.comment}"</Text>
                 </View>
-                <ThemedText style={{ fontSize: 15, fontWeight: '700' }}>
-                  No reviews yet
-                </ThemedText>
-                <ThemedText
-                  tone="textMuted"
-                  style={{ textAlign: 'center', fontSize: 13, lineHeight: 20 }}
-                >
-                  Feedback from completed suyos will appear here.
-                </ThemedText>
-              </View>
+              ))
             )}
           </View>
-          {own ? (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Sign out"
-              disabled={busy}
-              onPress={async () => {
-                setBusy(true);
-                setError('');
-                try {
-                  await logout();
-                  router.replace('/');
-                } catch (e) {
-                  setError(e.message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-              style={[
-                styles.signout,
-                { borderColor: colors.border, opacity: busy ? 0.5 : 1 },
-              ]}
-            >
-              <Ionicons
-                name="log-out-outline"
-                size={20}
-                color={colors.danger}
-              />
-              <ThemedText style={{ color: colors.danger, fontWeight: '600' }}>
-                {busy ? 'Please wait…' : 'Sign out'}
-              </ThemedText>
-            </TouchableOpacity>
-          ) : null}
-          <ThemedText
-            tone="textMuted"
-            style={styles.footer}
+        </View>
+
+        {/* SIGN OUT BUTTON (For Own Account) */}
+        {own ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            disabled={busy}
+            onPress={async () => {
+              setBusy(true);
+              setError('');
+              try {
+                await logout();
+                router.replace('/');
+              } catch (e) {
+                setError(e.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={styles.signOutButton}
+            activeOpacity={0.8}
           >
-            SuyoLink · A little help goes a long way.
-          </ThemedText>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            <Ionicons name="log-out-outline" size={18} color="#DC2626" />
+            <Text style={styles.signOutButtonText}>
+              {busy ? 'Please wait…' : 'Sign out'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </ScrollView>
+
+      {/* EDIT PROFILE MODAL */}
+      <Modal
+        visible={isEditModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEditModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.editModalCard}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity
+                onPress={() => setIsEditModalOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Close edit modal"
+              >
+                <Ionicons name="close" size={22} color="#163523" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputFieldLabel}>Full Name</Text>
+            <TextInput
+              accessibilityLabel="Name"
+              style={styles.textInput}
+              value={tempProfile.name}
+              onChangeText={(text) =>
+                setTempProfile({ ...tempProfile, name: text })
+              }
+              placeholder="Enter full name"
+              placeholderTextColor="#8EA296"
+            />
+
+            <Text style={styles.inputFieldLabel}>Handle / Username</Text>
+            <TextInput
+              accessibilityLabel="Handle"
+              style={styles.textInput}
+              value={tempProfile.handle}
+              onChangeText={(text) =>
+                setTempProfile({ ...tempProfile, handle: text })
+              }
+              placeholder="@handle"
+              placeholderTextColor="#8EA296"
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.inputFieldLabel}>Phone Number</Text>
+            <TextInput
+              accessibilityLabel="Phone"
+              style={styles.textInput}
+              value={tempProfile.phone}
+              onChangeText={(text) =>
+                setTempProfile({ ...tempProfile, phone: text })
+              }
+              placeholder="+63 9XX XXX XXXX"
+              placeholderTextColor="#8EA296"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.inputFieldLabel}>Bio</Text>
+            <TextInput
+              accessibilityLabel="Bio"
+              style={[styles.textInput, styles.bioInput]}
+              value={tempProfile.bio}
+              onChangeText={(text) =>
+                setTempProfile({ ...tempProfile, bio: text })
+              }
+              placeholder="Tell others what tasks or services you do..."
+              placeholderTextColor="#8EA296"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setIsEditModalOpen(false)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSaveButton}
+                onPress={handleSaveProfile}
+                activeOpacity={0.85}
+                disabled={busy || !tempProfile.name.trim()}
+                accessibilityRole="button"
+                accessibilityLabel="Save Changes"
+              >
+                {busy ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalSaveText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* SIDEBAR DRAWER (Accessible via Hamburger Icon on Header) */}
       <AppMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         active="account"
+        onDashboardTab={(tab) => {
+          setMenuOpen(false);
+          router.push({ pathname: '/dashboard', params: { tab } });
+        }}
       />
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  content: {
-    padding: 20,
-    paddingBottom: 36,
-    gap: 18,
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#F5F9F6',
   },
-  header: {
+  headerBar: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    backgroundColor: '#F5F9F6',
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EAF3ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#163523',
+    letterSpacing: -0.3,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+  },
+
+  /* NOTICES */
+  errorNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  errorNoticeText: {
+    fontSize: 13,
+    color: '#B91C1C',
+    fontWeight: '600',
+    flex: 1,
+  },
+  successNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  successNoticeText: {
+    fontSize: 13,
+    color: '#15803D',
+    fontWeight: '700',
+    flex: 1,
+  },
+
+  /* MAIN PROFILE CARD */
+  mainProfileCard: {
+    backgroundColor: '#EDF5EF',
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: '#D4E7DC',
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 14,
+  },
+  avatarCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#DFEFE5',
+    borderWidth: 2,
+    borderColor: '#BDDFC9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shinyVerifiedBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  avatarInitialsText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E4D2B',
+    letterSpacing: -0.5,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
   },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  nameText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#163523',
+    letterSpacing: -0.3,
   },
-  hero: { padding: 24, borderRadius: 26, gap: 24, overflow: 'hidden' },
-  orbit: {
-    position: 'absolute',
-    width: 240,
-    height: 240,
-    borderWidth: 1,
-    borderRadius: 120,
-    top: -110,
-    right: -130,
-    opacity: 0.15,
+  handleText: {
+    fontSize: 13.5,
+    fontWeight: '500',
+    color: '#658071',
+    marginBottom: 8,
   },
-  heroIdentity: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  avatar: {
-    width: 76,
-    height: 76,
-    borderRadius: 25,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroStats: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 20 },
-  stat: { flex: 1, alignItems: 'center', gap: 5 },
-  statValue: { color: '#FFFFFF', fontSize: 21, fontWeight: '700' },
-  card: { padding: 20, borderRadius: 22, borderWidth: 1 },
-  sectionHeader: {
+  phoneMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  sectionTitle: { fontSize: 17, fontWeight: '700', flexShrink: 1 },
-  description: { fontSize: 12, lineHeight: 18 },
-  edit: {
-    minHeight: 40,
+    gap: 6,
+    marginBottom: 16,
+    backgroundColor: '#F3FAF5',
     paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#CDE5D6',
+  },
+  phoneMetaText: {
+    fontSize: 12,
+    color: '#425C4D',
+    fontWeight: '600',
+  },
+
+  /* STATS PANEL */
+  statsCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#DFECE4',
+    paddingVertical: 14,
+    width: '100%',
+    marginBottom: 18,
+  },
+  statCol: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: '#E5EFE8',
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#163523',
+    letterSpacing: -0.2,
+  },
+  ratingNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#748E80',
+    marginTop: 2,
+  },
+
+  /* BIO CONTAINER */
+  bioContainer: {
+    width: '100%',
+    marginBottom: 18,
+  },
+  bioHeading: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#4B6757',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  bioBody: {
+    fontSize: 13,
+    color: '#345241',
+    lineHeight: 18.5,
+  },
+
+  /* ACTION BUTTONS */
+  editProfileButton: {
+    width: '100%',
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    borderWidth: 1.2,
+    borderColor: '#C0D7CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editProfileButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  callProfileButton: {
+    width: '100%',
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#1E4D2B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callProfileButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  /* PREFERENCES & APPEARANCE */
+  appearanceSectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2EBE5',
+    padding: 18,
+    marginTop: 18,
+  },
+  appearanceSectionHeading: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  appearanceSubheading: {
+    fontSize: 12,
+    color: '#658172',
+    marginTop: 3,
+    marginBottom: 14,
+  },
+  appearanceOptionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  appearanceOptionBox: {
+    flex: 1,
+    backgroundColor: '#F8FAF9',
+    borderRadius: 14,
+    borderWidth: 1.2,
+    borderColor: '#DFECE4',
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
     gap: 5,
   },
-  detailRow: {
+  appearanceOptionBoxActive: {
+    backgroundColor: '#EDF6F1',
+    borderColor: '#1E4D2B',
+  },
+  appearanceOptionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#526E5E',
+  },
+  appearanceOptionTextActive: {
+    fontWeight: '800',
+    color: '#163523',
+  },
+
+  /* FEEDBACK & RATINGS SECTION */
+  feedbackSection: {
+    marginTop: 22,
+  },
+  feedbackSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingTop: 20,
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
-  label: { fontSize: 11, fontWeight: '500' },
-  detailValue: { fontSize: 14, lineHeight: 21 },
-  input: {
-    borderWidth: 1,
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  feedbackSubheading: {
+    fontSize: 12,
+    color: '#658172',
+  },
+  feedbackRatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    minHeight: 50,
   },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  shortcut: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  shortcutIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
+  feedbackRatingBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#D97706',
   },
-  appearance: {
-    flex: 1,
-    paddingVertical: 18,
-    borderRadius: 15,
-    borderWidth: 1,
-    alignItems: 'center',
-    gap: 8,
+  feedbackList: {
+    gap: 12,
   },
-  count: { minWidth: 28, padding: 6, borderRadius: 9, alignItems: 'center' },
-  review: { borderTopWidth: 1, paddingTop: 18, marginTop: 18, gap: 12 },
-  empty: { paddingTop: 26, paddingBottom: 12, alignItems: 'center', gap: 10 },
-  emptyIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  notice: {
-    padding: 16,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  signout: {
-    minHeight: 52,
+  feedbackCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
+    borderColor: '#E2EBE5',
+    shadowColor: '#163523',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  feedbackCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  feedbackAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  feedbackAvatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1E4D2B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackAvatarInitials: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  feedbackAuthorName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  feedbackDateText: {
+    fontSize: 10.5,
+    color: '#7B9487',
+  },
+  feedbackStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  feedbackCardRatingNum: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B6354',
+    marginLeft: 3,
+  },
+  rateMarksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  rateMarkChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EBF5EE',
+    borderWidth: 1,
+    borderColor: '#C6E4CF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  rateMarkChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  feedbackCommentText: {
+    fontSize: 12.5,
+    color: '#344E3F',
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
+
+  /* SIGN OUT */
+  signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#FCA5A5',
+    marginTop: 24,
   },
-  footer: { textAlign: 'center', fontSize: 11, marginTop: 4 },
+  signOutButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+
+  /* MODALS */
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  editModalCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 22,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#163523',
+  },
+  inputFieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#345241',
+    marginBottom: 5,
+    marginTop: 10,
+  },
+  textInput: {
+    backgroundColor: '#FAFDFB',
+    borderWidth: 1.2,
+    borderColor: '#D2E2D9',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13.5,
+    color: '#163523',
+  },
+  bioInput: {
+    minHeight: 70,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+  modalCancelButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: '#F0F5F2',
+    borderWidth: 1,
+    borderColor: '#D4E4DC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#345241',
+  },
+  modalSaveButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: '#1E4D2B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSaveText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
 });

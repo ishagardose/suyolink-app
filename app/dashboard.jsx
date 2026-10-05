@@ -6529,6 +6529,40 @@ export default function DashboardScreen() {
               <Ionicons name="chevron-forward" size={16} color="#7A9384" />
             </TouchableOpacity>
 
+            {/* Transaction History Nav Item in Sidebar (Transferred from profile) */}
+            <TouchableOpacity
+              style={styles.sidebarMenuItem}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Transaction History"
+              onPress={() => {
+                closeSidebar();
+                router.push('/transactions');
+              }}
+            >
+              <View style={styles.menuItemLeft}>
+                <View
+                  style={[
+                    styles.menuItemIconCircle,
+                    { backgroundColor: '#DCFCE7' },
+                  ]}
+                >
+                  <Ionicons
+                    name="receipt-outline"
+                    size={18}
+                    color="#059669"
+                  />
+                </View>
+                <View style={styles.menuItemTextCol}>
+                  <Text style={styles.menuItemTitle}>Transaction History</Text>
+                  <Text style={styles.menuItemSub}>
+                    Completed suyos & reward totals
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#7A9384" />
+            </TouchableOpacity>
+
             {/* About SuyoLink */}
             <TouchableOpacity
               style={styles.sidebarMenuItem}
