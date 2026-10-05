@@ -1,3 +1,5 @@
+import { useDeviceLocation } from '../../context/LocationContext';
+import { distanceKm } from '../../lib/geo';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
@@ -7,20 +9,31 @@ import { urgencyFor } from '../../lib/urgency';
 
 export default function SuyoSummary({ details }) {
   const { colors } = useTheme();
+  const { position } = useDeviceLocation();
   if (!details) return null;
+  const km = distanceKm(position, details);
 
   const urgency = urgencyFor(details.deadline);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
       <View style={styles.headerRow}>
         <ThemedText style={[styles.category, { color: colors.textMuted }]}>
           {details.category?.toUpperCase()}
         </ThemedText>
         <View style={styles.badgeRow}>
           {urgency ? (
-            <View style={[styles.urgencyBadge, { backgroundColor: colors.danger }]}>
-              <ThemedText style={styles.urgencyText}>{urgency.label}</ThemedText>
+            <View
+              style={[styles.urgencyBadge, { backgroundColor: colors.danger }]}
+            >
+              <ThemedText style={styles.urgencyText}>
+                {urgency.label}
+              </ThemedText>
             </View>
           ) : null}
           <View style={[styles.badge, { backgroundColor: colors.surfaceAlt }]}>
@@ -39,19 +52,32 @@ export default function SuyoSummary({ details }) {
       <ThemedText style={styles.details}>{details.details}</ThemedText>
 
       {details.notes ? (
-        <ThemedText tone="textMuted" style={styles.notes}>
+        <ThemedText
+          tone="textMuted"
+          style={styles.notes}
+        >
           Notes: {details.notes}
         </ThemedText>
       ) : null}
 
       <View style={[styles.metaSection, { borderTopColor: colors.border }]}>
-        <ThemedText tone="textMuted" style={styles.metaItem}>
+        <ThemedText
+          tone="textMuted"
+          style={styles.metaItem}
+        >
           Area: {details.location}
+          {km != null ? ` - approximately ${km.toFixed(1)} km away` : ''}
         </ThemedText>
-        <ThemedText tone="textMuted" style={styles.metaItem}>
+        <ThemedText
+          tone="textMuted"
+          style={styles.metaItem}
+        >
           Deadline: {new Date(details.deadline).toLocaleString()}
         </ThemedText>
-        <ThemedText tone="textMuted" style={styles.metaItem}>
+        <ThemedText
+          tone="textMuted"
+          style={styles.metaItem}
+        >
           Posted by: {details.requesterName}
         </ThemedText>
       </View>

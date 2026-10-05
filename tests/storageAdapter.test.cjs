@@ -6,8 +6,12 @@ test('storage adapter handles get, set, remove, and error propagation', async ()
   const store = new Map();
   const mockBackend = {
     getItem: async (k) => store.get(k) ?? null,
-    setItem: async (k, v) => { store.set(k, String(v)); },
-    removeItem: async (k) => { store.delete(k); },
+    setItem: async (k, v) => {
+      store.set(k, String(v));
+    },
+    removeItem: async (k) => {
+      store.delete(k);
+    },
   };
 
   const adapter = createStorageAdapter(mockBackend);
@@ -25,12 +29,27 @@ test('storage adapter handles get, set, remove, and error propagation', async ()
 
   // Error propagation
   const failingBackend = {
-    getItem: async () => { throw new Error('Storage read failed'); },
-    setItem: async () => { throw new Error('Storage write failed'); },
-    removeItem: async () => { throw new Error('Storage remove failed'); },
+    getItem: async () => {
+      throw new Error('Storage read failed');
+    },
+    setItem: async () => {
+      throw new Error('Storage write failed');
+    },
+    removeItem: async () => {
+      throw new Error('Storage remove failed');
+    },
   };
   const failingAdapter = createStorageAdapter(failingBackend);
-  await assert.rejects(() => failingAdapter.getItem('k'), /Storage read failed/);
-  await assert.rejects(() => failingAdapter.setItem('k', 'v'), /Storage write failed/);
-  await assert.rejects(() => failingAdapter.removeItem('k'), /Storage remove failed/);
+  await assert.rejects(
+    () => failingAdapter.getItem('k'),
+    /Storage read failed/,
+  );
+  await assert.rejects(
+    () => failingAdapter.setItem('k', 'v'),
+    /Storage write failed/,
+  );
+  await assert.rejects(
+    () => failingAdapter.removeItem('k'),
+    /Storage remove failed/,
+  );
 });

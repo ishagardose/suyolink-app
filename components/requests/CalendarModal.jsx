@@ -11,8 +11,18 @@ import { Ionicons } from '@expo/vector-icons';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 const formatYMD = (year, month, day) => {
@@ -31,7 +41,7 @@ export default function CalendarModal({
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(
     () => formatYMD(today.getFullYear(), today.getMonth(), today.getDate()),
-    [today]
+    [today],
   );
 
   // Initialize selected and view dates
@@ -95,7 +105,11 @@ export default function CalendarModal({
       days.push({
         day: daysInPrevMonth - i,
         isCurrentMonth: false,
-        ymd: formatYMD(viewMonth === 0 ? viewYear - 1 : viewYear, viewMonth === 0 ? 11 : viewMonth - 1, daysInPrevMonth - i),
+        ymd: formatYMD(
+          viewMonth === 0 ? viewYear - 1 : viewYear,
+          viewMonth === 0 ? 11 : viewMonth - 1,
+          daysInPrevMonth - i,
+        ),
       });
     }
 
@@ -114,7 +128,11 @@ export default function CalendarModal({
       days.push({
         day: i,
         isCurrentMonth: false,
-        ymd: formatYMD(viewMonth === 11 ? viewYear + 1 : viewYear, viewMonth === 11 ? 0 : viewMonth + 1, i),
+        ymd: formatYMD(
+          viewMonth === 11 ? viewYear + 1 : viewYear,
+          viewMonth === 11 ? 0 : viewMonth + 1,
+          i,
+        ),
       });
     }
 
@@ -135,7 +153,11 @@ export default function CalendarModal({
   const setQuickOffset = (offsetDays) => {
     const target = new Date();
     target.setDate(target.getDate() + offsetDays);
-    const targetYMD = formatYMD(target.getFullYear(), target.getMonth(), target.getDate());
+    const targetYMD = formatYMD(
+      target.getFullYear(),
+      target.getMonth(),
+      target.getDate(),
+    );
     setViewYear(target.getFullYear());
     setViewMonth(target.getMonth());
     setSelectedYMD(targetYMD);
@@ -148,12 +170,22 @@ export default function CalendarModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+      <Pressable
+        style={styles.backdrop}
+        onPress={onClose}
+      >
+        <Pressable
+          style={styles.modalCard}
+          onPress={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.headerTitleWrap}>
-              <Ionicons name="calendar" size={20} color="#1E4D2B" />
+              <Ionicons
+                name="calendar"
+                size={20}
+                color="#1E4D2B"
+              />
               <Text style={styles.headerTitle}>Select Target Date</Text>
             </View>
             <TouchableOpacity
@@ -163,7 +195,11 @@ export default function CalendarModal({
               accessibilityRole="button"
               accessibilityLabel="Close calendar"
             >
-              <Ionicons name="close" size={20} color="#4A6B56" />
+              <Ionicons
+                name="close"
+                size={20}
+                color="#4A6B56"
+              />
             </TouchableOpacity>
           </View>
 
@@ -175,7 +211,11 @@ export default function CalendarModal({
               activeOpacity={0.7}
               accessibilityLabel="Previous month"
             >
-              <Ionicons name="chevron-back" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="chevron-back"
+                size={18}
+                color="#1E4D2B"
+              />
             </TouchableOpacity>
 
             <Text style={styles.monthYearText}>
@@ -188,7 +228,11 @@ export default function CalendarModal({
               activeOpacity={0.7}
               accessibilityLabel="Next month"
             >
-              <Ionicons name="chevron-forward" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color="#1E4D2B"
+              />
             </TouchableOpacity>
           </View>
 
@@ -222,7 +266,9 @@ export default function CalendarModal({
                     isSelected && styles.dayCellSelected,
                     isToday && !isSelected && styles.dayCellToday,
                   ]}
-                  onPress={() => item.isCurrentMonth && handleSelectDay(item.ymd)}
+                  onPress={() =>
+                    item.isCurrentMonth && handleSelectDay(item.ymd)
+                  }
                   disabled={!item.isCurrentMonth}
                   activeOpacity={0.65}
                 >
@@ -246,11 +292,19 @@ export default function CalendarModal({
           {/* Quick Shortcuts */}
           <View style={styles.quickShortcutsRow}>
             <TouchableOpacity
-              style={[styles.shortcutChip, selectedYMD === todayStr && styles.shortcutChipActive]}
+              style={[
+                styles.shortcutChip,
+                selectedYMD === todayStr && styles.shortcutChipActive,
+              ]}
               onPress={() => setQuickOffset(0)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.shortcutText, selectedYMD === todayStr && styles.shortcutTextActive]}>
+              <Text
+                style={[
+                  styles.shortcutText,
+                  selectedYMD === todayStr && styles.shortcutTextActive,
+                ]}
+              >
                 Today
               </Text>
             </TouchableOpacity>

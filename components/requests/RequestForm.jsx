@@ -1,116 +1,31 @@
+import { EMPTY } from './requestFormConfig';
+import ContactFields from './fields/ContactFields';
+import LocationFields from './fields/LocationFields';
+import DeadlineFields from './fields/DeadlineFields';
+import RewardFields from './fields/RewardFields';
+import TaskOverviewFields from './fields/TaskOverviewFields';
+import RequestSuccessModal from './RequestSuccessModal';
+import useRequestFormStyles from './requestForm.styles';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
-  Modal,
-  Image,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../theme/ThemeContext';
 import { useSuyos } from '../../context/SuyoContext';
-import { CATEGORIES } from '../../data/suyoRequests';
-import LocationPicker from './LocationPicker';
-import { localDeadline } from '../../lib/deadline';
+
 import CalendarModal from './CalendarModal';
 import ClockModal from './ClockModal';
 
-const EMPTY = {
-  title: '',
-  details: '',
-  category: '',
-  offerAmount: '',
-  deadlineDate: '',
-  deadlineTime: '',
-  location: '',
-  publicLocation: '',
-  exactAddress: '',
-  contactPhone: '',
-  phone: '',
-  coordinates: null,
-  notes: '',
-  attachments: [],
-};
-
-const CATEGORY_ICONS = {
-  Delivery: 'bicycle-outline',
-  Groceries: 'cart-outline',
-  Documents: 'document-attach-outline',
-  'Queuing & Bills': 'receipt-outline',
-  Household: 'home-outline',
-  Other: 'cube-outline',
-};
-
-const QUICK_PRESETS = [
-  {
-    key: 'custom',
-    label: 'Custom / Create',
-    isCreate: true,
-  },
-  {
-    key: 'groceries',
-    label: 'Groceries',
-    title: 'Buy groceries at supermarket',
-    category: 'Groceries',
-    offerAmount: '150.00',
-    details: 'Pick up eggs, fresh bread, and 2 cartons of milk from local supermarket.',
-  },
-  {
-    key: 'documents',
-    label: 'Documents',
-    title: 'Drop off documents - Unit 402',
-    category: 'Documents',
-    offerAmount: '300.00',
-    details: 'Deliver notarized agreements and legal documents to Unit 402 reception desk.',
-  },
-  {
-    key: 'bills',
-    label: 'Bills Payment',
-    title: 'Queue for bills payment',
-    category: 'Queuing & Bills',
-    offerAmount: '120.00',
-    details: 'Line up at Bayad Center to pay monthly utility bill. Cash and bill slip are prepared.',
-  },
-  {
-    key: 'pickup_deliver',
-    label: 'Pickup & Deliver',
-    title: 'Pickup & Deliver items',
-    category: 'Delivery',
-    offerAmount: '180.00',
-    details: 'Collect pre-ordered package from branch and safely deliver to destination address.',
-  },
-];
-
-const REWARD_PRESETS = ['100.00', '150.00', '200.00', '300.00'];
-
-const PLACEHOLDER_COLOR = '#688676';
-
-// Helper to get formatted default today & time +3 hours
-const getInitialDate = () => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
-
-const getInitialTime = () => {
-  const now = new Date(Date.now() + 3 * 3600000);
-  const h = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
-  return `${h}:${min}`;
-};
-
 export default function RequestForm({ onPosted }) {
+  const styles = useRequestFormStyles();
   const { colors } = useTheme();
   const { postRequest, isLoading, error: loadError, reload } = useSuyos();
 
@@ -119,7 +34,10 @@ export default function RequestForm({ onPosted }) {
     deadlineDate: '',
     deadlineTime: '',
     clientReference:
-      'post-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2),
+      'post-' +
+      Date.now().toString(36) +
+      '-' +
+      Math.random().toString(36).slice(2),
   }));
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -128,193 +46,12 @@ export default function RequestForm({ onPosted }) {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isClockOpen, setIsClockOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [attachmentLoading, setAttachmentLoading] = useState(false);
 
   const scrollViewRef = useRef(null);
   const contactInputRef = useRef(null);
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
   const submitting = useRef(false);
-
-  const formatFileSize = (bytes) => {
-    if (!bytes || isNaN(bytes)) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const handlePickFromCamera = async () => {
-    try {
-      if ((draft.attachments || []).length >= 5) {
-        Alert.alert('Limit Reached', 'You can attach up to 5 photos or files.');
-        return;
-      }
-      setAttachmentLoading(true);
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert(
-          'Camera Permission Required',
-          'Please allow camera access in your device settings to take photos for your suyo request.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: false,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const newAttachment = {
-          id: 'cam-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-          uri: asset.uri,
-          name: asset.fileName || `camera_photo_${Date.now()}.jpg`,
-          type: 'image',
-          mimeType: asset.mimeType || 'image/jpeg',
-          size: asset.fileSize,
-        };
-        setDraft((prev) => ({
-          ...prev,
-          attachments: [...(prev.attachments || []), newAttachment].slice(0, 5),
-        }));
-      }
-    } catch (err) {
-      console.warn('Camera pick error:', err);
-      Alert.alert('Camera Error', 'Could not open camera. Please try selecting from the photo gallery.');
-    } finally {
-      setAttachmentLoading(false);
-    }
-  };
-
-  const handlePickFromGallery = async () => {
-    try {
-      if ((draft.attachments || []).length >= 5) {
-        Alert.alert('Limit Reached', 'You can attach up to 5 photos or files.');
-        return;
-      }
-      setAttachmentLoading(true);
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert(
-          'Gallery Permission Required',
-          'Please allow photo library access to choose photos for your suyo request.'
-        );
-        return;
-      }
-
-      const maxAllowed = 5 - (draft.attachments?.length || 0);
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: maxAllowed,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newItems = result.assets.map((asset, index) => ({
-          id: 'gal-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2, 6),
-          uri: asset.uri,
-          name: asset.fileName || `gallery_image_${Date.now()}_${index + 1}.jpg`,
-          type: 'image',
-          mimeType: asset.mimeType || 'image/jpeg',
-          size: asset.fileSize,
-        }));
-
-        setDraft((prev) => ({
-          ...prev,
-          attachments: [...(prev.attachments || []), ...newItems].slice(0, 5),
-        }));
-      }
-    } catch (err) {
-      console.warn('Gallery pick error:', err);
-      Alert.alert('Gallery Error', 'Could not open photo gallery. Please try again.');
-    } finally {
-      setAttachmentLoading(false);
-    }
-  };
-
-  const handleAttachFiles = async () => {
-    try {
-      if ((draft.attachments || []).length >= 5) {
-        Alert.alert('Limit Reached', 'You can attach up to 5 photos or files.');
-        return;
-      }
-      setAttachmentLoading(true);
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: true,
-        multiple: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newFiles = result.assets.map((asset, index) => {
-          const isImg =
-            asset.mimeType?.startsWith('image/') ||
-            /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(asset.name || '');
-          return {
-            id: 'doc-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2, 6),
-            uri: asset.uri,
-            name: asset.name || `attached_file_${Date.now()}_${index + 1}`,
-            type: isImg ? 'image' : 'file',
-            mimeType: asset.mimeType || 'application/octet-stream',
-            size: asset.size,
-          };
-        });
-
-        setDraft((prev) => ({
-          ...prev,
-          attachments: [...(prev.attachments || []), ...newFiles].slice(0, 5),
-        }));
-      }
-    } catch (err) {
-      console.warn('Document picker error:', err);
-      Alert.alert('File Picker Error', 'Could not attach selected file. Please try again.');
-    } finally {
-      setAttachmentLoading(false);
-    }
-  };
-
-  const handleRemoveAttachment = (idToRemove) => {
-    setDraft((prev) => ({
-      ...prev,
-      attachments: (prev.attachments || []).filter((item) => item.id !== idToRemove),
-    }));
-  };
-
-  const handleSelectPreset = (preset) => {
-    if (preset.isCreate) {
-      // Clear/reset draft so user can customize everything from scratch
-      setDraft({
-        ...EMPTY,
-        deadlineDate: '',
-        deadlineTime: '',
-        clientReference:
-          'post-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2),
-      });
-      setFieldErrors({});
-      setGeneralError('');
-      return;
-    }
-
-    setDraft((prev) => ({
-      ...prev,
-      title: preset.title,
-      category: preset.category,
-      offerAmount: preset.offerAmount,
-      details: preset.details,
-    }));
-    // Clear errors on populated fields
-    setFieldErrors((prev) => ({
-      ...prev,
-      title: undefined,
-      category: undefined,
-      offerAmount: undefined,
-      details: undefined,
-    }));
-  };
 
   const validateForm = () => {
     const errors = {};
@@ -323,6 +60,7 @@ export default function RequestForm({ onPosted }) {
     if (!draft.title.trim()) {
       errors.title = 'Task title is required';
     }
+    if (!draft.category) errors.category = 'Choose a category';
     // 2. Reward Offer
     if (
       !draft.offerAmount ||
@@ -342,6 +80,12 @@ export default function RequestForm({ onPosted }) {
     if (!draft.location.trim()) {
       errors.location = 'Address/meeting landmark/Drop off is required';
     }
+    if (!draft.publicLocation.trim())
+      errors.publicLocation = 'Enter a public area or landmark';
+    if (!draft.coordinates)
+      errors.coordinates = 'Choose a location pin on the map';
+    if (!draft.details.trim())
+      errors.details = 'Describe what needs to be done';
     // 5. Contact Info
     if (!draft.contactPhone.trim()) {
       errors.contactPhone = 'Contact info is required to post a suyo';
@@ -356,7 +100,9 @@ export default function RequestForm({ onPosted }) {
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
-      setGeneralError('Please complete all required fields highlighted in red below.');
+      setGeneralError(
+        'Please complete all required fields highlighted in red below.',
+      );
 
       // If contact info is missing, lead the user directly back to the contact info input box
       if (errors.contactPhone) {
@@ -378,12 +124,17 @@ export default function RequestForm({ onPosted }) {
 
     // Validate deadline is in the future
     try {
-      const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(combinedDeadline);
+      const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(
+        combinedDeadline,
+      );
       if (!match) throw new Error('Invalid deadline date/time format.');
       const [, y, m, d, h, min] = match.map(Number);
       const parsedDate = new Date(y, m - 1, d, h, min);
       if (parsedDate.getTime() <= Date.now()) {
-        setFieldErrors((p) => ({ ...p, deadlineTime: 'Deadline must be set in the future' }));
+        setFieldErrors((p) => ({
+          ...p,
+          deadlineTime: 'Deadline must be set in the future',
+        }));
         setGeneralError('Please set a deadline time in the future.');
         return;
       }
@@ -400,22 +151,22 @@ export default function RequestForm({ onPosted }) {
     try {
       await postRequest({
         ...draft,
-        category: draft.category || 'Delivery',
+        category: draft.category,
         details: draft.details.trim() || draft.title.trim(),
         location: draft.location.trim(),
-        publicLocation: draft.location.trim(),
+        publicLocation: draft.publicLocation.trim(),
         exactAddress: draft.location.trim(),
-        phone: draft.contactPhone.trim() || draft.phone || 'N/A',
-        coordinates: draft.coordinates || { latitude: 7.4475, longitude: 125.8078 },
+        phone: draft.contactPhone.trim(),
+        coordinates: draft.coordinates,
         deadline: combinedDeadline,
         attachments: draft.attachments || [],
-        notes: draft.contactPhone
-          ? `Contact Phone: ${draft.contactPhone.trim()}\n${draft.notes || ''}`.trim()
-          : draft.notes,
+        notes: draft.notes.trim(),
       });
       setIsSuccessModalOpen(true);
     } catch (err) {
-      setGeneralError(err.message || 'Failed to post request. Please check all details.');
+      setGeneralError(
+        err.message || 'Failed to post request. Please check all details.',
+      );
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -434,666 +185,99 @@ export default function RequestForm({ onPosted }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.formContainer}>
-          {/* TOP BANNER */}
-          <View style={styles.heroBanner}>
-            <View style={styles.heroIconBadge}>
-              <Ionicons name="sparkles" size={20} color="#1E4D2B" />
-            </View>
-            <View style={styles.heroTextCol}>
-              <Text style={styles.heroTitle}>Post a Suyo Request</Text>
-              <Text style={styles.heroSub}>
-                Fill out your task details, reward offer, and meeting location. Verified community doers will be alerted immediately.
-              </Text>
-            </View>
-          </View>
-
-          {/* QUICK SUGGESTION PRESETS */}
-          <View style={styles.templatesBlock}>
-            <Text style={styles.templatesHeader}>Quick Suggestions:</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.templatesScroll}
+          <View style={{ gap: 8, paddingVertical: 8 }}>
+            <Text
+              style={{
+                fontSize: 27,
+                fontWeight: '700',
+                color: colors.text,
+                letterSpacing: -0.6,
+              }}
             >
-              {QUICK_PRESETS.map((preset) => (
-                <TouchableOpacity
-                  key={preset.key}
-                  style={[
-                    styles.templateChip,
-                    preset.isCreate && styles.templateChipCreate,
-                  ]}
-                  onPress={() => handleSelectPreset(preset)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.templateChipText,
-                      preset.isCreate && styles.templateChipCreateText,
-                    ]}
-                  >
-                    {preset.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+              What do you need?
+            </Text>
+            <Text
+              style={{ fontSize: 14, lineHeight: 22, color: colors.textMuted }}
+            >
+              A few clear details help the right person lend a hand.
+            </Text>
           </View>
-
           {/* GENERAL ERROR BANNER */}
           {generalError ? (
             <View style={styles.generalErrorBanner}>
-              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Ionicons
+                name="alert-circle"
+                size={18}
+                color="#DC2626"
+              />
               <Text style={styles.generalErrorText}>{generalError}</Text>
             </View>
           ) : null}
 
           {/* CARD 1: TASK OVERVIEW */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons name="create-outline" size={18} color="#1E4D2B" />
-              <Text style={styles.cardTitle}>Task Overview</Text>
-            </View>
-
-            {/* Title */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldLabelRow}>
-                <Text style={[styles.fieldLabel, fieldErrors.title && styles.fieldLabelError]}>
-                  Task Title *
-                </Text>
-                <Text style={styles.counterText}>{draft.title.length}/100</Text>
-              </View>
-              <View
-                style={[
-                  styles.inputWithIcon,
-                  fieldErrors.title && styles.inputErrorBorder,
-                ]}
-              >
-                <Ionicons
-                  name="document-text-outline"
-                  size={18}
-                  color={fieldErrors.title ? '#DC2626' : '#1E4D2B'}
-                  style={styles.leadingIcon}
-                />
-                <TextInput
-                  style={styles.textInputInner}
-                  placeholder="e.g. Drop off documents - Unit 402"
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.title}
-                  onChangeText={(val) => {
-                    setDraft((p) => ({ ...p, title: val }));
-                    if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: undefined }));
-                  }}
-                  maxLength={100}
-                  editable={!busy}
-                />
-              </View>
-              {fieldErrors.title && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.title}</Text>
-              )}
-            </View>
-
-            {/* Category Selector */}
-            <View style={styles.fieldBlock}>
-              <Text style={styles.fieldLabel}>Category (Optional)</Text>
-              <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat) => {
-                  const isSelected = draft.category === cat;
-                  const iconName = CATEGORY_ICONS[cat] || 'cube-outline';
-                  return (
-                    <TouchableOpacity
-                      key={cat}
-                      style={[
-                        styles.categoryBtn,
-                        isSelected ? styles.categoryBtnActive : styles.categoryBtnInactive,
-                      ]}
-                      onPress={() => {
-                        setDraft((p) => ({ ...p, category: cat }));
-                      }}
-                      disabled={busy}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={iconName}
-                        size={16}
-                        color={isSelected ? '#FFFFFF' : '#1E4D2B'}
-                      />
-                      <Text
-                        style={[
-                          styles.categoryBtnText,
-                          isSelected
-                            ? styles.categoryBtnTextActive
-                            : styles.categoryBtnTextInactive,
-                        ]}
-                      >
-                        {cat}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Task Details */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Detailed Instructions (Optional)</Text>
-                <Text style={styles.counterText}>{draft.details.length}/2000</Text>
-              </View>
-              <View style={styles.textareaWrapper}>
-                <TextInput
-                  style={styles.textareaInput}
-                  placeholder="Step-by-step instructions, specific items, or handling details..."
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.details}
-                  onChangeText={(val) => {
-                    setDraft((p) => ({ ...p, details: val }));
-                  }}
-                  multiline
-                  numberOfLines={4}
-                  maxLength={2000}
-                  textAlignVertical="top"
-                  editable={!busy}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* CARD 2: PHOTOS & FILE ATTACHMENTS (CAMERA, GALLERY, DOCUMENTS) */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons name="images-outline" size={18} color="#1E4D2B" />
-              <View style={styles.attachCardHeaderTitleRow}>
-                <Text style={styles.cardTitle}>Photos & File Attachments</Text>
-                <View style={styles.attachCountBadge}>
-                  <Text style={styles.attachCountText}>
-                    {(draft.attachments || []).length}/5 Attached
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <Text style={styles.cardSubText}>
-              Attach photos from your camera or gallery (e.g. items to buy, receipts, parcel, location) or attach files/documents.
-            </Text>
-
-            {/* Three Action Pickers: Camera, Gallery, Files */}
-            <View style={styles.attachActionRow}>
-              {/* 1. Camera */}
-              <TouchableOpacity
-                style={[
-                  styles.attachActionBtn,
-                  styles.attachActionBtnCamera,
-                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
-                ]}
-                activeOpacity={0.75}
-                onPress={handlePickFromCamera}
-                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
-              >
-                <View style={[styles.attachActionIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                  <Ionicons name="camera" size={19} color="#15803D" />
-                </View>
-                <Text style={[styles.attachActionBtnText, { color: '#15803D' }]}>Take Photo</Text>
-                <Text style={styles.attachActionBtnSub}>Camera</Text>
-              </TouchableOpacity>
-
-              {/* 2. Gallery */}
-              <TouchableOpacity
-                style={[
-                  styles.attachActionBtn,
-                  styles.attachActionBtnGallery,
-                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
-                ]}
-                activeOpacity={0.75}
-                onPress={handlePickFromGallery}
-                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
-              >
-                <View style={[styles.attachActionIconCircle, { backgroundColor: '#E0F2FE' }]}>
-                  <Ionicons name="images" size={19} color="#0369A1" />
-                </View>
-                <Text style={[styles.attachActionBtnText, { color: '#0369A1' }]}>Gallery</Text>
-                <Text style={styles.attachActionBtnSub}>Photos</Text>
-              </TouchableOpacity>
-
-              {/* 3. Files */}
-              <TouchableOpacity
-                style={[
-                  styles.attachActionBtn,
-                  styles.attachActionBtnFiles,
-                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
-                ]}
-                activeOpacity={0.75}
-                onPress={handleAttachFiles}
-                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
-              >
-                <View style={[styles.attachActionIconCircle, { backgroundColor: '#FEF3C7' }]}>
-                  <Ionicons name="document-attach" size={19} color="#B45309" />
-                </View>
-                <Text style={[styles.attachActionBtnText, { color: '#B45309' }]}>Attach File</Text>
-                <Text style={styles.attachActionBtnSub}>PDF/Docs</Text>
-              </TouchableOpacity>
-            </View>
-
-            {attachmentLoading && (
-              <View style={styles.attachmentLoadingRow}>
-                <ActivityIndicator size="small" color="#1E4D2B" />
-                <Text style={styles.attachmentLoadingText}>Processing attachment...</Text>
-              </View>
-            )}
-
-            {/* List of Attached Items */}
-            {draft.attachments && draft.attachments.length > 0 && (
-              <View style={styles.attachmentListWrapper}>
-                <View style={styles.attachListHeaderRow}>
-                  <Text style={styles.attachmentListTitle}>
-                    Attached Items ({draft.attachments.length}):
-                  </Text>
-                  <Text style={styles.attachTapHint}>Tap photo to preview</Text>
-                </View>
-
-                <View style={styles.attachmentListGrid}>
-                  {draft.attachments.map((item) => {
-                    const isImg = item.type === 'image';
-                    return (
-                      <View key={item.id} style={isImg ? styles.attachImageItemCard : styles.attachDocItemCard}>
-                        {isImg ? (
-                          <View style={styles.attachImageItemInner}>
-                            <TouchableOpacity
-                              activeOpacity={0.85}
-                              onPress={() => setPreviewImage(item.uri)}
-                              style={styles.attachImageThumbWrapper}
-                            >
-                              <Image source={{ uri: item.uri }} style={styles.attachImageThumb} resizeMode="cover" />
-                              <View style={styles.attachImageBadge}>
-                                <Ionicons name="eye" size={10} color="#FFFFFF" />
-                                <Text style={styles.attachImageBadgeText}>View</Text>
-                              </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.attachRemoveBtn}
-                              activeOpacity={0.7}
-                              onPress={() => handleRemoveAttachment(item.id)}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <Ionicons name="close" size={11} color="#FFFFFF" />
-                            </TouchableOpacity>
-                          </View>
-                        ) : (
-                          <View style={styles.attachDocCardContent}>
-                            <View style={styles.attachDocIconCircle}>
-                              <Ionicons name="document-text" size={18} color="#B45309" />
-                            </View>
-                            <View style={styles.attachDocMeta}>
-                              <Text style={styles.attachDocName} numberOfLines={1}>
-                                {item.name}
-                              </Text>
-                              <Text style={styles.attachDocSize}>
-                                {formatFileSize(item.size) || 'Attached document'}
-                              </Text>
-                            </View>
-                            <TouchableOpacity
-                              style={styles.attachDocRemoveBtn}
-                              activeOpacity={0.7}
-                              onPress={() => handleRemoveAttachment(item.id)}
-                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                            >
-                              <Ionicons name="trash-outline" size={15} color="#DC2626" />
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-          </View>
+          <TaskOverviewFields
+            fieldErrors={fieldErrors}
+            draft={draft}
+            setDraft={setDraft}
+            setFieldErrors={setFieldErrors}
+            busy={busy}
+          />
 
           {/* CARD 3: REWARD OFFER */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons name="cash-outline" size={18} color="#1E4D2B" />
-              <Text style={styles.cardTitle}>Reward Offer (PHP)</Text>
-            </View>
-
-            <View style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, fieldErrors.offerAmount && styles.fieldLabelError]}>
-                Offer Amount *
-              </Text>
-              <View
-                style={[
-                  styles.currencyInputRow,
-                  fieldErrors.offerAmount && styles.inputErrorBorder,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.currencySymbolBadge,
-                    fieldErrors.offerAmount && styles.currencySymbolBadgeError,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.currencySymbolText,
-                      fieldErrors.offerAmount && { color: '#DC2626' },
-                    ]}
-                  >
-                    ₱
-                  </Text>
-                </View>
-                <TextInput
-                  style={styles.currencyInput}
-                  placeholder="150.00"
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.offerAmount}
-                  onChangeText={(val) => {
-                    setDraft((p) => ({
-                      ...p,
-                      offerAmount: val.replace(/[^0-9.]/g, ''),
-                    }));
-                    if (fieldErrors.offerAmount) setFieldErrors((p) => ({ ...p, offerAmount: undefined }));
-                  }}
-                  keyboardType="decimal-pad"
-                  maxLength={10}
-                  editable={!busy}
-                />
-              </View>
-              {fieldErrors.offerAmount && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.offerAmount}</Text>
-              )}
-            </View>
-
-            {/* Reward Presets */}
-            <View style={styles.presetsRow}>
-              <Text style={styles.presetsLabel}>Presets:</Text>
-              {REWARD_PRESETS.map((amt) => (
-                <TouchableOpacity
-                  key={amt}
-                  style={[
-                    styles.presetPill,
-                    draft.offerAmount === amt && styles.presetPillActive,
-                  ]}
-                  onPress={() => {
-                    setDraft((p) => ({ ...p, offerAmount: amt }));
-                    if (fieldErrors.offerAmount) setFieldErrors((p) => ({ ...p, offerAmount: undefined }));
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.presetPillText,
-                      draft.offerAmount === amt && styles.presetPillTextActive,
-                    ]}
-                  >
-                    ₱{parseInt(amt, 10)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <RewardFields
+            fieldErrors={fieldErrors}
+            draft={draft}
+            setDraft={setDraft}
+            setFieldErrors={setFieldErrors}
+            busy={busy}
+          />
 
           {/* CARD 3: COMPLETION DEADLINE (DATE & TIME) */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons name="time-outline" size={18} color="#1E4D2B" />
-              <Text style={styles.cardTitle}>Completion Deadline</Text>
-            </View>
-
-            <Text style={styles.cardSubText}>
-              Set the required target date and time when the suyo must be completed.
-            </Text>
-
-            {/* Separate Date and Time Inputs */}
-            <View style={styles.dateTimeRow}>
-              {/* Date Input Box with Calendar Icon */}
-              <View style={styles.dateTimeCol}>
-                <Text
-                  style={[
-                    styles.fieldLabel,
-                    fieldErrors.deadlineDate && styles.fieldLabelError,
-                  ]}
-                >
-                  Target Date *
-                </Text>
-                <View
-                  style={[
-                    styles.dateTimeInputWrapper,
-                    fieldErrors.deadlineDate && styles.inputErrorBorder,
-                  ]}
-                >
-                  <TextInput
-                    ref={dateInputRef}
-                    style={styles.textInputInner}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={PLACEHOLDER_COLOR}
-                    value={draft.deadlineDate}
-                    onChangeText={(val) => {
-                      setDraft((p) => ({ ...p, deadlineDate: val }));
-                      if (fieldErrors.deadlineDate) setFieldErrors((p) => ({ ...p, deadlineDate: undefined }));
-                    }}
-                    maxLength={10}
-                    editable={!busy}
-                  />
-                  <TouchableOpacity
-                    style={styles.pickerTrailingButton}
-                    activeOpacity={0.65}
-                    onPress={() => setIsCalendarOpen(true)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open calendar date setter"
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={19}
-                      color={fieldErrors.deadlineDate ? '#DC2626' : '#1E4D2B'}
-                    />
-                  </TouchableOpacity>
-                </View>
-                {fieldErrors.deadlineDate && (
-                  <Text style={styles.fieldErrorText}>{fieldErrors.deadlineDate}</Text>
-                )}
-              </View>
-
-              {/* Time Input Box with Clock Icon on the right */}
-              <View style={styles.dateTimeCol}>
-                <Text
-                  style={[
-                    styles.fieldLabel,
-                    fieldErrors.deadlineTime && styles.fieldLabelError,
-                  ]}
-                >
-                  Target Time *
-                </Text>
-                <View
-                  style={[
-                    styles.dateTimeInputWrapper,
-                    fieldErrors.deadlineTime && styles.inputErrorBorder,
-                  ]}
-                >
-                  <TextInput
-                    ref={timeInputRef}
-                    style={styles.textInputInner}
-                    placeholder="HH:mm"
-                    placeholderTextColor={PLACEHOLDER_COLOR}
-                    value={draft.deadlineTime}
-                    onChangeText={(val) => {
-                      setDraft((p) => ({ ...p, deadlineTime: val }));
-                      if (fieldErrors.deadlineTime) setFieldErrors((p) => ({ ...p, deadlineTime: undefined }));
-                    }}
-                    maxLength={5}
-                    editable={!busy}
-                  />
-                  <TouchableOpacity
-                    style={styles.pickerTrailingButton}
-                    activeOpacity={0.65}
-                    onPress={() => setIsClockOpen(true)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open clock time setter"
-                  >
-                    <Ionicons
-                      name="time-outline"
-                      size={19}
-                      color={fieldErrors.deadlineTime ? '#DC2626' : '#1E4D2B'}
-                    />
-                  </TouchableOpacity>
-                </View>
-                {fieldErrors.deadlineTime && (
-                  <Text style={styles.fieldErrorText}>{fieldErrors.deadlineTime}</Text>
-                )}
-              </View>
-            </View>
-
-            {draft.deadlineDate && draft.deadlineTime ? (
-              <View style={styles.deadlineContainerPill}>
-                <Ionicons name="checkmark-circle" size={14} color="#1E4D2B" />
-                <Text style={styles.deadlinePillText}>
-                  Scheduled Deadline: {draft.deadlineDate} at {draft.deadlineTime}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          <DeadlineFields
+            fieldErrors={fieldErrors}
+            dateInputRef={dateInputRef}
+            draft={draft}
+            setDraft={setDraft}
+            setFieldErrors={setFieldErrors}
+            busy={busy}
+            setIsCalendarOpen={setIsCalendarOpen}
+            timeInputRef={timeInputRef}
+            setIsClockOpen={setIsClockOpen}
+          />
 
           {/* CARD 4: LOCATION & PIN */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons name="location-outline" size={18} color="#1E4D2B" />
-              <Text style={styles.cardTitle}>Location & Map Pin</Text>
-            </View>
-
-            {/* Address / Meeting landmark / Drop off */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldLabelRow}>
-                <Text
-                  style={[
-                    styles.fieldLabel,
-                    fieldErrors.location && styles.fieldLabelError,
-                  ]}
-                >
-                  Address/meeting landmark/Drop off *
-                </Text>
-                <Text style={styles.counterText}>{draft.location.length}/250</Text>
-              </View>
-              <View
-                style={[
-                  styles.inputWithIcon,
-                  fieldErrors.location && styles.inputErrorBorder,
-                ]}
-              >
-                <Ionicons
-                  name="location-sharp"
-                  size={18}
-                  color={fieldErrors.location ? '#DC2626' : '#1E4D2B'}
-                  style={styles.leadingIcon}
-                />
-                <TextInput
-                  style={styles.textInputInner}
-                  placeholder="Address, landmark, or drop-off..."
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.location}
-                  onChangeText={(val) => {
-                    setDraft((p) => ({ ...p, location: val }));
-                    if (fieldErrors.location) setFieldErrors((p) => ({ ...p, location: undefined }));
-                  }}
-                  maxLength={250}
-                  editable={!busy}
-                />
-              </View>
-              {fieldErrors.location && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.location}</Text>
-              )}
-            </View>
-
-            {/* Map Pin Picker */}
-            <LocationPicker
-              value={draft.coordinates}
-              disabled={busy}
-              onChange={(coordinates) => {
-                setDraft((previous) => ({ ...previous, coordinates }));
-              }}
-            />
-          </View>
+          <LocationFields
+            fieldErrors={fieldErrors}
+            draft={draft}
+            setDraft={setDraft}
+            setFieldErrors={setFieldErrors}
+            busy={busy}
+          />
 
           {/* CARD 6: CONTACT INFO & SPECIAL INSTRUCTIONS */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons name="call-outline" size={18} color="#1E4D2B" />
-              <Text style={styles.cardTitle}>Contact Info & Extra Instructions</Text>
-            </View>
-
-            {/* Contact Phone (Mandatory) */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldLabelRow}>
-                <Text
-                  style={[
-                    styles.fieldLabel,
-                    fieldErrors.contactPhone && styles.fieldLabelError,
-                  ]}
-                >
-                  Requester Contact Phone *
-                </Text>
-                <Text style={styles.requiredBadge}>Required</Text>
-              </View>
-              <View
-                style={[
-                  styles.inputWithIcon,
-                  fieldErrors.contactPhone && styles.inputErrorBorder,
-                ]}
-              >
-                <Ionicons
-                  name="call"
-                  size={18}
-                  color={fieldErrors.contactPhone ? '#DC2626' : '#1E4D2B'}
-                  style={styles.leadingIcon}
-                />
-                <TextInput
-                  ref={contactInputRef}
-                  style={styles.textInputInner}
-                  placeholder="e.g. 0917 842 1983"
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.contactPhone}
-                  onChangeText={(val) => {
-                    setDraft((p) => ({ ...p, contactPhone: val }));
-                    if (fieldErrors.contactPhone) setFieldErrors((p) => ({ ...p, contactPhone: undefined }));
-                  }}
-                  keyboardType="phone-pad"
-                  maxLength={20}
-                  editable={!busy}
-                />
-              </View>
-              {fieldErrors.contactPhone && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.contactPhone}</Text>
-              )}
-            </View>
-
-            {/* Extra Notes */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Additional Notes (Optional)</Text>
-                <Text style={styles.counterText}>{draft.notes.length}/1000</Text>
-              </View>
-              <View style={styles.textareaWrapper}>
-                <TextInput
-                  style={styles.textareaInput}
-                  placeholder="Call upon arrival at lobby guard, receipt required..."
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.notes}
-                  onChangeText={(val) => setDraft((p) => ({ ...p, notes: val }))}
-                  multiline
-                  numberOfLines={3}
-                  maxLength={1000}
-                  textAlignVertical="top"
-                  editable={!busy}
-                />
-              </View>
-            </View>
-          </View>
+          <ContactFields
+            fieldErrors={fieldErrors}
+            contactInputRef={contactInputRef}
+            draft={draft}
+            setDraft={setDraft}
+            setFieldErrors={setFieldErrors}
+            busy={busy}
+          />
 
           {/* LOAD ERROR BANNER */}
           {loadError ? (
             <View style={styles.errorCard}>
-              <Ionicons name="cloud-offline-outline" size={20} color="#DC2626" />
+              <Ionicons
+                name="cloud-offline-outline"
+                size={20}
+                color="#DC2626"
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.errorCardText}>{loadError}</Text>
-                <TouchableOpacity onPress={reload} style={styles.retryBtn}>
+                <TouchableOpacity
+                  onPress={reload}
+                  style={styles.retryBtn}
+                >
                   <Text style={styles.retryBtnText}>Retry Connection</Text>
                 </TouchableOpacity>
               </View>
@@ -1102,16 +286,28 @@ export default function RequestForm({ onPosted }) {
 
           {/* SUBMIT BUTTON */}
           <TouchableOpacity
-            style={[styles.submitButton, (busy || isLoading) && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              (busy || isLoading) && styles.submitButtonDisabled,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Post request"
             onPress={submit}
             disabled={busy || isLoading}
             activeOpacity={0.85}
           >
             {busy ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
             ) : (
               <>
-                <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
+                <Ionicons
+                  name="paper-plane"
+                  size={20}
+                  color="#FFFFFF"
+                />
                 <Text style={styles.submitButtonText}>
                   Post Suyo Request • ₱{draft.offerAmount || '0.00'}
                 </Text>
@@ -1121,75 +317,15 @@ export default function RequestForm({ onPosted }) {
         </View>
       </ScrollView>
 
-      {/* ========================================================== */}
       {/* SUCCESS CONFIRMATION MODAL                                */}
-      {/* ========================================================== */}
-      <Modal
-        visible={isSuccessModalOpen}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => {
-          setIsSuccessModalOpen(false);
-          onPosted();
-        }}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.successModalCard}>
-            <View style={styles.successIconCircle}>
-              <Ionicons name="checkmark-sharp" size={38} color="#FFFFFF" />
-            </View>
+      <RequestSuccessModal
+        isSuccessModalOpen={isSuccessModalOpen}
+        setIsSuccessModalOpen={setIsSuccessModalOpen}
+        onPosted={onPosted}
+        draft={draft}
+      />
 
-            <Text style={styles.successModalTitle}>Suyo Posted Successfully!</Text>
-            <Text style={styles.successModalSub}>
-              Your suyo request "{draft.title}" is now live. Nearby verified doers have been alerted.
-            </Text>
-
-            <View style={styles.successSummaryBox}>
-              <View style={styles.summaryRowItem}>
-                <Text style={styles.summaryLabel}>Category:</Text>
-                <Text style={styles.summaryValue}>{draft.category}</Text>
-              </View>
-              <View style={styles.summaryRowItem}>
-                <Text style={styles.summaryLabel}>Reward:</Text>
-                <Text style={[styles.summaryValue, { color: '#1E4D2B', fontWeight: '800' }]}>
-                  ₱{draft.offerAmount}
-                </Text>
-              </View>
-              <View style={styles.summaryRowItem}>
-                <Text style={styles.summaryLabel}>Contact:</Text>
-                <Text style={styles.summaryValue}>{draft.contactPhone}</Text>
-              </View>
-              <View style={styles.summaryRowItem}>
-                <Text style={styles.summaryLabel}>Deadline:</Text>
-                <Text style={styles.summaryValue}>{draft.deadlineDate} {draft.deadlineTime}</Text>
-              </View>
-              {draft.attachments && draft.attachments.length > 0 && (
-                <View style={styles.summaryRowItem}>
-                  <Text style={styles.summaryLabel}>Attachments:</Text>
-                  <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '700' }]}>
-                    {draft.attachments.length} item{draft.attachments.length > 1 ? 's' : ''} ({draft.attachments.filter((a) => a.type === 'image').length} photo{draft.attachments.filter((a) => a.type === 'image').length === 1 ? '' : 's'}, {draft.attachments.filter((a) => a.type === 'file').length} doc{draft.attachments.filter((a) => a.type === 'file').length === 1 ? '' : 's'})
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={styles.successDoneButton}
-              onPress={() => {
-                setIsSuccessModalOpen(false);
-                onPosted();
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.successDoneButtonText}>Return to Dashboard</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ========================================================== */}
       {/* CALENDAR LOOKALIKE SETTER MODAL                            */}
-      {/* ========================================================== */}
       <CalendarModal
         visible={isCalendarOpen}
         currentDate={draft.deadlineDate}
@@ -1202,9 +338,7 @@ export default function RequestForm({ onPosted }) {
         }}
       />
 
-      {/* ========================================================== */}
       {/* CLOCK LOOKALIKE SETTER MODAL                               */}
-      {/* ========================================================== */}
       <ClockModal
         visible={isClockOpen}
         currentTime={draft.deadlineTime}
@@ -1216,793 +350,6 @@ export default function RequestForm({ onPosted }) {
           }
         }}
       />
-
-      {/* ========================================================== */}
-      {/* FULLSCREEN IMAGE PREVIEW MODAL                             */}
-      {/* ========================================================== */}
-      {previewImage && (
-        <Modal
-          visible={!!previewImage}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setPreviewImage(null)}
-        >
-          <View style={styles.imagePreviewModalBackdrop}>
-            <TouchableOpacity
-              style={styles.imagePreviewCloseBtn}
-              onPress={() => setPreviewImage(null)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Ionicons name="close" size={26} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Image
-              source={{ uri: previewImage }}
-              style={styles.imagePreviewFull}
-              resizeMode="contain"
-            />
-          </View>
-        </Modal>
-      )}
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    paddingBottom: 50,
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    gap: 16,
-  },
-
-  /* HERO BANNER */
-  heroBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EBF5EF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#D4E8DC',
-    gap: 14,
-  },
-  heroIconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#CDE3D5',
-  },
-  heroTextCol: {
-    flex: 1,
-  },
-  heroTitle: {
-    fontSize: 16.5,
-    fontWeight: '800',
-    color: '#163523',
-    letterSpacing: -0.2,
-    marginBottom: 2,
-  },
-  heroSub: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: '#466151',
-  },
-
-  /* QUICK PRESETS */
-  templatesBlock: {
-    gap: 8,
-  },
-  templatesHeader: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#556E60',
-    letterSpacing: 0.2,
-    paddingHorizontal: 2,
-  },
-  templatesScroll: {
-    gap: 8,
-  },
-  templateChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
-    borderColor: '#D6E6DC',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  templateChipText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#1E4D2B',
-  },
-  templateChipCreate: {
-    backgroundColor: '#EBF5EF',
-    borderColor: '#A4D1B8',
-  },
-  templateChipCreateText: {
-    color: '#163523',
-    fontWeight: '800',
-  },
-
-  /* GENERAL ERROR BANNER */
-  generalErrorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 12,
-    padding: 12,
-  },
-  generalErrorText: {
-    fontSize: 12.5,
-    color: '#DC2626',
-    fontWeight: '600',
-    flex: 1,
-  },
-
-  /* CARDS */
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1.2,
-    borderColor: '#E1ECE5',
-    padding: 16,
-    gap: 14,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  cardWithErrors: {
-    borderColor: '#FECACA',
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F5F2',
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#163523',
-    letterSpacing: -0.2,
-  },
-  cardSubText: {
-    fontSize: 12,
-    color: '#556E60',
-    lineHeight: 16,
-    marginTop: -6,
-  },
-
-  /* FIELDS */
-  fieldBlock: {
-    gap: 6,
-  },
-  fieldLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#243D2F',
-  },
-  fieldLabelError: {
-    color: '#DC2626',
-    fontWeight: '800',
-  },
-  counterText: {
-    fontSize: 11,
-    color: '#8EA296',
-    fontWeight: '600',
-  },
-  requiredBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#DC2626',
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    minHeight: 48,
-  },
-  inputErrorBorder: {
-    borderColor: '#DC2626',
-    borderWidth: 1.6,
-    backgroundColor: '#FEF2F2',
-  },
-  currencySymbolBadgeError: {
-    backgroundColor: '#FEE2E2',
-    borderRightColor: '#DC2626',
-  },
-  fieldErrorText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#DC2626',
-    marginTop: 2,
-  },
-  leadingIcon: {
-    marginRight: 6,
-  },
-  textInputInner: {
-    flex: 1,
-    fontSize: 12.5,
-    color: '#163523',
-    fontWeight: '500',
-    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
-    paddingHorizontal: 0,
-    minWidth: 0,
-  },
-  textareaWrapper: {
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    padding: 12,
-    minHeight: 84,
-  },
-  textareaInput: {
-    fontSize: 12.5,
-    color: '#163523',
-    lineHeight: 18,
-  },
-  pickerTrailingButton: {
-    paddingLeft: 6,
-    paddingRight: 2,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* CATEGORY GRID */
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1.2,
-  },
-  categoryBtnActive: {
-    backgroundColor: '#1E4D2B',
-    borderColor: '#1E4D2B',
-    shadowColor: '#1E4D2B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  categoryBtnInactive: {
-    backgroundColor: '#F5FAF7',
-    borderColor: '#D4E4DC',
-  },
-  categoryBtnError: {
-    borderColor: '#DC2626',
-    backgroundColor: '#FEF2F2',
-  },
-  categoryBtnText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-  },
-  categoryBtnTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  categoryBtnTextInactive: {
-    color: '#264A35',
-  },
-
-  /* CURRENCY / REWARD */
-  currencyInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    overflow: 'hidden',
-    height: 50,
-  },
-  currencySymbolBadge: {
-    width: 48,
-    height: '100%',
-    backgroundColor: '#EBF5EF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#D4E2DA',
-  },
-  currencySymbolText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1E4D2B',
-  },
-  currencyInput: {
-    flex: 1,
-    paddingHorizontal: 14,
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  presetsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#637A6D',
-    marginRight: 2,
-  },
-  presetPill: {
-    backgroundColor: '#F3F8F5',
-    borderWidth: 1,
-    borderColor: '#D8E8DF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  presetPillActive: {
-    backgroundColor: '#1E4D2B',
-    borderColor: '#1E4D2B',
-  },
-  presetPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#2D4E3A',
-  },
-  presetPillTextActive: {
-    color: '#FFFFFF',
-  },
-
-  /* DATE & TIME ROW */
-  dateTimeRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dateTimeCol: {
-    flex: 1,
-    gap: 6,
-  },
-  dateTimeInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 48,
-  },
-  deadlineContainerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EBF5EF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  deadlinePillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#1E4D2B',
-  },
-
-  /* LOAD ERROR */
-  errorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 14,
-    padding: 12,
-  },
-  errorCardText: {
-    fontSize: 13,
-    color: '#DC2626',
-    fontWeight: '600',
-    flex: 1,
-  },
-  retryBtn: {
-    marginTop: 4,
-  },
-  retryBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#DC2626',
-    textDecorationLine: 'underline',
-  },
-
-  /* SUBMIT BUTTON */
-  submitButton: {
-    backgroundColor: '#1E4D2B',
-    borderRadius: 16,
-    height: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#1E4D2B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    marginTop: 4,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.2,
-  },
-
-  /* SUCCESS MODAL */
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  successModalCard: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  successIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#1E4D2B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  successModalTitle: {
-    fontSize: 21,
-    fontWeight: '800',
-    color: '#163523',
-    marginBottom: 8,
-  },
-  successModalSub: {
-    fontSize: 13,
-    color: '#556E60',
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 16,
-  },
-  successSummaryBox: {
-    width: '100%',
-    backgroundColor: '#F5FAF7',
-    borderWidth: 1,
-    borderColor: '#E1ECE5',
-    borderRadius: 14,
-    padding: 12,
-    gap: 6,
-    marginBottom: 20,
-  },
-  summaryRowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#637A6D',
-    fontWeight: '600',
-  },
-  summaryValue: {
-    fontSize: 12.5,
-    color: '#163523',
-    fontWeight: '700',
-    maxWidth: '60%',
-  },
-  successDoneButton: {
-    backgroundColor: '#1E4D2B',
-    width: '100%',
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successDoneButtonText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-
-  /* PHOTOS & FILE ATTACHMENTS STYLES */
-  attachCardHeaderTitleRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  attachCountBadge: {
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  attachCountText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#15803D',
-  },
-  attachActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  attachActionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderRadius: 14,
-    borderWidth: 1.2,
-    backgroundColor: '#FFFFFF',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  attachActionBtnDisabled: {
-    opacity: 0.45,
-  },
-  attachActionBtnCamera: {
-    borderColor: '#C6EAD3',
-    backgroundColor: '#F6FCF8',
-  },
-  attachActionBtnGallery: {
-    borderColor: '#BAE6FD',
-    backgroundColor: '#F0F9FF',
-  },
-  attachActionBtnFiles: {
-    borderColor: '#FDE68A',
-    backgroundColor: '#FFFDF5',
-  },
-  attachActionIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  attachActionBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 1,
-  },
-  attachActionBtnSub: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  attachmentLoadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    marginTop: 4,
-  },
-  attachmentLoadingText: {
-    fontSize: 12,
-    color: '#1E4D2B',
-    fontWeight: '600',
-  },
-  attachmentListWrapper: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#ECF4EF',
-  },
-  attachListHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  attachmentListTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  attachTapHint: {
-    fontSize: 10.5,
-    color: '#658172',
-    fontStyle: 'italic',
-  },
-  attachmentListGrid: {
-    gap: 8,
-  },
-  attachImageItemCard: {
-    position: 'relative',
-    marginRight: 8,
-  },
-  attachImageItemInner: {
-    position: 'relative',
-    width: 90,
-    height: 90,
-  },
-  attachImageThumbWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1.2,
-    borderColor: '#CBD5E1',
-    position: 'relative',
-  },
-  attachImageThumb: {
-    width: '100%',
-    height: '100%',
-  },
-  attachImageBadge: {
-    position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  attachImageBadgeText: {
-    fontSize: 9,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  attachRemoveBtn: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#DC2626',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
-    zIndex: 10,
-  },
-  attachDocItemCard: {
-    backgroundColor: '#FAFDFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D4E2DA',
-    padding: 10,
-  },
-  attachDocCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  attachDocIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attachDocMeta: {
-    flex: 1,
-  },
-  attachDocName: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#163523',
-    marginBottom: 2,
-  },
-  attachDocSize: {
-    fontSize: 10.5,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  attachDocRemoveBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* FULLSCREEN IMAGE PREVIEW */
-  imagePreviewModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.94)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  imagePreviewCloseBtn: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 20,
-  },
-  imagePreviewFull: {
-    width: '100%',
-    height: '80%',
-  },
-});

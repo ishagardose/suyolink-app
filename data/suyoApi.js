@@ -1,5 +1,9 @@
 import { supabase } from '../lib/supabase';
-import { fromPublicRow, fromDetailPayload, fromTransactionRow } from './supabaseRequests';
+import {
+  fromPublicRow,
+  fromDetailPayload,
+  fromTransactionRow,
+} from './supabaseRequests';
 
 /**
  * Standardized user-safe error message mapper.
@@ -21,6 +25,7 @@ export async function listRequests({
   scope = 'browse',
   sort = 'newest',
   origin = null,
+  radiusKm = null,
 } = {}) {
   if (!supabase) throw new Error('Database client not initialized');
 
@@ -32,6 +37,7 @@ export async function listRequests({
     p_sort: sort || 'newest',
     p_origin_latitude: origin?.latitude ?? null,
     p_origin_longitude: origin?.longitude ?? null,
+    p_radius_km: radiusKm,
   });
 
   if (error) handleApiError(error, 'Failed to fetch task list.');
@@ -114,7 +120,11 @@ export async function getLastLocation() {
 /**
  * Save user's browsing location.
  */
-export async function saveLastLocation({ latitude, longitude, source = 'manual' }) {
+export async function saveLastLocation({
+  latitude,
+  longitude,
+  source = 'manual',
+}) {
   if (!supabase) throw new Error('Database client not initialized');
 
   const { data, error } = await supabase.rpc('save_last_location', {

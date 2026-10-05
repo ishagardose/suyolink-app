@@ -25,8 +25,7 @@ export const STATUS_LABELS = {
 
 export function parseDeadline(value) {
   const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(value.trim());
-  if (!match)
-    throw new Error('Choose a deadline date and time.');
+  if (!match) throw new Error('Choose a deadline date and time.');
   const [, year, month, day, hour, minute] = match.map(Number);
   const date = new Date(year, month - 1, day, hour, minute);
   if (
@@ -66,7 +65,7 @@ export function createRequest(draft, user, now = Date.now()) {
     Number(amount) > 1000000
   ) {
     throw new Error(
-      'Enter an offer from PHP 0.01 to PHP 1,000,000, with at most two decimal places.'
+      'Enter an offer from PHP 0.01 to PHP 1,000,000, with at most two decimal places.',
     );
   }
   const deadline = parseDeadline(draft.deadline);
@@ -75,9 +74,11 @@ export function createRequest(draft, user, now = Date.now()) {
 
   // Validate private fields if present or required
   const publicLocation = (draft.publicLocation || draft.location || '').trim();
-  const exactAddress = draft.exactAddress !== undefined ? draft.exactAddress.trim() : null;
+  const exactAddress =
+    draft.exactAddress !== undefined ? draft.exactAddress.trim() : null;
   const phone = draft.phone !== undefined ? draft.phone.trim() : null;
-  const coordinates = draft.coordinates !== undefined ? draft.coordinates : null;
+  const coordinates =
+    draft.coordinates !== undefined ? draft.coordinates : null;
 
   if (exactAddress !== null && (!exactAddress || exactAddress.length > 500)) {
     throw new Error('Enter an exact address (up to 500 characters).');
@@ -143,7 +144,7 @@ export function readRequests(raw) {
         typeof r.id !== 'string' ||
         typeof r.requesterEmail !== 'string' ||
         !['title', 'details', 'location', 'notes', 'requesterName'].every(
-          (key) => typeof r[key] === 'string'
+          (key) => typeof r[key] === 'string',
         ) ||
         !CATEGORIES.includes(r.category) ||
         !STATUS_LABELS[r.status] ||
@@ -151,7 +152,7 @@ export function readRequests(raw) {
         r.offerCentavos <= 0 ||
         !Number.isFinite(Date.parse(r.deadline)) ||
         !Number.isFinite(Date.parse(r.createdAt)) ||
-        !Array.isArray(r.applicants)
+        !Array.isArray(r.applicants),
     )
   )
     throw new Error('Saved requests could not be read.');

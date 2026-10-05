@@ -10,6 +10,9 @@ for (const [cli, args] of [
   [require.resolve('expo/bin/cli'), ['export', '--platform', 'web', '--clear']],
   [require.resolve('@playwright/test/cli'), ['test', ...process.argv.slice(2)]],
 ]) {
-  const result = spawnSync(process.execPath, [cli, ...args], { env, stdio: 'inherit' });
+  const result = spawnSync(process.execPath, [cli, ...args], {
+    env,
+    stdio: 'inherit',
+  });
   if (result.status !== 0) process.exit(result.status || 1);
 }

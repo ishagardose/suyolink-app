@@ -11,8 +11,10 @@ export default function PrivateTaskDetails({ details }) {
   const [copied, setCopied] = useState(false);
 
   // Private fields only exist if backend returned them
-  const hasExactAddress = details?.exactAddress !== null && details?.exactAddress !== undefined;
-  const hasContactPhone = details?.contactPhone !== null && details?.contactPhone !== undefined;
+  const hasExactAddress =
+    details?.exactAddress !== null && details?.exactAddress !== undefined;
+  const hasContactPhone =
+    details?.contactPhone !== null && details?.contactPhone !== undefined;
 
   if (!hasExactAddress && !hasContactPhone) {
     return null;
@@ -33,9 +35,18 @@ export default function PrivateTaskDetails({ details }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+      ]}
+    >
       <View style={styles.headerRow}>
-        <Ionicons name="lock-open-outline" size={16} color={colors.primary} />
+        <Ionicons
+          name="lock-open-outline"
+          size={16}
+          color={colors.primary}
+        />
         <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>
           Private Task Information
         </ThemedText>
@@ -62,7 +73,7 @@ export default function PrivateTaskDetails({ details }) {
               style={styles.actionBtn}
             />
             <ThemedButton
-              title={copied ? "Copied!" : "Copy"}
+              title={copied ? 'Copied!' : 'Copy'}
               variant="secondary"
               onPress={copyPhone}
               style={styles.actionBtn}

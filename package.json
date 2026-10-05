@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
+    "format": "prettier --write \"**/*.{js,jsx,cjs,ts,json,sql}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,cjs,ts,json,sql}\"",
     "test": "node --test tests/suyoRequests.test.cjs tests/geo.test.cjs tests/urgency.test.cjs && node tests/supabase-schema.test.cjs",
     "start": "expo start",
     "android": "expo run:android",
@@ -25,6 +27,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.12",
     "expo-location": "~19.0.8",
+    "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
@@ -43,6 +46,10 @@
   "private": true,
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@types/react": "^19.3.0",
+    "prettier": "3.9.9",
+    "prettier-plugin-sql-cst": "0.22.1",
+    "typescript": "^5.9.3"
   }
 }
