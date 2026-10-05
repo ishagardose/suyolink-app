@@ -98,11 +98,18 @@ export default function AppMenu({
           'notifications',
         ],
         [
+          'wallet',
+          'wallet-outline',
+          'Wallet',
+          '/wallet',
+        ],
+        [
           'transactions',
           'receipt-outline',
           'Transaction history',
           '/transactions',
         ],
+        ['map', 'navigate-outline', 'Live Tracking', '/map'],
         ['location', 'location-outline', 'Change area', '/set-location'],
       ],
     ],
