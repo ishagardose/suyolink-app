@@ -23,76 +23,20 @@ import { supabase } from '../../lib/supabase';
 import AppMenu from '../navigation/AppMenu';
 import ThemedText from '../themed/ThemedText';
 
-// Curated feedbacks from Requesters for Doers (Rich fallback)
-const REQUESTER_FEEDBACKS_FOR_DOER = [
-  {
-    id: 'FB-1',
-    author: 'Atty. Rafael Cruz',
-    rating: 5.0,
-    date: 'Yesterday · 4:15 PM',
-    rateMarks: ['Punctual Delivery', 'Polite & Professional', 'Careful Handling'],
-    comment:
-      'Super reliable and very swift with document delivery. Handled the notarized papers with utmost care and gave clear updates throughout. Highly recommended!',
-  },
-  {
-    id: 'FB-2',
-    author: 'Maria Clarissa',
-    rating: 5.0,
-    date: 'Sep 27, 2026',
-    rateMarks: ['Clear Communication', 'Followed Instructions', 'Fast Completion'],
-    comment:
-      'Bought all exact grocery items from the list, checked expiration dates as requested, and delivered ahead of schedule. Very polite!',
-  },
-  {
-    id: 'FB-3',
-    author: 'Kenneth Gomez',
-    rating: 5.0,
-    date: 'Sep 21, 2026',
-    rateMarks: ['Trustworthy & Reliable', 'Punctual Delivery'],
-    comment:
-      'Waited patiently in line for utility bill payment and handed over validated receipts promptly. Excellent neighborly service.',
-  },
-  {
-    id: 'FB-4',
-    author: 'Elena Soriano',
-    rating: 4.8,
-    date: 'Sep 15, 2026',
-    rateMarks: ['Careful Handling', 'Responsive Communication'],
-    comment:
-      'Very accommodating courier. Promptly answered my calls when clarifying delivery location. Will hire again!',
-  },
-];
-
-// Curated feedbacks from Doers/Community for Requesters (Rich fallback)
-const COMMUNITY_FEEDBACKS_FOR_REQUESTER = [
-  {
-    id: 'FBR-1',
-    author: 'Carlos Dalisay',
-    rating: 5.0,
-    date: 'Yesterday · 5:20 PM',
-    rateMarks: ['Prompt Payment', 'Clear Instructions', 'Respectful & Courteous'],
-    comment:
-      'Clear drop-off directions at the 4th floor reception. Payment was released immediately upon proof submission. Very smooth coordination!',
-  },
-  {
-    id: 'FBR-2',
-    author: 'Reynaldo Bautista',
-    rating: 5.0,
-    date: 'Sep 25, 2026',
-    rateMarks: ['Accurate Location Details', 'Prompt Payment', 'Highly Recommended'],
-    comment:
-      'Super responsive client. Exact landmark provided and was waiting at the lobby for the parcel handoff.',
-  },
-  {
-    id: 'FBR-3',
-    author: 'Jenny Morales',
-    rating: 4.9,
-    date: 'Sep 18, 2026',
-    rateMarks: ['Respectful & Courteous', 'Trustworthy Requester'],
-    comment:
-      'Pleasant and professional interaction. Generous tip and fair compensation. 10/10 requester.',
-  },
-];
+function formatFeedbackDate(dateStr) {
+  if (!dateStr) return 'Recently';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'Recently';
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (isToday) return `Today · ${timeStr}`;
+  if (isYesterday) return `Yesterday · ${timeStr}`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -100,7 +44,11 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { user, logout, updateProfile, isProfileReady } = useAuth();
-  const { requests } = useSuyos() || { requests: [] };
+  const {
+    requests = [],
+    transactions = [],
+    ratings: contextRatings = [],
+  } = useSuyos() || {};
 
   const targetId = params.userId || user?.id;
   const own = !params.userId || params.userId === user?.id;
@@ -148,12 +96,12 @@ export default function AccountScreen() {
         .single(),
       supabase
         .from('ratings')
-        .select('id,score,comment,created_at')
+        .select('id,score,comment,created_at,reviewer_id,request_id,provider_id')
         .eq('provider_id', targetId)
         .order('created_at', { ascending: false }),
       own ? AsyncStorage.getItem(`@suyolink/profile_meta_${targetId}`) : Promise.resolve(null),
     ])
-      .then(([profRes, contRes, rateRes, metaRes]) => {
+      .then(async ([profRes, contRes, rateRes, metaRes]) => {
         if (!active) return;
         if (profRes.data?.full_name) {
           setProfileName(profRes.data.full_name);
@@ -162,7 +110,37 @@ export default function AccountScreen() {
           setProfilePhone(contRes.data.phone);
         }
         if (rateRes.data && rateRes.data.length > 0) {
-          setReviews(rateRes.data);
+          const rawList = rateRes.data;
+          const reviewerIds = [
+            ...new Set(rawList.map((r) => r.reviewer_id).filter(Boolean)),
+          ];
+          if (reviewerIds.length > 0) {
+            try {
+              const { data: profs } = await supabase
+                .from('profiles')
+                .select('id,full_name')
+                .in('id', reviewerIds);
+              if (active && profs && profs.length > 0) {
+                const nameMap = {};
+                profs.forEach((p) => {
+                  nameMap[p.id] = p.full_name;
+                });
+                const enriched = rawList.map((r) => ({
+                  ...r,
+                  reviewerName: nameMap[r.reviewer_id] || null,
+                }));
+                setReviews(enriched);
+              } else if (active) {
+                setReviews(rawList);
+              }
+            } catch (_) {
+              if (active) setReviews(rawList);
+            }
+          } else {
+            setReviews(rawList);
+          }
+        } else if (rateRes.data) {
+          setReviews([]);
         }
         if (metaRes) {
           try {
@@ -212,17 +190,99 @@ export default function AccountScreen() {
         r.status === 'completed'
     ).length;
     if (myDone > 0) return String(myDone);
-    return own ? '48' : '34';
-  }, [requests, targetId, params, own]);
+    if (own && Array.isArray(transactions) && transactions.length > 0) {
+      return String(transactions.length);
+    }
+    return '0';
+  }, [requests, targetId, params, own, transactions]);
 
-  // Dynamic Rating calculation
+  // Combine and format all actual feedback items
+  const dynamicFeedbacks = useMemo(() => {
+    const list = [...reviews];
+
+    // If own profile and direct query returned nothing, check transactions with ratings
+    if (own && list.length === 0 && Array.isArray(transactions)) {
+      transactions.forEach((t) => {
+        if (t.rating_score != null) {
+          list.push({
+            id: `tx-rating-${t.request_id}`,
+            score: t.rating_score,
+            comment: t.rating_comment || '',
+            created_at: t.completed_at,
+            reviewer_id: t.other_user_id,
+            reviewerName: t.other_user_name,
+            request_id: t.request_id,
+            taskTitle: t.title,
+          });
+        }
+      });
+    }
+
+    // Check contextRatings as fallback if list is still empty
+    if (list.length === 0 && Array.isArray(contextRatings)) {
+      const fromContext = contextRatings.filter(
+        (r) => r.provider_id === targetId || (!r.provider_id && !targetId)
+      );
+      fromContext.forEach((r) => list.push(r));
+    }
+
+    // Deduplicate by id or (request_id + reviewer_id)
+    const seen = new Set();
+    const deduped = [];
+    for (const item of list) {
+      const key = item.id || `${item.request_id}_${item.reviewer_id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(item);
+      }
+    }
+
+    return deduped.map((item, idx) => {
+      const req = (requests || []).find((r) => r.id === item.request_id);
+      const tx = (transactions || []).find((t) => t.request_id === item.request_id);
+      const taskTitle = item.taskTitle || tx?.title || req?.title || null;
+
+      let authorName =
+        item.reviewerName ||
+        item.reviewer?.full_name ||
+        tx?.other_user_name;
+
+      if (!authorName && req) {
+        if (req.requesterId === item.reviewer_id && req.requesterName) {
+          authorName = req.requesterName;
+        } else if (req.providerId === item.reviewer_id && req.providerName) {
+          authorName = req.providerName;
+        }
+      }
+
+      if (!authorName) {
+        authorName = 'Verified Neighbor';
+      }
+
+      return {
+        id: item.id || `feedback-${idx}`,
+        author: authorName,
+        score: Number(item.score || 5),
+        comment: (item.comment || '').trim(),
+        created_at: item.created_at,
+        taskTitle,
+      };
+    });
+  }, [reviews, own, transactions, contextRatings, targetId, requests]);
+
+  // Dynamic Rating calculation from actual reviews
   const displayRating = useMemo(() => {
-    if (reviews.length > 0) {
-      const avg = reviews.reduce((sum, r) => sum + (r.score || 5), 0) / reviews.length;
+    if (dynamicFeedbacks.length > 0) {
+      const avg =
+        dynamicFeedbacks.reduce((sum, item) => sum + item.score, 0) /
+        dynamicFeedbacks.length;
       return avg.toFixed(1);
     }
-    return (params.rating || '4.9').replace(/[★*]/g, '').trim();
-  }, [reviews, params.rating]);
+    if (params.rating) {
+      return String(params.rating).replace(/[★*]/g, '').trim();
+    }
+    return '5.0';
+  }, [dynamicFeedbacks, params.rating]);
 
   const displayBio =
     profileBio ||
@@ -230,11 +290,6 @@ export default function AccountScreen() {
     (own
       ? 'Just a helpful neighbor. Ready to run grocery suyos, assist with light moving, or pet-sit in Quezon City. 🇵🇭'
       : 'Verified SuyoLink community member. Active requester and helper around the area.');
-
-  const isAttyRafael = displayName.toLowerCase().includes('rafael');
-  const activeFeedbacks = isAttyRafael
-    ? COMMUNITY_FEEDBACKS_FOR_REQUESTER
-    : REQUESTER_FEEDBACKS_FOR_DOER;
 
   const getInitials = (n) => {
     if (!n) return 'AR';
@@ -466,67 +521,8 @@ export default function AccountScreen() {
           </View>
 
           <View style={styles.feedbackList}>
-            {/* If live reviews exist in Supabase, render them */}
-            {reviews.length > 0 ? (
-              reviews.map((item) => (
-                <View key={item.id} style={styles.feedbackCard}>
-                  <View style={styles.feedbackCardHeader}>
-                    <View style={styles.feedbackAuthorRow}>
-                      <View style={styles.feedbackAvatarCircle}>
-                        <Text style={styles.feedbackAvatarInitials}>
-                          {getInitials(item.comment ? 'Verified Member' : 'Requester')}
-                        </Text>
-                      </View>
-                      <View>
-                        <Text style={styles.feedbackAuthorName}>
-                          {item.comment ? 'Verified Coordinator' : 'Requester'}
-                        </Text>
-                        <Text style={styles.feedbackDateText}>
-                          {item.created_at
-                            ? new Date(item.created_at).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })
-                            : 'Recent'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.feedbackStarsRow}>
-                      {[...Array(5)].map((_, i) => (
-                        <Ionicons
-                          key={i}
-                          name={i < Math.floor(item.score || 5) ? 'star' : 'star-outline'}
-                          size={12}
-                          color="#F59E0B"
-                          style={{ marginLeft: 1 }}
-                        />
-                      ))}
-                      <Text style={styles.feedbackCardRatingNum}>
-                        {Number(item.score || 5).toFixed(1)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rateMarksRow}>
-                    <View style={styles.rateMarkChip}>
-                      <Ionicons name="checkmark-circle" size={11} color="#059669" />
-                      <Text style={styles.rateMarkChipText}>Verified Suyo</Text>
-                    </View>
-                    <View style={styles.rateMarkChip}>
-                      <Ionicons name="checkmark-circle" size={11} color="#059669" />
-                      <Text style={styles.rateMarkChipText}>Community Confirmed</Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.feedbackCommentText}>
-                    "{item.comment || 'Prompt, courteous and excellent task coordination.'}"
-                  </Text>
-                </View>
-              ))
-            ) : (
-              /* Fallback rich feedbacks */
-              activeFeedbacks.map((item) => (
+            {dynamicFeedbacks.length > 0 ? (
+              dynamicFeedbacks.map((item) => (
                 <View key={item.id} style={styles.feedbackCard}>
                   <View style={styles.feedbackCardHeader}>
                     <View style={styles.feedbackAuthorRow}>
@@ -537,39 +533,72 @@ export default function AccountScreen() {
                       </View>
                       <View>
                         <Text style={styles.feedbackAuthorName}>{item.author}</Text>
-                        <Text style={styles.feedbackDateText}>{item.date}</Text>
+                        <Text style={styles.feedbackDateText}>
+                          {formatFeedbackDate(item.created_at)}
+                        </Text>
                       </View>
                     </View>
                     <View style={styles.feedbackStarsRow}>
-                      {[...Array(5)].map((_, i) => (
+                      {[1, 2, 3, 4, 5].map((star) => (
                         <Ionicons
-                          key={i}
-                          name={i < Math.floor(item.rating) ? 'star' : 'star-half'}
+                          key={star}
+                          name={star <= Math.round(item.score) ? 'star' : 'star-outline'}
                           size={12}
                           color="#F59E0B"
                           style={{ marginLeft: 1 }}
                         />
                       ))}
                       <Text style={styles.feedbackCardRatingNum}>
-                        {Number(item.rating).toFixed(1)}
+                        {Number(item.score).toFixed(1)}
                       </Text>
                     </View>
                   </View>
 
-                  {item.rateMarks && item.rateMarks.length > 0 && (
-                    <View style={styles.rateMarksRow}>
-                      {item.rateMarks.map((mark, idx) => (
-                        <View key={idx} style={styles.rateMarkChip}>
-                          <Ionicons name="checkmark-circle" size={11} color="#059669" />
-                          <Text style={styles.rateMarkChipText}>{mark}</Text>
-                        </View>
-                      ))}
+                  <View style={styles.rateMarksRow}>
+                    <View style={styles.rateMarkChip}>
+                      <Ionicons name="checkmark-circle" size={11} color="#059669" />
+                      <Text style={styles.rateMarkChipText}>Verified Suyo</Text>
                     </View>
-                  )}
+                    {item.taskTitle ? (
+                      <View
+                        style={[
+                          styles.rateMarkChip,
+                          { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
+                        ]}
+                      >
+                        <Ionicons name="pricetag-outline" size={11} color="#15803D" />
+                        <Text
+                          style={[styles.rateMarkChipText, { maxWidth: 180 }]}
+                          numberOfLines={1}
+                        >
+                          {item.taskTitle}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.rateMarkChip}>
+                        <Ionicons name="shield-checkmark-outline" size={11} color="#059669" />
+                        <Text style={styles.rateMarkChipText}>Community Confirmed</Text>
+                      </View>
+                    )}
+                  </View>
 
-                  <Text style={styles.feedbackCommentText}>"{item.comment}"</Text>
+                  <Text style={styles.feedbackCommentText}>
+                    {item.comment || `Rated ${item.score} out of 5 stars.`}
+                  </Text>
                 </View>
               ))
+            ) : (
+              <View style={styles.feedbackEmptyCard}>
+                <View style={styles.feedbackEmptyIconCircle}>
+                  <Ionicons name="chatbubbles-outline" size={24} color="#2D5A3C" />
+                </View>
+                <Text style={styles.feedbackEmptyTitle}>No reviews yet</Text>
+                <Text style={styles.feedbackEmptySub}>
+                  {own
+                    ? 'Ratings and comments from requesters and doers will appear here once you complete suyos.'
+                    : 'This community member has not received any reviews yet.'}
+                </Text>
+              </View>
             )}
           </View>
         </View>
@@ -1089,6 +1118,41 @@ const styles = StyleSheet.create({
     color: '#344E3F',
     lineHeight: 18,
     fontStyle: 'italic',
+  },
+
+  /* EMPTY FEEDBACK STATE */
+  feedbackEmptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2EBE5',
+    borderStyle: 'dashed',
+  },
+  feedbackEmptyIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EAF3EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  feedbackEmptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#163523',
+    marginBottom: 4,
+  },
+  feedbackEmptySub: {
+    fontSize: 12.5,
+    color: '#638070',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
   },
 
   /* SIGN OUT */
