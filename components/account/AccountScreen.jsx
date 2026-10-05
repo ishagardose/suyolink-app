@@ -98,7 +98,7 @@ export default function AccountScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
-  const { colors, themeMode, setThemeMode } = useTheme();
+  const { colors } = useTheme();
   const { user, logout, updateProfile, isProfileReady } = useAuth();
   const { requests } = useSuyos() || { requests: [] };
 
@@ -294,7 +294,7 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top', 'left', 'right']}>
-      <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style="dark" />
 
       {/* TOP HEADER BAR */}
       <View style={styles.headerBar}>
@@ -447,62 +447,6 @@ export default function AccountScreen() {
           )}
         </View>
 
-        {/* PREFERENCES / APPEARANCE SECTION (For Own Account) */}
-        {own ? (
-          <View style={styles.appearanceSectionCard}>
-            <Text style={styles.appearanceSectionHeading}>Make it feel like you</Text>
-            <Text style={styles.appearanceSubheading}>Choose your preferred appearance.</Text>
-            <View
-              accessibilityRole="radiogroup"
-              accessibilityLabel="Appearance"
-              style={styles.appearanceOptionsRow}
-            >
-              {[
-                ['light', 'sunny-outline', 'Light appearance'],
-                ['dark', 'moon-outline', 'Dark appearance'],
-                ['system', 'phone-portrait-outline', 'System appearance'],
-              ].map(([mode, icon, radioLabel]) => (
-                <TouchableOpacity
-                  key={mode}
-                  accessibilityRole="radio"
-                  accessibilityLabel={radioLabel}
-                  aria-checked={themeMode === mode}
-                  accessibilityState={{ checked: themeMode === mode }}
-                  onPress={() =>
-                    setThemeMode(mode).catch((e) => setError(e.message))
-                  }
-                  style={[
-                    styles.appearanceOptionBox,
-                    themeMode === mode && styles.appearanceOptionBoxActive,
-                  ]}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={icon}
-                    size={22}
-                    color={themeMode === mode ? '#1E4D2B' : '#6A8374'}
-                  />
-                  <Text
-                    style={[
-                      styles.appearanceOptionText,
-                      themeMode === mode && styles.appearanceOptionTextActive,
-                    ]}
-                  >
-                    {mode[0].toUpperCase() + mode.slice(1)}
-                  </Text>
-                  {themeMode === mode ? (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={14}
-                      color="#1E4D2B"
-                      style={{ position: 'absolute', top: 6, right: 6 }}
-                    />
-                  ) : null}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        ) : null}
 
         {/* REQUESTERS' FEEDBACK & COMMENTS SECTION WITH RATE MARKS */}
         <View style={styles.feedbackSection}>
@@ -1024,55 +968,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  /* PREFERENCES & APPEARANCE */
-  appearanceSectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E2EBE5',
-    padding: 18,
-    marginTop: 18,
-  },
-  appearanceSectionHeading: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  appearanceSubheading: {
-    fontSize: 12,
-    color: '#658172',
-    marginTop: 3,
-    marginBottom: 14,
-  },
-  appearanceOptionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  appearanceOptionBox: {
-    flex: 1,
-    backgroundColor: '#F8FAF9',
-    borderRadius: 14,
-    borderWidth: 1.2,
-    borderColor: '#DFECE4',
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    gap: 5,
-  },
-  appearanceOptionBoxActive: {
-    backgroundColor: '#EDF6F1',
-    borderColor: '#1E4D2B',
-  },
-  appearanceOptionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#526E5E',
-  },
-  appearanceOptionTextActive: {
-    fontWeight: '800',
-    color: '#163523',
-  },
 
   /* FEEDBACK & RATINGS SECTION */
   feedbackSection: {

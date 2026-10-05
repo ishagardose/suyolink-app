@@ -36,25 +36,14 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const value = useMemo(() => {
-    const scheme =
-      themeMode === 'system' ? (deviceScheme ?? 'light') : themeMode;
     return {
-      themeMode,
-      isLoading,
-      isDark: scheme === 'dark',
-      colors: scheme === 'dark' ? dark : light,
-      setThemeMode: (mode) => {
-        if (!MODES.includes(mode))
-          return Promise.reject(new Error('Invalid theme mode'));
-        // Serialize writes so rapid changes persist the last selection.
-        const write = writes.current
-          .catch(() => {})
-          .then(() => AsyncStorage.setItem(STORAGE_KEY, mode));
-        writes.current = write;
-        return write.then(() => setMode(mode));
-      },
+      themeMode: 'light',
+      isLoading: false,
+      isDark: false,
+      colors: light,
+      setThemeMode: () => Promise.resolve(),
     };
-  }, [themeMode, deviceScheme, isLoading]);
+  }, []);
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

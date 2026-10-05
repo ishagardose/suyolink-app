@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import ThemedButton from '../themed/ThemedButton';
 const SIDEBAR_WIDTH = Math.min(Dimensions.get('window').width * 0.82, 340);
 export default function Sidebar({ visible, onClose, onEditProfile }) {
-  const { colors, themeMode, setThemeMode } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user: userProfile, logout, isProfileReady, profileError } = useAuth();
   const router = useRouter();
@@ -107,17 +107,7 @@ export default function Sidebar({ visible, onClose, onEditProfile }) {
                 {profileError ? <ThemedText tone="danger" accessibilityRole="alert">{profileError}</ThemedText> : null}
 
                 <View style={styles.sidebarDivider} />
-                <ThemedText style={styles.sidebarSectionTitle}>Preferences</ThemedText>
-                <ThemedText style={styles.menuItemTitle}>Appearance</ThemedText>
-                <View style={{ flexDirection: 'row', gap: 6, marginVertical: 12 }}>
-                  {['light', 'dark', 'system'].map((mode) => (
-                    <ThemedButton key={mode} title={mode[0].toUpperCase() + mode.slice(1)}
-                      variant={themeMode === mode ? 'primary' : 'secondary'} style={{ flex: 1, paddingHorizontal: 6 }}
-                      accessibilityLabel={mode + ' theme'} accessibilityState={{ selected: themeMode === mode }}
-                      onPress={() => setThemeMode(mode).catch(() => setError('Could not save appearance. Please try again.'))} />
-                  ))}
-                </View>
-                {error ? <ThemedText accessibilityRole="alert" style={{ color: colors.danger }}>{error}</ThemedText> : null}
+                <ThemedText style={styles.sidebarSectionTitle}>Menu & Navigation</ThemedText>
 
 
                 <TouchableOpacity
