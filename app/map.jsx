@@ -47,14 +47,13 @@ export default function MapScreen() {
       (r) =>
         (r.providerId === user?.id || r.requesterId === user?.id) &&
         ["assigned", "in_progress"].includes(r.status)
-    ) ||
-    (requests || [])[0];
+    );
 
   const own = activeTask?.providerId === user?.id;
   const doerName = own
     ? activeTask?.requesterName || "Requester"
-    : activeTask?.providerName || "Alex M.";
-  const suyoTitle = activeTask?.title || "Drop off documents at Unit 402";
+    : activeTask?.providerName || "Assigned Doer";
+  const suyoTitle = activeTask?.title || "Active Suyo";
 
   const destination = activeTask && {
     latitude: activeTask.exactLatitude ?? activeTask.latitude,
@@ -131,75 +130,97 @@ export default function MapScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.mapArea}>
-        <Image
-          source={require("../assets/hunter_green_tracking.jpg")}
-          style={styles.mapIllustration}
-          resizeMode="contain"
-        />
-        <View style={styles.mapOverlayCard}>
-          <View style={styles.liveIndicatorRow}>
-            <View style={styles.pulsingDot} />
-            <Text style={styles.liveText}>LIVE TRACKING</Text>
+      {!activeTask ? (
+        <View style={styles.emptyMapContainer}>
+          <View style={styles.emptyMapCircle}>
+            <Ionicons name="navigate-circle-outline" size={56} color="#1E4D2B" />
           </View>
-          <Text style={styles.trackingLabel}>{trackingText}</Text>
-          <Text style={styles.trackingSub}>Suyo: {suyoTitle}</Text>
-        </View>
-      </View>
-
-      <View style={styles.bottomPanel}>
-        <View style={styles.doerInfoRow}>
-          <View style={styles.doerAvatarCircle}>
-            <Ionicons name="person" size={22} color="#FFFFFF" />
-          </View>
-          <View style={styles.doerMeta}>
-            <Text style={styles.doerName}>{doerName}</Text>
-            <Text style={styles.doerRating}>4.9 - Verified Partner</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.callButton}
-            activeOpacity={0.7}
-            onPress={handleCall}
-            accessibilityRole="button"
-            accessibilityLabel="Call"
-          >
-            <Ionicons name="call" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.chatButton}
-            activeOpacity={0.7}
-            onPress={handleChat}
-            accessibilityRole="button"
-            accessibilityLabel="Chat"
-          >
-            <Ionicons name="chatbubble-ellipses" size={18} color="#163523" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>Route progress</Text>
-          <Text style={styles.progressPercent}>{progressPercent}%</Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <View
-            style={[styles.progressFill, { width: `${progressPercent}%` }]}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={styles.cancelButton}
-          activeOpacity={0.8}
-          onPress={handleCancel}
-          disabled={acting}
-          accessibilityRole="button"
-          accessibilityLabel="Cancel Suyo"
-        >
-          <Ionicons name="close-circle-outline" size={18} color="#D32F2F" />
-          <Text style={styles.cancelText}>
-            {acting ? "Cancelling..." : "Cancel Suyo"}
+          <Text style={styles.emptyMapTitle}>No Active Tracking</Text>
+          <Text style={styles.emptyMapSub}>
+            You don't have any assigned or in-progress suyo right now. When a suyo is underway, live courier tracking will appear here.
           </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.browseButton}
+            activeOpacity={0.85}
+            onPress={() => router.push('/dashboard')}
+          >
+            <Ionicons name="compass-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+            <Text style={styles.browseButtonText}>Browse Available Suyos</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          <View style={styles.mapArea}>
+            <Image
+              source={require("../assets/hunter_green_tracking.jpg")}
+              style={styles.mapIllustration}
+              resizeMode="contain"
+            />
+            <View style={styles.mapOverlayCard}>
+              <View style={styles.liveIndicatorRow}>
+                <View style={styles.pulsingDot} />
+                <Text style={styles.liveText}>LIVE TRACKING</Text>
+              </View>
+              <Text style={styles.trackingLabel}>{trackingText}</Text>
+              <Text style={styles.trackingSub}>Suyo: {suyoTitle}</Text>
+            </View>
+          </View>
+
+          <View style={styles.bottomPanel}>
+            <View style={styles.doerInfoRow}>
+              <View style={styles.doerAvatarCircle}>
+                <Ionicons name="person" size={22} color="#FFFFFF" />
+              </View>
+              <View style={styles.doerMeta}>
+                <Text style={styles.doerName}>{doerName}</Text>
+                <Text style={styles.doerRating}>4.9 - Verified Partner</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.callButton}
+                activeOpacity={0.7}
+                onPress={handleCall}
+                accessibilityRole="button"
+                accessibilityLabel="Call"
+              >
+                <Ionicons name="call" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.chatButton}
+                activeOpacity={0.7}
+                onPress={handleChat}
+                accessibilityRole="button"
+                accessibilityLabel="Chat"
+              >
+                <Ionicons name="chatbubble-ellipses" size={18} color="#163523" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.progressRow}>
+              <Text style={styles.progressLabel}>Route progress</Text>
+              <Text style={styles.progressPercent}>{progressPercent}%</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[styles.progressFill, { width: `${progressPercent}%` }]}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              activeOpacity={0.8}
+              onPress={handleCancel}
+              disabled={acting}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel Suyo"
+            >
+              <Ionicons name="close-circle-outline" size={18} color="#D32F2F" />
+              <Text style={styles.cancelText}>
+                {acting ? "Cancelling..." : "Cancel Suyo"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -322,4 +343,53 @@ const styles = StyleSheet.create({
     borderColor: "#FECACA",
   },
   cancelText: { fontSize: 13.5, fontWeight: "700", color: "#D32F2F" },
+  emptyMapContainer: {
+    flex: 1,
+    backgroundColor: "#F4FAF6",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  emptyMapCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#E0F0E7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  emptyMapTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#163523",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  emptyMapSub: {
+    fontSize: 14,
+    color: "#557261",
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 28,
+    maxWidth: 300,
+  },
+  browseButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1E4D2B",
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 24,
+    shadowColor: "#1E4D2B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  browseButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
 });

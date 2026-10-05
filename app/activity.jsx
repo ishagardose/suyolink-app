@@ -163,16 +163,38 @@ const WALLET_INCOME_CHART_PRESETS = {
   },
 };
 
-function WalletIncomeLineGraph({ totalOverride }) {
+function WalletIncomeLineGraph({ totalOverride, hasTransactions }) {
   const [activeRange, setActiveRange] = useState('monthly');
   const base = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS.monthly;
+  const isZero = !hasTransactions || totalOverride === '₱0.00';
   const current = useMemo(() => {
-    if (!totalOverride) return base;
+    if (isZero) {
+      return {
+        ...base,
+        total: '₱0.00',
+        totalNote: 'No completed suyo earnings recorded yet',
+        growth: '0.0%',
+        pts: [
+          { x: 95, y: 168, val: '₱0', label: 'Start' },
+          { x: 205, y: 168, val: '₱0', label: 'Mid' },
+          { x: 315, y: 168, val: '₱0', label: 'Recent' },
+          { x: 425, y: 168, val: '₱0', label: 'Now' },
+        ],
+        pathD: 'M 95,168 L 425,168',
+        areaD: 'M 95,168 L 425,168 L 425,168 L 95,168 Z',
+        yLabels: ['₱500', '₱350', '₱200', '₱100', '₱0'],
+        metrics: [
+          { label: 'Completed Suyos', value: '0 Suyos' },
+          { label: 'Average Earnings', value: '₱0.00' },
+          { label: 'Peak Earning', value: '₱0.00' },
+        ],
+      };
+    }
     return {
       ...base,
-      total: totalOverride,
+      total: totalOverride || base.total,
     };
-  }, [base, totalOverride]);
+  }, [base, totalOverride, isZero]);
 
   const renderWebSvg = () => {
     return React.createElement(
@@ -473,7 +495,7 @@ export default function WalletScreen() {
   );
 
   const dynamicEarnedList = useMemo(() => {
-    if (!hasLiveTransactions) return WALLET_EARNED_SUYOS;
+    if (!hasLiveTransactions) return [];
     return providerTransactions.map((t, idx) => {
       const d = t.completedAt ? new Date(t.completedAt) : new Date();
       const isToday = d.toDateString() === new Date().toDateString();
@@ -506,8 +528,8 @@ export default function WalletScreen() {
   const todayEarnedList = dynamicEarnedList.filter((s) => s.date?.startsWith('Today'));
   const todayEarningsSum = todayEarnedList.reduce((sum, s) => sum + (Number(s.earnedAmount) || 0), 0);
   const todaySuyosCount = todayEarnedList.length;
-  const overallSuyosCount = hasLiveTransactions ? providerTransactions.length : 84;
-  const displayTotal = hasLiveTransactions ? `₱${overallEarningsSum.toFixed(2)}` : '₱15,360.00';
+  const overallSuyosCount = providerTransactions.length;
+  const displayTotal = `₱${overallEarningsSum.toFixed(2)}`;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeContainer}>
@@ -582,7 +604,7 @@ export default function WalletScreen() {
           </View>
 
           {/* Literal Modern Graphical Line Graph */}
-          <WalletIncomeLineGraph totalOverride={hasLiveTransactions ? displayTotal : null} />
+          <WalletIncomeLineGraph totalOverride={displayTotal} hasTransactions={hasLiveTransactions} />
 
           {/* Informative Note: Direct Settlement Outside App */}
           <View style={styles.walletPaymentNoticeRow}>
@@ -610,7 +632,18 @@ export default function WalletScreen() {
 
         {/* 3. The Clean List of Earned Accepted Suyo Requests */}
         <View style={styles.walletListWrapper}>
-          {dynamicEarnedList.map((item) => (
+          {dynamicEarnedList.length === 0 ? (
+            <View style={styles.walletEmptyCard}>
+              <View style={styles.walletEmptyIconCircle}>
+                <Ionicons name="wallet-outline" size={32} color="#1E4D2B" />
+              </View>
+              <Text style={styles.walletEmptyTitle}>No suyo earnings yet</Text>
+              <Text style={styles.walletEmptySub}>
+                When you accept and complete suyos for others, your settled earnings and receipts will be recorded here.
+              </Text>
+            </View>
+          ) : (
+            dynamicEarnedList.map((item) => (
             <View key={item.id} style={styles.walletItemCard}>
               <View style={styles.walletItemLeft}>
                 <View
@@ -681,7 +714,7 @@ export default function WalletScreen() {
                 </View>
               </View>
             </View>
-          ))}
+          )))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -1180,5 +1213,37 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '700',
     color: '#15803D',
+  },
+  walletEmptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginVertical: 12,
+  },
+  walletEmptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EAF4EF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  walletEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 6,
+  },
+  walletEmptySub: {
+    fontSize: 13,
+    color: '#557261',
+    textAlign: 'center',
+    lineHeight: 19,
+    maxWidth: 290,
   },
 });

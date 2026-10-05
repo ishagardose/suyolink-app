@@ -700,9 +700,38 @@ const WALLET_INCOME_CHART_PRESETS = {
   },
 };
 
-function WalletIncomeLineGraph() {
+function WalletIncomeLineGraph({ totalOverride, hasTransactions }) {
   const [activeRange, setActiveRange] = useState('monthly');
-  const current = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS.monthly;
+  const base = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS.monthly;
+  const isZero = !hasTransactions || totalOverride === '₱0.00';
+  const current = useMemo(() => {
+    if (isZero) {
+      return {
+        ...base,
+        total: '₱0.00',
+        totalNote: 'No completed suyo earnings recorded yet',
+        growth: '0.0%',
+        pts: [
+          { x: 95, y: 168, val: '₱0', label: 'Start' },
+          { x: 205, y: 168, val: '₱0', label: 'Mid' },
+          { x: 315, y: 168, val: '₱0', label: 'Recent' },
+          { x: 425, y: 168, val: '₱0', label: 'Now' },
+        ],
+        pathD: 'M 95,168 L 425,168',
+        areaD: 'M 95,168 L 425,168 L 425,168 L 95,168 Z',
+        yLabels: ['₱500', '₱350', '₱200', '₱100', '₱0'],
+        metrics: [
+          { label: 'Completed Suyos', value: '0 Suyos' },
+          { label: 'Average Earnings', value: '₱0.00' },
+          { label: 'Peak Earning', value: '₱0.00' },
+        ],
+      };
+    }
+    return {
+      ...base,
+      total: totalOverride || base.total,
+    };
+  }, [base, totalOverride, isZero]);
 
   const renderWebSvg = () => {
     return React.createElement(
@@ -1352,7 +1381,7 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState('home');
   const { user, logout } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const { requests, workflowError, error, refresh, isLoading } = useSuyos();
+  const { requests, transactions = [], workflowError, error, refresh, isLoading } = useSuyos();
   const { position, hasSavedLocation, locate } = useDeviceLocation();
 
   // Sidebar & Modal animation state
@@ -1389,12 +1418,12 @@ export default function DashboardScreen() {
   const [selectedUrgency, setSelectedUrgency] = useState('All');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // MySuyo Tab Navigation & Management state (Posted, Accepted, Completed, Cancelled, Archived)
-  const [postedSuyos, setPostedSuyos] = useState(() => INITIAL_POSTED_SUYOS);
-  const [acceptedSuyos, setAcceptedSuyos] = useState(() => INITIAL_ACCEPTED_SUYOS);
-  const [completedSuyos, setCompletedSuyos] = useState(() => INITIAL_COMPLETED_SUYOS);
-  const [cancelledSuyos, setCancelledSuyos] = useState(() => INITIAL_CANCELLED_SUYOS);
-  const [archivedSuyos, setArchivedSuyos] = useState(() => INITIAL_ARCHIVED_SUYOS);
+  // MySuyo Tab Navigation & Management state (dynamically populated from live requests)
+  const [postedSuyos, setPostedSuyos] = useState([]);
+  const [acceptedSuyos, setAcceptedSuyos] = useState([]);
+  const [completedSuyos, setCompletedSuyos] = useState([]);
+  const [cancelledSuyos, setCancelledSuyos] = useState([]);
+  const [archivedSuyos, setArchivedSuyos] = useState([]);
   const [mySuyoNavTab, setMySuyoNavTab] = useState('posted'); // 'posted' | 'accepted' | 'completed' | 'cancelled' | 'archived'
   const [isMySuyoEditMode, setIsMySuyoEditMode] = useState(false);
   const [selectedMySuyoIdsToDelete, setSelectedMySuyoIdsToDelete] = useState([]);
@@ -1410,10 +1439,10 @@ export default function DashboardScreen() {
     context: 'posted',
   });
 
-  // Doer Suyo Hub state (Suyos done as a doer: Accepted, Completed, Cancelled)
-  const [doerAcceptedSuyos, setDoerAcceptedSuyos] = useState(() => INITIAL_DOER_ACCEPTED_SUYOS);
-  const [doerCompletedSuyos, setDoerCompletedSuyos] = useState(() => WALLET_EARNED_SUYOS);
-  const [doerCancelledSuyos, setDoerCancelledSuyos] = useState(() => INITIAL_DOER_CANCELLED_SUYOS);
+  // Doer Suyo Hub state (dynamically populated from live requests)
+  const [doerAcceptedSuyos, setDoerAcceptedSuyos] = useState([]);
+  const [doerCompletedSuyos, setDoerCompletedSuyos] = useState([]);
+  const [doerCancelledSuyos, setDoerCancelledSuyos] = useState([]);
   const [doerNavTab, setDoerNavTab] = useState('accepted'); // 'accepted' | 'completed' | 'cancelled'
   const [selectedDoerSuyo, setSelectedDoerSuyo] = useState(null);
   const [doerCancelModalItem, setDoerCancelModalItem] = useState(null);
@@ -1424,26 +1453,38 @@ export default function DashboardScreen() {
   const [selectedSuyo, setSelectedSuyo] = useState(null);
 
   // Activity Tab state (Financial ledger, digital receipts, verified proof logs)
-  const [activityRecords, setActivityRecords] = useState(() => INITIAL_ACTIVITY_RECORDS);
+  const [activityRecords, setActivityRecords] = useState([]);
   const [activityFilter, setActivityFilter] = useState('All'); // 'All' | 'InProgress' | 'Spending' | 'Earnings' | 'Completed'
   const [activitySearchQuery, setActivitySearchQuery] = useState('');
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   // Favorites / Saved Suyos state
-  const [favoriteSuyoIds, setFavoriteSuyoIds] = useState(['SYL-102']);
+  const [favoriteSuyoIds, setFavoriteSuyoIds] = useState([]);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [openedFromFavorites, setOpenedFromFavorites] = useState(false);
 
-  // Sync live Supabase requests with MySuyo & Doer Hub state
+  // Helper to ensure every public suyo on the dashboard has a valid urgency tag
+  const resolveUrgencyTag = (item) => {
+    if (item?.urgency && ['Normal', 'Urgent', 'Due today', 'Due tomorrow'].includes(item.urgency)) {
+      return item.urgency;
+    }
+    const dueStr = `${item?.due || ''} ${item?.dueDate || ''}`.toLowerCase();
+    if (dueStr.includes('urgent') || dueStr.includes('asap')) return 'Urgent';
+    if (dueStr.includes('tomorrow')) return 'Due tomorrow';
+    if (dueStr.includes('today')) return 'Due today';
+    return 'Normal';
+  };
+
+  // Sync live Supabase requests & transactions with MySuyo & Doer Hub state
   useEffect(() => {
-    if (!requests || requests.length === 0) return;
+    if (!requests) return;
     const myPosted = requests
       .filter((r) => r.requesterId === user?.id && r.status === 'open')
       .map((r) => ({
         id: r.id,
         title: r.title,
-        category: r.category,
-        location: r.location,
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
         distanceText: 'Nearby',
         reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
         rewardAmount: (r.offerCentavos || 0) / 100,
@@ -1454,59 +1495,181 @@ export default function DashboardScreen() {
         dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
         createdAt: Date.parse(r.createdAt || Date.now()),
         formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today',
-        details: r.details,
-        notes: r.notes || '',
+        details: r.details || '',
+        notes: r.specialInstructions || '',
         requesterName: r.requesterName || 'You',
         rawRequest: r,
       }));
 
-    if (myPosted.length > 0) {
-      setPostedSuyos((prev) => {
-        const liveIds = new Set(myPosted.map((m) => m.id));
-        const filteredPrev = prev.filter((p) => !liveIds.has(p.id) && !p.id.startsWith('POST-'));
-        return [...myPosted, ...filteredPrev];
-      });
-    }
+    const myAccepted = requests
+      .filter((r) => r.requesterId === user?.id && ['assigned', 'in_progress'].includes(r.status))
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
+        distanceText: 'In Progress',
+        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+        rewardAmount: (r.offerCentavos || 0) / 100,
+        tag: r.status === 'in_progress' ? 'In Progress' : 'Assigned',
+        status: r.status === 'in_progress' ? 'In Progress - Courier on the way' : 'Accepted - Courier assigned',
+        due: r.deadline ? `Due ${new Date(r.deadline).toLocaleDateString()}` : 'Due today',
+        dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
+        createdAt: Date.parse(r.createdAt || Date.now()),
+        formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today',
+        details: r.details || '',
+        notes: r.specialInstructions || '',
+        requesterName: r.requesterName || 'You',
+        rawRequest: r,
+      }));
+
+    const myCompleted = requests
+      .filter((r) => r.requesterId === user?.id && r.status === 'completed')
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
+        distanceText: 'Fulfilled',
+        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+        rewardAmount: (r.offerCentavos || 0) / 100,
+        tag: 'Completed',
+        status: 'Completed',
+        due: 'Completed',
+        dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
+        createdAt: Date.parse(r.createdAt || Date.now()),
+        formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recently',
+        details: r.details || '',
+        notes: r.specialInstructions || '',
+        requesterName: r.requesterName || 'You',
+        rawRequest: r,
+      }));
+
+    const myCancelled = requests
+      .filter((r) => r.requesterId === user?.id && r.status === 'cancelled')
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
+        distanceText: 'Cancelled',
+        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+        rewardAmount: (r.offerCentavos || 0) / 100,
+        tag: 'Cancelled',
+        status: 'Cancelled',
+        due: 'Cancelled',
+        dueDate: getTodayFormatted(),
+        createdAt: Date.parse(r.createdAt || Date.now()),
+        formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recently',
+        details: r.details || '',
+        notes: r.specialInstructions || '',
+        requesterName: r.requesterName || 'You',
+        rawRequest: r,
+      }));
 
     const myAssigned = requests
       .filter((r) => r.providerId === user?.id && ['assigned', 'in_progress'].includes(r.status))
       .map((r) => ({
         id: r.id,
         title: r.title,
-        category: r.category,
-        location: r.location,
-        distanceText: 'Nearby',
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
+        distanceText: 'In Progress',
         reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
         rewardAmount: (r.offerCentavos || 0) / 100,
         tag: r.status === 'in_progress' ? 'In Progress' : 'Assigned',
         status: r.status === 'in_progress' ? 'In Progress - On the way' : 'Accepted',
         createdAt: Date.parse(r.createdAt || Date.now()),
-        details: r.details,
-        notes: r.notes || '',
+        details: r.details || '',
+        notes: r.specialInstructions || '',
         requesterName: r.requesterName || 'Community Member',
         rawRequest: r,
       }));
 
-    if (myAssigned.length > 0) {
-      setDoerAcceptedSuyos((prev) => {
-        const liveIds = new Set(myAssigned.map((m) => m.id));
-        const filteredPrev = prev.filter((p) => !liveIds.has(p.id) && !p.id.startsWith('DOER-ACC-'));
-        return [...myAssigned, ...filteredPrev];
-      });
-    }
+    const myDoerCompleted = requests
+      .filter((r) => r.providerId === user?.id && r.status === 'completed')
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
+        earnedAmount: (r.offerCentavos || 0) / 100,
+        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Completed',
+        requesterName: r.requesterName || 'Requester',
+        icon:
+          r.category === 'Groceries'
+            ? 'cart'
+            : r.category === 'Medicine'
+            ? 'medkit'
+            : r.category === 'Delivery'
+            ? 'bicycle'
+            : 'document-text',
+        rawRequest: r,
+      }));
+
+    const myDoerCancelled = requests
+      .filter((r) => r.providerId === user?.id && r.status === 'cancelled')
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        location: r.location || 'Nearby',
+        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+        status: 'Cancelled',
+        rawRequest: r,
+      }));
+
+    setPostedSuyos(myPosted);
+    setAcceptedSuyos(myAccepted);
+    setCompletedSuyos(myCompleted);
+    setCancelledSuyos(myCancelled);
+    setDoerAcceptedSuyos(myAssigned);
+    setDoerCompletedSuyos(myDoerCompleted);
+    setDoerCancelledSuyos(myDoerCancelled);
   }, [requests, user?.id]);
 
-  // Helper to ensure every public suyo on the dashboard has a valid urgency tag (Normal, Urgent, Due today, Due tomorrow)
-  const resolveUrgencyTag = (item) => {
-    if (item.urgency && ['Normal', 'Urgent', 'Due today', 'Due tomorrow'].includes(item.urgency)) {
-      return item.urgency;
-    }
-    const dueStr = `${item.due || ''} ${item.dueDate || ''}`.toLowerCase();
-    if (dueStr.includes('urgent') || dueStr.includes('asap')) return 'Urgent';
-    if (dueStr.includes('tomorrow')) return 'Due tomorrow';
-    if (dueStr.includes('today')) return 'Due today';
-    return 'Normal';
-  };
+  // Wallet dynamic computations from live Supabase transactions
+  const providerTransactions = useMemo(
+    () => (transactions || []).filter((t) => t.role === 'provider'),
+    [transactions]
+  );
+  const overallEarningsSum = useMemo(
+    () => providerTransactions.reduce((sum, t) => sum + (t.rewardCentavos || 0), 0) / 100,
+    [providerTransactions]
+  );
+  const dynamicWalletList = useMemo(() => {
+    return providerTransactions.map((t, idx) => {
+      const d = t.completedAt ? new Date(t.completedAt) : new Date();
+      const isToday = d.toDateString() === new Date().toDateString();
+      const dateStr = isToday
+        ? `Today · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+        : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return {
+        id: t.requestId || `WAL-${idx}`,
+        title: t.title || 'Completed Suyo',
+        category: t.category || 'Documents',
+        icon:
+          t.category === 'Groceries'
+            ? 'cart'
+            : t.category === 'Medicine'
+            ? 'medkit'
+            : t.category === 'Delivery'
+            ? 'bicycle'
+            : 'document-text',
+        date: dateStr,
+        requesterName: t.otherUserName || 'Requester',
+        location: 'Direct Settlement',
+        earnedAmount: (t.rewardCentavos || 0) / 100,
+        status: 'Received',
+      };
+    });
+  }, [providerTransactions]);
+
+  const todayWalletList = dynamicWalletList.filter((s) => s.date?.startsWith('Today'));
+  const todayEarningsSum = todayWalletList.reduce((sum, s) => sum + (Number(s.earnedAmount) || 0), 0);
+  const todaySuyosCount = todayWalletList.length;
+  const overallSuyosCount = providerTransactions.length;
+  const displayWalletTotal = `₱${overallEarningsSum.toFixed(2)}`;
 
   // Overall available suyos in Dashboard: public suyos from different users + account owner's open posted suyos
   // Note: 'Waiting for doer' is a lifecycle status ONLY applied and visible to MySuyo nav;
@@ -1562,20 +1725,18 @@ export default function DashboardScreen() {
         dueDate: p.dueDate || getTodayFormatted(),
       }));
 
-    // Public available fallback suyos from different users
-    const publicSuyos = INITIAL_AVAILABLE_SUYOS.map((s) => ({
-      ...s,
-      tag: resolveUrgencyTag(s),
-      isMine: false,
-    }));
-
-    // Merge: Owner's open posted suyos + backend open requests + public fallback without duplicate IDs.
+    // Merge: Owner's open posted suyos + backend open requests without duplicate IDs.
     // In-progress accepted suyos are excluded from public available board (they belong in MySuyo -> Accepted).
     const merged = [...ownerPosted, ...fromBackend];
-    const seenIds = new Set(merged.map((item) => item.id));
-    const uniquePublic = publicSuyos.filter((item) => !seenIds.has(item.id));
-
-    return [...merged, ...uniquePublic];
+    const seenIds = new Set();
+    const result = [];
+    for (const item of merged) {
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        result.push(item);
+      }
+    }
+    return result;
   }, [requests, position, postedSuyos]);
 
   // List of suyos favorited by the user
@@ -2260,22 +2421,28 @@ export default function DashboardScreen() {
     }
   };
 
-  // Active Suyo floating banner state (matching original single active banner)
-  const [activeSuyo, setActiveSuyo] = useState({
-    id: 'TRK-9842',
-    trackingNumber: '#SYL-88219',
-    status: 'In Progress',
-    eta: 'Doer is 5 mins away',
-    detail: 'Suyo: Drop off documents at Unit 402',
-    progress: '75%',
-  });
+  // Active Suyo floating banner state (matching live task for current user)
+  const activeSuyo = useMemo(() => {
+    const live = (requests || []).find(
+      (r) =>
+        (r.requesterId === user?.id || r.providerId === user?.id) &&
+        ['assigned', 'in_progress'].includes(r.status)
+    );
+    if (!live) return null;
+    const isDoer = live.providerId === user?.id;
+    return {
+      id: live.id,
+      trackingNumber: `#SYL-${String(live.id).slice(0, 6).toUpperCase()}`,
+      status: live.status === 'in_progress' ? 'In Progress' : 'Assigned',
+      eta: live.status === 'in_progress' ? (isDoer ? 'You are on the way' : 'Doer is on the way') : 'Doer assigned',
+      detail: `Suyo: ${live.title}`,
+      progress: live.status === 'in_progress' ? '75%' : '40%',
+      raw: live,
+    };
+  }, [requests, user?.id]);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
-  const hasActiveSuyo =
-    activeSuyo &&
-    (activeSuyo.status === 'In Progress' ||
-      activeSuyo.status === 'In Transit' ||
-      activeSuyo.status === 'On Process');
+  const hasActiveSuyo = Boolean(activeSuyo);
 
   const currentDistanceKm = parseDistanceKm(selectedDistance);
 
@@ -3467,38 +3634,50 @@ export default function DashboardScreen() {
             {/* --- TAB B: COMPLETED SUYOS (Doer Completed History) --- */}
             {doerNavTab === 'completed' && (
               <View style={styles.doerListContainer}>
-                {doerCompletedSuyos.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.doerCompletedCard}
-                    activeOpacity={0.88}
-                    onPress={() => setSelectedDoerSuyo(item)}
-                  >
-                    <View style={styles.doerCompletedLeft}>
-                      <View style={styles.doerCompletedIconCircle}>
-                        <Ionicons name={item.icon || 'checkmark-done'} size={18} color="#059669" />
-                      </View>
-                      <View style={styles.doerCompletedTextCol}>
-                        <Text style={styles.doerCompletedTitle} numberOfLines={1}>{item.title}</Text>
-                        <Text style={styles.doerCompletedRequester}>From: {item.requesterName}</Text>
-                        <View style={styles.doerCompletedMetaRow}>
-                          <Ionicons name="time-outline" size={12} color="#8CA395" />
-                          <Text style={styles.doerCompletedDate}>{item.date}</Text>
-                          <Text style={styles.doerDot}>•</Text>
-                          <Text style={styles.doerCompletedLocation} numberOfLines={1}>{item.location}</Text>
+                {doerCompletedSuyos.length === 0 ? (
+                  <View style={styles.doerEmptyCard}>
+                    <View style={styles.doerEmptyIconCircle}>
+                      <Ionicons name="checkmark-done" size={28} color="#059669" />
+                    </View>
+                    <Text style={styles.doerEmptyTitle}>No Completed Suyos Yet</Text>
+                    <Text style={styles.doerEmptySub}>
+                      Fulfill suyos as a doer to see your completed history and earned rewards.
+                    </Text>
+                  </View>
+                ) : (
+                  doerCompletedSuyos.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.doerCompletedCard}
+                      activeOpacity={0.88}
+                      onPress={() => setSelectedDoerSuyo(item)}
+                    >
+                      <View style={styles.doerCompletedLeft}>
+                        <View style={styles.doerCompletedIconCircle}>
+                          <Ionicons name={item.icon || 'checkmark-done'} size={18} color="#059669" />
+                        </View>
+                        <View style={styles.doerCompletedTextCol}>
+                          <Text style={styles.doerCompletedTitle} numberOfLines={1}>{item.title}</Text>
+                          <Text style={styles.doerCompletedRequester}>From: {item.requesterName}</Text>
+                          <View style={styles.doerCompletedMetaRow}>
+                            <Ionicons name="time-outline" size={12} color="#8CA395" />
+                            <Text style={styles.doerCompletedDate}>{item.date}</Text>
+                            <Text style={styles.doerDot}>•</Text>
+                            <Text style={styles.doerCompletedLocation} numberOfLines={1}>{item.location}</Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
 
-                    <View style={styles.doerCompletedRight}>
-                      <Text style={styles.doerCompletedEarned}>+₱{Number(item.earnedAmount).toFixed(2)}</Text>
-                      <View style={styles.doerCompletedRatingBadge}>
-                        <Ionicons name="star" size={10} color="#F59E0B" />
-                        <Text style={styles.doerCompletedRatingText}>5.0★</Text>
+                      <View style={styles.doerCompletedRight}>
+                        <Text style={styles.doerCompletedEarned}>+₱{Number(item.earnedAmount).toFixed(2)}</Text>
+                        <View style={styles.doerCompletedRatingBadge}>
+                          <Ionicons name="star" size={10} color="#F59E0B" />
+                          <Text style={styles.doerCompletedRatingText}>5.0★</Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                    </TouchableOpacity>
+                  ))
+                )}
               </View>
             )}
 
@@ -3647,33 +3826,34 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={styles.walletBalanceLabel}>Total Overall Earnings (2026)</Text>
-              <Text style={styles.walletBalanceAmount}>₱15,360.00</Text>
+              <Text style={styles.walletBalanceAmount}>{displayWalletTotal}</Text>
 
               <View style={styles.walletSummaryRow}>
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>
-                    ₱{WALLET_EARNED_SUYOS.filter((s) => s.date?.startsWith('Today'))
-                      .reduce((sum, s) => sum + (Number(s.earnedAmount) || 0), 0)
-                      .toFixed(2)}
+                    ₱{todayEarningsSum.toFixed(2)}
                   </Text>
                   <Text style={styles.walletSummaryLabel}>Today Earnings</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>
-                    {WALLET_EARNED_SUYOS.filter((s) => s.date?.startsWith('Today')).length} Suyos
+                    {todaySuyosCount} Suyos
                   </Text>
                   <Text style={styles.walletSummaryLabel}>Today Suyos</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>84 Suyos</Text>
+                  <Text style={styles.walletSummaryCount}>{overallSuyosCount} Suyos</Text>
                   <Text style={styles.walletSummaryLabel}>Overall Suyos</Text>
                 </View>
               </View>
 
               {/* Literal Modern Graphical Line Graph */}
-              <WalletIncomeLineGraph />
+              <WalletIncomeLineGraph
+                totalOverride={displayWalletTotal}
+                hasTransactions={providerTransactions.length > 0}
+              />
 
               {/* Informative Note: Direct Settlement Outside App */}
               <View style={styles.walletPaymentNoticeRow}>
@@ -3694,85 +3874,97 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.walletCountChip}>
                 <Text style={styles.walletCountChipText}>
-                  {WALLET_EARNED_SUYOS.length} earned (₱1,280.00)
+                  {dynamicWalletList.length} earned ({displayWalletTotal})
                 </Text>
               </View>
             </View>
 
             {/* 3. The Clean List of Earned Accepted Suyo Requests */}
             <View style={styles.walletListWrapper}>
-              {WALLET_EARNED_SUYOS.map((item) => (
-                <View key={item.id} style={styles.walletItemCard}>
-                  <View style={styles.walletItemLeft}>
-                    <View
-                      style={[
-                        styles.walletCategoryIconCircle,
-                        item.category === 'Groceries'
-                          ? { backgroundColor: '#DCFCE7' }
-                          : item.category === 'Medicine'
-                          ? { backgroundColor: '#F3E8FF' }
-                          : item.category === 'Documents'
-                          ? { backgroundColor: '#E0F2FE' }
-                          : item.category === 'Queuing & Bills'
-                          ? { backgroundColor: '#FEF3C7' }
-                          : { backgroundColor: '#EAF4EF' },
-                      ]}
-                    >
-                      <Ionicons
-                        name={item.icon || 'receipt'}
-                        size={18}
-                        color={
-                          item.category === 'Groceries'
-                            ? '#15803D'
-                            : item.category === 'Medicine'
-                            ? '#7E22CE'
-                            : item.category === 'Documents'
-                            ? '#0369A1'
-                            : item.category === 'Queuing & Bills'
-                            ? '#B45309'
-                            : '#1E4D2B'
-                        }
-                      />
-                    </View>
-
-                    <View style={styles.walletItemInfoCol}>
-                      <Text style={styles.walletItemTitle} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-
-                      <View style={styles.walletItemMetaRow}>
-                        <Ionicons name="person-circle-outline" size={13} color="#557261" />
-                        <Text style={styles.walletItemRequesterText}>
-                          From:{' '}
-                          <Text style={{ fontWeight: '700', color: '#163523' }}>
-                            {item.requesterName}
-                          </Text>
-                        </Text>
-                      </View>
-
-                      <View style={styles.walletItemDateRow}>
-                        <Ionicons name="time-outline" size={12} color="#8CA395" />
-                        <Text style={styles.walletItemDateText}>{item.date}</Text>
-                        <Text style={styles.walletItemDot}>•</Text>
-                        <Ionicons name="location-outline" size={12} color="#8CA395" />
-                        <Text style={styles.walletItemLocationText} numberOfLines={1}>
-                          {item.location}
-                        </Text>
-                      </View>
-                    </View>
+              {dynamicWalletList.length === 0 ? (
+                <View style={styles.doerEmptyCard}>
+                  <View style={styles.doerEmptyIconCircle}>
+                    <Ionicons name="wallet-outline" size={28} color="#1E4D2B" />
                   </View>
-
-                  <View style={styles.walletItemRight}>
-                    <Text style={styles.walletEarnedAmountText}>
-                      +₱{Number(item.earnedAmount).toFixed(2)}
-                    </Text>
-                    <View style={styles.walletStatusChip}>
-                      <Ionicons name="checkmark-circle" size={10} color="#15803D" />
-                      <Text style={styles.walletStatusChipText}>{item.status}</Text>
-                    </View>
-                  </View>
+                  <Text style={styles.doerEmptyTitle}>No Suyo Earnings Yet</Text>
+                  <Text style={styles.doerEmptySub}>
+                    When you accept and complete suyos for others, your settled earnings and receipts will appear here.
+                  </Text>
                 </View>
-              ))}
+              ) : (
+                dynamicWalletList.map((item) => (
+                  <View key={item.id} style={styles.walletItemCard}>
+                    <View style={styles.walletItemLeft}>
+                      <View
+                        style={[
+                          styles.walletCategoryIconCircle,
+                          item.category === 'Groceries'
+                            ? { backgroundColor: '#DCFCE7' }
+                            : item.category === 'Medicine'
+                            ? { backgroundColor: '#F3E8FF' }
+                            : item.category === 'Documents'
+                            ? { backgroundColor: '#E0F2FE' }
+                            : item.category === 'Queuing & Bills'
+                            ? { backgroundColor: '#FEF3C7' }
+                            : { backgroundColor: '#EAF4EF' },
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.icon || 'receipt'}
+                          size={18}
+                          color={
+                            item.category === 'Groceries'
+                              ? '#15803D'
+                              : item.category === 'Medicine'
+                              ? '#7E22CE'
+                              : item.category === 'Documents'
+                              ? '#0369A1'
+                              : item.category === 'Queuing & Bills'
+                              ? '#B45309'
+                              : '#1E4D2B'
+                          }
+                        />
+                      </View>
+
+                      <View style={styles.walletItemInfoCol}>
+                        <Text style={styles.walletItemTitle} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+
+                        <View style={styles.walletItemMetaRow}>
+                          <Ionicons name="person-circle-outline" size={13} color="#557261" />
+                          <Text style={styles.walletItemRequesterText}>
+                            From:{' '}
+                            <Text style={{ fontWeight: '700', color: '#163523' }}>
+                              {item.requesterName}
+                            </Text>
+                          </Text>
+                        </View>
+
+                        <View style={styles.walletItemDateRow}>
+                          <Ionicons name="time-outline" size={12} color="#8CA395" />
+                          <Text style={styles.walletItemDateText}>{item.date}</Text>
+                          <Text style={styles.walletItemDot}>•</Text>
+                          <Ionicons name="location-outline" size={12} color="#8CA395" />
+                          <Text style={styles.walletItemLocationText} numberOfLines={1}>
+                            {item.location}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.walletItemRight}>
+                      <Text style={styles.walletEarnedAmountText}>
+                        +₱{Number(item.earnedAmount).toFixed(2)}
+                      </Text>
+                      <View style={styles.walletStatusChip}>
+                        <Ionicons name="checkmark-circle" size={10} color="#15803D" />
+                        <Text style={styles.walletStatusChipText}>{item.status}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
           </View>
         )}
