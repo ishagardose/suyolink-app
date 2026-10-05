@@ -8,6 +8,7 @@ export default function ScreenHeader({
   subtitle,
   onBack,
   brand = false,
+  hideBorder = false,
 }) {
   const { colors } = useTheme();
   const color = brand ? colors.onPrimary : colors.text;
@@ -16,8 +17,8 @@ export default function ScreenHeader({
       style={[
         styles.header,
         {
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+          borderBottomWidth: brand || hideBorder ? 0 : 1,
+          borderBottomColor: brand || hideBorder ? 'transparent' : colors.border,
           backgroundColor: brand ? colors.brand : colors.card,
         },
       ]}

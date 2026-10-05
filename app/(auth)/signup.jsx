@@ -15,7 +15,7 @@ export default function SignUpScreen() {
           router.replace('/');
         }
       }}
-      onSignUpSuccess={() => router.replace('/welcome')}
+      onSignUpSuccess={() => router.replace('/set-location')}
       onSwitchToLogin={() => router.replace('/login')}
     />
   );

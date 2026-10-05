@@ -14,7 +14,7 @@ export default function SignUpSheet({
       visible={visible}
       onClose={onClose}
       onSwitch={onSwitchToLogin}
-      onSuccess={onSignUpSuccess ?? (() => router.replace('/welcome'))}
+      onSuccess={onSignUpSuccess ?? (() => router.replace('/set-location'))}
     />
   );
 }

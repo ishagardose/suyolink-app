@@ -122,11 +122,9 @@ export function AuthProvider({ children }) {
       },
       signup: async ({ email, password, name, location, acknowledged }) => {
         if (!supabase) throw new Error(authConfigError);
-        if (!hasCoordinates(location?.position) || acknowledged !== true)
-          throw new Error(
-            'Choose your area and acknowledge location use before signing up.',
-          );
-        await stageSignupLocation(email, location.position, location.source);
+        if (location && hasCoordinates(location?.position) && acknowledged === true) {
+          await stageSignupLocation(email, location.position, location.source);
+        }
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,

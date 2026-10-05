@@ -19,8 +19,6 @@ import ThemedView from './themed/ThemedView';
 import ThemedText from './themed/ThemedText';
 import ThemedTextInput from './themed/ThemedTextInput';
 import ThemedButton from './themed/ThemedButton';
-import SignupLocationFields from './onboarding/SignupLocationFields';
-import { hasCoordinates } from '../lib/geo';
 
 export default function AuthSheet({
   mode,
@@ -41,10 +39,30 @@ export default function AuthSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [locationSelection, setLocationSelection] = useState(null);
-  const [acknowledged, setAcknowledged] = useState(false);
   const submitting = useRef(false);
   const opacity = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const confirmPasswordInputRef = useRef(null);
+
+  const scrollToField = (y) => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y, animated: true });
+    }, 100);
+  };
+
+  const scrollToBottom = () => {
+    const doScroll = () => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollToEnd({ animated: true });
+      }
+    };
+    doScroll();
+    setTimeout(doScroll, 80);
+    setTimeout(doScroll, 250);
+  };
 
   useEffect(() => {
     const animation = Animated.timing(opacity, {
@@ -66,15 +84,6 @@ export default function AuthSheet({
 
   const submit = async () => {
     if (submitting.current) return;
-    if (
-      signup &&
-      (!hasCoordinates(locationSelection?.position) || !acknowledged)
-    ) {
-      setError(
-        'Choose your area and check the location acknowledgment before creating your account.',
-      );
-      return;
-    }
     if (signup && !name.trim()) {
       setError('Enter your full name.');
       return;
@@ -100,8 +109,6 @@ export default function AuthSheet({
             email,
             password,
             name,
-            location: locationSelection,
-            acknowledged,
           })
         : await login({ email, password });
       setPassword('');
@@ -140,6 +147,7 @@ export default function AuthSheet({
       >
         <ScreenHeader
           brand
+          hideBorder
           title={signup ? 'Sign Up' : 'Log In'}
           onBack={onClose}
         />
@@ -152,8 +160,11 @@ export default function AuthSheet({
             style={styles.flex}
           >
             <ScrollView
-              contentContainerStyle={styles.content}
+              ref={scrollRef}
+              contentContainerStyle={[styles.content, { paddingBottom: 260 }]}
               keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets={true}
+              showsVerticalScrollIndicator={false}
             >
               <Image
                 source={
@@ -172,33 +183,12 @@ export default function AuthSheet({
                 style={styles.subtitle}
               >
                 {signup
-                  ? 'Start with your location, then create your SuyoLink account.'
+                  ? 'Create your SuyoLink account to get started.'
                   : 'Sign in to your SuyoLink account.'}
               </ThemedText>
-              {signup ? (
-                <>
-                  <SignupLocationFields
-                    selection={locationSelection}
-                    onSelect={setLocationSelection}
-                    acknowledged={acknowledged}
-                    onAcknowledge={setAcknowledged}
-                    disabled={busy}
-                  />
-                  <ThemedText
-                    tone="link"
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: 1.3,
-                      fontWeight: '700',
-                      marginBottom: 16,
-                    }}
-                  >
-                    STEP 2 OF 2 · ACCOUNT DETAILS
-                  </ThemedText>
-                </>
-              ) : null}
               {signup && (
                 <Field
+                  ref={nameInputRef}
                   label="Full Name"
                   icon="person-outline"
                   value={name}
@@ -206,9 +196,16 @@ export default function AuthSheet({
                   placeholder="John Doe"
                   autoCapitalize="words"
                   editable={!busy}
+                  returnKeyType="next"
+                  onFocus={() => scrollToField(0)}
+                  onSubmitEditing={() => {
+                    emailInputRef.current?.focus();
+                    scrollToField(signup ? 90 : 40);
+                  }}
                 />
               )}
               <Field
+                ref={emailInputRef}
                 label="Email Address"
                 icon="mail-outline"
                 value={email}
@@ -218,8 +215,15 @@ export default function AuthSheet({
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!busy}
+                returnKeyType="next"
+                onFocus={() => scrollToField(signup ? 90 : 40)}
+                onSubmitEditing={() => {
+                  passwordInputRef.current?.focus();
+                  scrollToField(signup ? 180 : 120);
+                }}
               />
               <Field
+                ref={passwordInputRef}
                 label="Password"
                 icon="lock-closed-outline"
                 value={password}
@@ -229,8 +233,16 @@ export default function AuthSheet({
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!busy}
-                onSubmitEditing={submit}
-                returnKeyType="go"
+                returnKeyType={signup ? 'next' : 'go'}
+                onFocus={() => scrollToField(signup ? 180 : 120)}
+                onSubmitEditing={() => {
+                  if (signup) {
+                    confirmPasswordInputRef.current?.focus();
+                    scrollToBottom();
+                  } else {
+                    submit();
+                  }
+                }}
                 accessory={
                   <TouchableOpacity
                     accessibilityRole="button"
@@ -250,6 +262,7 @@ export default function AuthSheet({
               />
               {signup ? (
                 <Field
+                  ref={confirmPasswordInputRef}
                   label="Confirm Password"
                   icon="lock-closed-outline"
                   value={confirmPassword}
@@ -259,8 +272,9 @@ export default function AuthSheet({
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!busy}
-                  onSubmitEditing={submit}
                   returnKeyType="go"
+                  onFocus={scrollToBottom}
+                  onSubmitEditing={submit}
                 />
               ) : null}
               {error ? (
@@ -276,11 +290,7 @@ export default function AuthSheet({
                 title={signup ? 'Sign Up' : 'Log In'}
                 onPress={submit}
                 loading={busy}
-                disabled={
-                  signup &&
-                  (!hasCoordinates(locationSelection?.position) ||
-                    !acknowledged)
-                }
+                disabled={busy}
               />
               {!signup ? (
                 <ThemedView style={{ gap: 10, marginTop: 12 }}>
@@ -324,7 +334,10 @@ export default function AuthSheet({
   );
 }
 
-function Field({ label, icon, accessory, ...props }) {
+const Field = React.forwardRef(function Field(
+  { label, icon, accessory, ...props },
+  ref,
+) {
   const { colors } = useTheme();
   return (
     <ThemedView style={styles.field}>
@@ -339,6 +352,7 @@ function Field({ label, icon, accessory, ...props }) {
           color={colors.muted}
         />
         <ThemedTextInput
+          ref={ref}
           accessibilityLabel={label}
           {...props}
           style={styles.input}
@@ -347,7 +361,7 @@ function Field({ label, icon, accessory, ...props }) {
       </ThemedView>
     </ThemedView>
   );
-}
+});
 const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', maxWidth: 760, alignSelf: 'center' },
   flex: { flex: 1 },

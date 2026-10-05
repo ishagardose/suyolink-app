@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -55,7 +56,20 @@ export default function VerifyEmailScreen() {
   const [cooldown, setCooldown] = useState(0);
   const processed = useRef(new Set());
   const resendBusy = useRef(false);
+  const scrollRef = useRef(null);
+  const codeInputRef = useRef(null);
   const verified = isLoggedIn && user?.emailVerified && !checking && !error;
+
+  const scrollToBottom = () => {
+    const doScroll = () => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollToEnd({ animated: true });
+      }
+    };
+    doScroll();
+    setTimeout(doScroll, 80);
+    setTimeout(doScroll, 250);
+  };
 
   useEffect(() => {
     // Web reads the current fragment; native handles both cold and warm deep links.
@@ -153,10 +167,17 @@ export default function VerifyEmailScreen() {
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={[styles.content, { paddingBottom: 260 }]}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          showsVerticalScrollIndicator={false}
+        >
         <ThemedText style={styles.brand}>SUYOLINK</ThemedText>
         <ThemedView
           tone="surface"
@@ -217,10 +238,16 @@ export default function VerifyEmailScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!sending}
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  codeInputRef.current?.focus();
+                  scrollToBottom();
+                }}
                 style={[styles.input, { borderColor: colors.border }]}
               />
               <ThemedText style={styles.label}>Verification code</ThemedText>
               <ThemedTextInput
+                ref={codeInputRef}
                 accessibilityLabel="Verification code"
                 value={code}
                 onChangeText={(value) => setCode(value.replace(/\s/g, ''))}
@@ -232,8 +259,9 @@ export default function VerifyEmailScreen() {
                 autoComplete="one-time-code"
                 maxLength={10}
                 editable={!sending}
-                onSubmitEditing={verify}
                 returnKeyType="done"
+                onFocus={scrollToBottom}
+                onSubmitEditing={verify}
                 style={[styles.input, { borderColor: colors.border }]}
               />
               {error ? (
@@ -274,7 +302,8 @@ export default function VerifyEmailScreen() {
             </>
           ) : null}
         </ThemedView>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { LogBox } from 'react-native';
 import { observePush } from '../lib/pushNotifications';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +9,12 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SuyoProvider } from '../context/SuyoContext';
 import { NotificationsModalProvider } from '../context/NotificationsModalContext';
 import { LocationProvider } from '../context/LocationContext';
+
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  '`expo-notifications` functionality is not fully supported in Expo Go',
+  'expo-notifications functionality is not fully supported in Expo Go',
+]);
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
