@@ -28,7 +28,7 @@ export default function RequestSuccessModal({
             <Ionicons
               name="checkmark-sharp"
               size={38}
-              color="#FFFFFF"
+              color={colors.onPrimary}
             />
           </View>
 
@@ -58,7 +58,7 @@ export default function RequestSuccessModal({
             </View>
             <View style={styles.summaryRowItem}>
               <Text style={styles.summaryLabel}>Contact:</Text>
-              <Text style={styles.summaryValue}>{draft.contactPhone}</Text>
+              <Text style={styles.summaryValue}>+63{draft.contactPhone}</Text>
             </View>
             <View style={styles.summaryRowItem}>
               <Text style={styles.summaryLabel}>Deadline:</Text>
@@ -72,7 +72,7 @@ export default function RequestSuccessModal({
                 <Text
                   style={[
                     styles.summaryValue,
-                    { color: '#059669', fontWeight: '700' },
+                    { color: colors.success, fontWeight: '700' },
                   ]}
                 >
                   {draft.attachments.length} item

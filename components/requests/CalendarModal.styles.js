@@ -1,0 +1,202 @@
+import { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
+import { useTheme } from '../../theme/ThemeContext';
+
+export default function useCalendarModalStyles() {
+  const { colors } = useTheme();
+  return useMemo(() => {
+    return StyleSheet.create({
+      backdrop: {
+        flex: 1,
+        backgroundColor: colors.backdrop,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+      },
+      modalCard: {
+        width: '100%',
+        maxWidth: 360,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 18,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 8,
+      },
+      headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 14,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      },
+      headerTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+      },
+      headerTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.text,
+        letterSpacing: -0.2,
+      },
+      closeBtn: {
+        padding: 4,
+        borderRadius: 8,
+        backgroundColor: colors.surface,
+      },
+      monthNavRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        paddingHorizontal: 6,
+      },
+      navArrowBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.surfaceAlt,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      monthYearText: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: colors.link,
+      },
+      weekdaysRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+        paddingHorizontal: 4,
+      },
+      weekdayText: {
+        width: 38,
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.textMuted,
+      },
+      weekendText: {
+        color: colors.textMuted,
+      },
+      daysGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+      },
+      dayCell: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 2,
+        position: 'relative',
+      },
+      dayCellSelected: {
+        backgroundColor: colors.primary,
+      },
+      dayCellToday: {
+        borderWidth: 1.5,
+        borderColor: colors.link,
+        backgroundColor: colors.surfaceAlt,
+      },
+      dayText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.text,
+      },
+      dayTextMuted: {
+        color: colors.border,
+      },
+      dayTextPast: {
+        color: colors.textMuted,
+      },
+      dayTextToday: {
+        fontWeight: '800',
+        color: colors.link,
+      },
+      dayTextSelected: {
+        color: colors.onPrimary,
+        fontWeight: '800',
+      },
+      todayDot: {
+        position: 'absolute',
+        bottom: 3,
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: colors.link,
+      },
+      quickShortcutsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 6,
+        marginTop: 12,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+      },
+      shortcutChip: {
+        flex: 1,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingVertical: 6,
+        alignItems: 'center',
+      },
+      shortcutChipActive: {
+        backgroundColor: colors.surfaceAlt,
+        borderColor: colors.link,
+      },
+      shortcutText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.text,
+      },
+      shortcutTextActive: {
+        color: colors.link,
+      },
+      footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 14,
+        gap: 12,
+      },
+      selectedBadge: {
+        flex: 1,
+      },
+      selectedBadgeLabel: {
+        fontSize: 10.5,
+        fontWeight: '600',
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+      },
+      selectedBadgeValue: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.text,
+      },
+      confirmBtn: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 12,
+      },
+      confirmBtnText: {
+        color: colors.onPrimary,
+        fontSize: 13,
+        fontWeight: '800',
+      },
+    });
+  }, [colors]);
+}

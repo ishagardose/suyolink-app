@@ -79,7 +79,10 @@ test('posting keeps private fields out of public remarks and requires a chosen p
   await page
     .getByLabel('Exact address', { exact: true })
     .fill('123 Private Road');
-  await page.getByLabel('Contact phone', { exact: true }).fill('09123456789');
+  await page.getByLabel('Contact phone', { exact: true }).fill('91abc23456');
+  await expect(page.getByLabel('Contact phone', { exact: true })).toHaveValue(
+    '9123456',
+  );
   await page.getByLabel('Remarks', { exact: true }).fill('Keep receipt');
   await page.getByRole('button', { name: 'Post request', exact: true }).click();
   await expect(
@@ -88,7 +91,14 @@ test('posting keeps private fields out of public remarks and requires a chosen p
   expect(
     calls.some((c) => c.path === '/rest/v1/rpc/create_suyo_request_v2'),
   ).toBe(false);
+  await expect(
+    page.getByText('Enter exactly 10 digits after +63', { exact: true }),
+  ).toBeVisible();
   await page.getByTestId('task-map').click({ position: { x: 100, y: 100 } });
+  await page.getByLabel('Contact phone', { exact: true }).fill('91234567890');
+  await expect(page.getByLabel('Contact phone', { exact: true })).toHaveValue(
+    '9123456789',
+  );
   await page.getByRole('button', { name: 'Post request', exact: true }).click();
   await expect(
     page.getByText('Suyo Posted Successfully!', { exact: true }),
@@ -99,7 +109,7 @@ test('posting keeps private fields out of public remarks and requires a chosen p
   expect(body.p_notes).toBe('Keep receipt');
   expect(body.p_public_location).toBe('City market');
   expect(body.p_exact_address).toBe('123 Private Road');
-  expect(body.p_contact_phone).toBe('09123456789');
+  expect(body.p_contact_phone).toBe('+639123456789');
 });
 test('signed out users cannot open dashboard', async ({ page }) => {
   await mockSupabase(page);

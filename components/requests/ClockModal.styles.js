@@ -1,0 +1,286 @@
+import { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
+import { useTheme } from '../../theme/ThemeContext';
+import { CLOCK_SIZE, RADIUS, CENTER } from './clockGeometry';
+
+export default function useClockModalStyles() {
+  const { colors } = useTheme();
+  return useMemo(() => {
+    return StyleSheet.create({
+      backdrop: {
+        flex: 1,
+        backgroundColor: colors.backdrop,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+      },
+      modalCard: {
+        width: '100%',
+        maxWidth: 350,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 18,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 8,
+      },
+      headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      },
+      headerTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+      },
+      headerTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.text,
+        letterSpacing: -0.2,
+      },
+      closeBtn: {
+        padding: 4,
+        borderRadius: 8,
+        backgroundColor: colors.surface,
+      },
+      digitalDisplayRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.surface,
+        borderWidth: 1.2,
+        borderColor: colors.border,
+        borderRadius: 14,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 8,
+      },
+      timeSegmentsWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+      },
+      timeSegmentBtn: {
+        backgroundColor: colors.surfaceAlt,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        alignItems: 'center',
+        minWidth: 54,
+      },
+      timeSegmentBtnActive: {
+        backgroundColor: colors.primary,
+      },
+      timeSegmentText: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: colors.link,
+      },
+      timeSegmentTextActive: {
+        color: colors.onPrimary,
+      },
+      segmentLabel: {
+        fontSize: 9.5,
+        fontWeight: '700',
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+      },
+      timeColon: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: colors.text,
+        marginHorizontal: 2,
+      },
+      periodToggleWrap: {
+        flexDirection: 'column',
+        gap: 4,
+      },
+      periodBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 6,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+      },
+      periodBtnActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.link,
+      },
+      periodBtnText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.text,
+      },
+      periodBtnTextActive: {
+        color: colors.onPrimary,
+      },
+      modeHintText: {
+        fontSize: 11.5,
+        fontWeight: '600',
+        color: colors.textMuted,
+        textAlign: 'center',
+        marginBottom: 8,
+      },
+      clockContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 4,
+      },
+      clockFace: {
+        width: CLOCK_SIZE,
+        height: CLOCK_SIZE,
+        borderRadius: CLOCK_SIZE / 2,
+        backgroundColor: colors.surface,
+        borderWidth: 2,
+        borderColor: colors.border,
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      clockOuterRing: {
+        position: 'absolute',
+        width: CLOCK_SIZE - 20,
+        height: CLOCK_SIZE - 20,
+        borderRadius: (CLOCK_SIZE - 20) / 2,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderStyle: 'dashed',
+      },
+      clockCenterPin: {
+        position: 'absolute',
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: colors.link,
+        zIndex: 10,
+      },
+      clockHandContainer: {
+        position: 'absolute',
+        width: 2,
+        height: RADIUS,
+        top: CENTER - RADIUS,
+        left: CENTER - 1,
+        transformOrigin: 'bottom center',
+        alignItems: 'center',
+        zIndex: 5,
+      },
+      clockHandLine: {
+        width: 2,
+        height: RADIUS - 14,
+        backgroundColor: colors.link,
+      },
+      clockHandTip: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: colors.link,
+      },
+      dialNumberBtn: {
+        position: 'absolute',
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 12,
+      },
+      dialNumberBtnSelected: {
+        backgroundColor: colors.primary,
+        shadowColor: colors.link,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 3,
+      },
+      dialNumberText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: colors.text,
+      },
+      dialMinuteText: {
+        fontSize: 11.5,
+      },
+      dialNumberTextSelected: {
+        color: colors.onPrimary,
+        fontWeight: '800',
+      },
+      quickMinutesRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 8,
+        marginTop: 10,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+      },
+      minutePresetBtn: {
+        flex: 1,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingVertical: 5,
+        alignItems: 'center',
+      },
+      minutePresetBtnActive: {
+        backgroundColor: colors.surfaceAlt,
+        borderColor: colors.link,
+      },
+      minutePresetText: {
+        fontSize: 11.5,
+        fontWeight: '700',
+        color: colors.text,
+      },
+      minutePresetTextActive: {
+        color: colors.link,
+      },
+      footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 14,
+        gap: 12,
+      },
+      selectedBadge: {
+        flex: 1,
+      },
+      selectedBadgeLabel: {
+        fontSize: 10.5,
+        fontWeight: '600',
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+      },
+      selectedBadgeValue: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.text,
+      },
+      selectedBadge24: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textMuted,
+      },
+      confirmBtn: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 12,
+      },
+      confirmBtnText: {
+        color: colors.onPrimary,
+        fontSize: 13,
+        fontWeight: '800',
+      },
+    });
+  }, [colors]);
+}

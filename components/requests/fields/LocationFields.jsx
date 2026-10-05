@@ -1,10 +1,11 @@
 import { useTheme } from '../../../theme/ThemeContext';
-import { PLACEHOLDER_COLOR } from '../requestFormConfig';
-import { View, Text, TextInput } from 'react-native';
+import { Platform, View, Text, TextInput } from 'react-native';
 import useRequestFormStyles from '../requestForm.styles';
 import { Ionicons } from '@expo/vector-icons';
 import LocationPicker from '../LocationPicker';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import PhilippineAreaPicker from '../PhilippineAreaPicker';
+import { reverseTaskArea } from '../../../lib/reverseTaskArea';
 
 export default function LocationFields({
   fieldErrors,
@@ -15,6 +16,58 @@ export default function LocationFields({
 }) {
   const styles = useRequestFormStyles();
   const { colors } = useTheme();
+  const [lookingUp, setLookingUp] = useState(false);
+  const autoArea = useRef('');
+
+  useEffect(() => {
+    if (!draft.coordinates || busy || Platform.OS === 'web') return;
+    let active = true;
+    setLookingUp(true);
+    // Debounce pin adjustments and ignore results from older selections.
+    const timer = setTimeout(async () => {
+      let area = '';
+      try {
+        area = await reverseTaskArea(draft.coordinates);
+      } catch {
+        // The area picker and manual field remain available without geocoding.
+      }
+      if (!active) return;
+      if (area) {
+        const previousAutoArea = autoArea.current;
+        autoArea.current = area;
+        setDraft((previous) => {
+          if (
+            previous.publicLocation &&
+            previous.publicLocation !== previousAutoArea
+          )
+            return previous;
+          return { ...previous, publicLocation: area };
+        });
+        setFieldErrors((previous) => ({
+          ...previous,
+          publicLocation: undefined,
+        }));
+      }
+      setLookingUp(false);
+    }, 700);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [
+    draft.coordinates?.latitude,
+    draft.coordinates?.longitude,
+    busy,
+    setDraft,
+    setFieldErrors,
+  ]);
+
+  const updatePublicArea = (publicLocation) => {
+    autoArea.current = '';
+    setDraft((previous) => ({ ...previous, publicLocation }));
+    setFieldErrors((previous) => ({ ...previous, publicLocation: undefined }));
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
@@ -26,7 +79,34 @@ export default function LocationFields({
         <Text style={styles.cardTitle}>Location & Map Pin</Text>
       </View>
 
+      <Text style={styles.cardSubText}>
+        Pin the pickup or drop-off first, then confirm the public area below.
+        Only the accepted doer can see the exact pin, private directions and
+        phone.
+      </Text>
+      <LocationPicker
+        value={draft.coordinates}
+        disabled={busy}
+        onChange={(coordinates) => {
+          setDraft((previous) => ({ ...previous, coordinates }));
+          setFieldErrors((previous) => ({
+            ...previous,
+            coordinates: undefined,
+          }));
+        }}
+      />
+      {fieldErrors.coordinates ? (
+        <Text style={styles.fieldErrorText}>{fieldErrors.coordinates}</Text>
+      ) : null}
+      {lookingUp ? (
+        <Text style={styles.cardSubText}>Checking the area for this pin…</Text>
+      ) : null}
+
       <View style={styles.fieldBlock}>
+        <PhilippineAreaPicker
+          disabled={busy}
+          onSelect={updatePublicArea}
+        />
         <Text style={styles.fieldLabel}>Public area / landmark *</Text>
         <TextInput
           accessibilityLabel="Public area"
@@ -40,9 +120,7 @@ export default function LocationFields({
           value={draft.publicLocation}
           editable={!busy}
           maxLength={250}
-          onChangeText={(publicLocation) =>
-            setDraft((p) => ({ ...p, publicLocation }))
-          }
+          onChangeText={updatePublicArea}
         />
         {fieldErrors.publicLocation ? (
           <Text style={styles.fieldErrorText}>
@@ -50,8 +128,8 @@ export default function LocationFields({
           </Text>
         ) : null}
         <Text style={styles.cardSubText}>
-          Only the accepted doer can see your exact address and phone. Keep
-          personal details out of public remarks.
+          Confirm the area matches your pin. Keep house numbers and personal
+          details out of this public field.
         </Text>
       </View>
       <View style={styles.fieldBlock}>
@@ -62,7 +140,7 @@ export default function LocationFields({
               fieldErrors.location && styles.fieldLabelError,
             ]}
           >
-            Exact address (private) *
+            Extra directions (private, optional)
           </Text>
           <Text style={styles.counterText}>{draft.location.length}/250</Text>
         </View>
@@ -80,7 +158,7 @@ export default function LocationFields({
           />
           <TextInput
             style={styles.textInputInner}
-            placeholder="Address, landmark, or drop-off..."
+            placeholder="Unit, gate, or pickup instructions (optional)"
             placeholderTextColor={colors.muted}
             accessibilityLabel="Exact address"
             value={draft.location}
@@ -96,16 +174,11 @@ export default function LocationFields({
         {fieldErrors.location && (
           <Text style={styles.fieldErrorText}>{fieldErrors.location}</Text>
         )}
+        <Text style={styles.cardSubText}>
+          Your map pin is the exact location. Add details only if they help the
+          doer find you.
+        </Text>
       </View>
-
-      <Text style={styles.fieldErrorText}>{fieldErrors.coordinates}</Text>
-      <LocationPicker
-        value={draft.coordinates}
-        disabled={busy}
-        onChange={(coordinates) => {
-          setDraft((previous) => ({ ...previous, coordinates }));
-        }}
-      />
     </View>
   );
 }

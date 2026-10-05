@@ -23,6 +23,7 @@ import { useSuyos } from '../../context/SuyoContext';
 
 import CalendarModal from './CalendarModal';
 import ClockModal from './ClockModal';
+import { privatePinAddress } from '../../lib/philippineAreas';
 
 export default function RequestForm({ onPosted }) {
   const styles = useRequestFormStyles();
@@ -77,9 +78,6 @@ export default function RequestForm({ onPosted }) {
       errors.deadlineTime = 'Target time is required';
     }
     // 4. Address
-    if (!draft.location.trim()) {
-      errors.location = 'Address/meeting landmark/Drop off is required';
-    }
     if (!draft.publicLocation.trim())
       errors.publicLocation = 'Enter a public area or landmark';
     if (!draft.coordinates)
@@ -87,8 +85,8 @@ export default function RequestForm({ onPosted }) {
     if (!draft.details.trim())
       errors.details = 'Describe what needs to be done';
     // 5. Contact Info
-    if (!draft.contactPhone.trim()) {
-      errors.contactPhone = 'Contact info is required to post a suyo';
+    if (!/^\d{10}$/.test(draft.contactPhone)) {
+      errors.contactPhone = 'Enter exactly 10 digits after +63';
     }
 
     setFieldErrors(errors);
@@ -155,8 +153,9 @@ export default function RequestForm({ onPosted }) {
         details: draft.details.trim() || draft.title.trim(),
         location: draft.location.trim(),
         publicLocation: draft.publicLocation.trim(),
-        exactAddress: draft.location.trim(),
-        phone: draft.contactPhone.trim(),
+        exactAddress:
+          draft.location.trim() || privatePinAddress(draft.coordinates),
+        phone: `+63${draft.contactPhone}`,
         coordinates: draft.coordinates,
         deadline: combinedDeadline,
         attachments: draft.attachments || [],
