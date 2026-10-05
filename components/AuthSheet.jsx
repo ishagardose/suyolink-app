@@ -19,6 +19,8 @@ import ThemedView from './themed/ThemedView';
 import ThemedText from './themed/ThemedText';
 import ThemedTextInput from './themed/ThemedTextInput';
 import ThemedButton from './themed/ThemedButton';
+import SignupLocationFields from './onboarding/SignupLocationFields';
+import { hasCoordinates } from '../lib/geo';
 
 export default function AuthSheet({
   mode,
@@ -39,6 +41,8 @@ export default function AuthSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [locationSelection, setLocationSelection] = useState(null);
+  const [acknowledged, setAcknowledged] = useState(false);
   const submitting = useRef(false);
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -62,6 +66,15 @@ export default function AuthSheet({
 
   const submit = async () => {
     if (submitting.current) return;
+    if (
+      signup &&
+      (!hasCoordinates(locationSelection?.position) || !acknowledged)
+    ) {
+      setError(
+        'Choose your area and check the location acknowledgment before creating your account.',
+      );
+      return;
+    }
     if (signup && !name.trim()) {
       setError('Enter your full name.');
       return;
@@ -83,7 +96,13 @@ export default function AuthSheet({
     setError('');
     try {
       const result = signup
-        ? await register({ email, password, name })
+        ? await register({
+            email,
+            password,
+            name,
+            location: locationSelection,
+            acknowledged,
+          })
         : await login({ email, password });
       setPassword('');
       setConfirmPassword('');
@@ -115,13 +134,19 @@ export default function AuthSheet({
       style={[styles.root, { backgroundColor: colors.brand, opacity }]}
     >
       <StatusBar style="light" />
-      <SafeAreaView edges={['top', 'bottom']} style={styles.flex}>
+      <SafeAreaView
+        edges={['top', 'bottom']}
+        style={styles.flex}
+      >
         <ScreenHeader
           brand
           title={signup ? 'Sign Up' : 'Log In'}
           onBack={onClose}
         />
-        <ThemedView tone="surface" style={styles.sheet}>
+        <ThemedView
+          tone="surface"
+          style={styles.sheet}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.flex}
@@ -142,11 +167,36 @@ export default function AuthSheet({
               <ThemedText style={styles.title}>
                 {signup ? 'Getting Started' : 'Welcome Back!'}
               </ThemedText>
-              <ThemedText tone="textSecondary" style={styles.subtitle}>
+              <ThemedText
+                tone="textSecondary"
+                style={styles.subtitle}
+              >
                 {signup
-                  ? 'Create your SuyoLink account.'
+                  ? 'Start with your location, then create your SuyoLink account.'
                   : 'Sign in to your SuyoLink account.'}
               </ThemedText>
+              {signup ? (
+                <>
+                  <SignupLocationFields
+                    selection={locationSelection}
+                    onSelect={setLocationSelection}
+                    acknowledged={acknowledged}
+                    onAcknowledge={setAcknowledged}
+                    disabled={busy}
+                  />
+                  <ThemedText
+                    tone="link"
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: 1.3,
+                      fontWeight: '700',
+                      marginBottom: 16,
+                    }}
+                  >
+                    STEP 2 OF 2 · ACCOUNT DETAILS
+                  </ThemedText>
+                </>
+              ) : null}
               {signup && (
                 <Field
                   label="Full Name"
@@ -226,6 +276,11 @@ export default function AuthSheet({
                 title={signup ? 'Sign Up' : 'Log In'}
                 onPress={submit}
                 loading={busy}
+                disabled={
+                  signup &&
+                  (!hasCoordinates(locationSelection?.position) ||
+                    !acknowledged)
+                }
               />
               {!signup ? (
                 <ThemedView style={{ gap: 10, marginTop: 12 }}>
@@ -253,7 +308,10 @@ export default function AuthSheet({
                   onPress={onSwitch}
                   disabled={busy}
                 >
-                  <ThemedText tone="link" style={styles.link}>
+                  <ThemedText
+                    tone="link"
+                    style={styles.link}
+                  >
                     {signup ? 'Log In' : 'Sign Up'}
                   </ThemedText>
                 </TouchableOpacity>
@@ -275,7 +333,11 @@ function Field({ label, icon, accessory, ...props }) {
         tone="input"
         style={[styles.inputRow, { borderColor: colors.border }]}
       >
-        <Ionicons name={icon} size={20} color={colors.muted} />
+        <Ionicons
+          name={icon}
+          size={20}
+          color={colors.muted}
+        />
         <ThemedTextInput
           accessibilityLabel={label}
           {...props}

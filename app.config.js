@@ -5,16 +5,26 @@ module.exports = ({ config }) => ({
     ...(config.plugins || []),
     'expo-secure-store',
     '@react-native-community/datetimepicker',
-    ['expo-image-picker', {
-      photosPermission: 'Choose a photo as proof that your Suyo task is complete.',
-      cameraPermission: 'Take a photo as proof that your Suyo task is complete.',
-      microphonePermission: false,
-    }],
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Choose a photo as proof that your Suyo task is complete.',
+        cameraPermission:
+          'Take a photo as proof that your Suyo task is complete.',
+        microphonePermission: false,
+      },
+    ],
   ],
   android: {
     ...config.android,
-    ...(process.env.GOOGLE_MAPS_API_KEY ? {
-      config: { ...config.android?.config, googleMaps: { apiKey: process.env.GOOGLE_MAPS_API_KEY } },
-    } : {}),
+    ...(process.env.GOOGLE_MAPS_API_KEY
+      ? {
+          config: {
+            ...config.android?.config,
+            googleMaps: { apiKey: process.env.GOOGLE_MAPS_API_KEY },
+          },
+        }
+      : {}),
   },
 });

@@ -29,8 +29,11 @@ export default function RateSuyoScreen() {
   }, [id, loadDetails]);
 
   const request = detailsById[id] || requests.find((item) => item.id === id);
-  const existingRating = ratings.find((r) => r.request_id === id && r.reviewer_id === user?.id);
-  const isRequester = request?.requesterId === user?.id || request?.providerId === user?.id;
+  const existingRating = ratings.find(
+    (r) => r.request_id === id && r.reviewer_id === user?.id,
+  );
+  const isRequester =
+    request?.requesterId === user?.id || request?.providerId === user?.id;
   const isCompleted = request?.status === 'completed';
 
   const handleSubmit = async () => {
@@ -87,7 +90,14 @@ export default function RateSuyoScreen() {
         }
       />
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 60, width: '100%', maxWidth: 760, alignSelf: 'center' }}
+        contentContainerStyle={{
+          padding: 20,
+          gap: 16,
+          paddingBottom: 60,
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+        }}
       >
         {request ? <SuyoSummary details={request} /> : null}
 
@@ -129,14 +139,20 @@ export default function RateSuyoScreen() {
             </ThemedText>
 
             {error ? (
-              <ThemedText accessibilityRole="alert" tone="danger">
+              <ThemedText
+                accessibilityRole="alert"
+                tone="danger"
+              >
                 {error}
               </ThemedText>
             ) : null}
 
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {[1, 2, 3, 4, 5].map((val) => (
-                <View key={val} style={{ flex: 1 }}>
+                <View
+                  key={val}
+                  style={{ flex: 1 }}
+                >
                   <ThemedButton
                     title={String(val)}
                     accessibilityLabel={`${val} stars`}
@@ -169,7 +185,9 @@ export default function RateSuyoScreen() {
 
             <ThemedButton
               title={busy ? 'Submitting rating…' : 'Submit rating'}
-              disabled={busy || !score || !request || !isRequester || !isCompleted}
+              disabled={
+                busy || !score || !request || !isRequester || !isCompleted
+              }
               onPress={handleSubmit}
             />
           </View>

@@ -21,7 +21,11 @@ export default function DeadlineFields({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
-        <Ionicons name="time-outline" size={18} color={colors.link} />
+        <Ionicons
+          name="time-outline"
+          size={18}
+          color={colors.link}
+        />
         <Text style={styles.cardTitle}>Completion Deadline</Text>
       </View>
 
@@ -52,7 +56,8 @@ export default function DeadlineFields({
               style={styles.textInputInner}
               placeholder="YYYY-MM-DD"
               placeholderTextColor={colors.muted}
-              accessibilityLabel="Target date" value={draft.deadlineDate}
+              accessibilityLabel="Target date"
+              value={draft.deadlineDate}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineDate: val }));
                 if (fieldErrors.deadlineDate)
@@ -104,7 +109,8 @@ export default function DeadlineFields({
               style={styles.textInputInner}
               placeholder="HH:mm"
               placeholderTextColor={colors.muted}
-              accessibilityLabel="Target time" value={draft.deadlineTime}
+              accessibilityLabel="Target time"
+              value={draft.deadlineTime}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineTime: val }));
                 if (fieldErrors.deadlineTime)
@@ -138,7 +144,11 @@ export default function DeadlineFields({
 
       {draft.deadlineDate && draft.deadlineTime ? (
         <View style={styles.deadlineContainerPill}>
-          <Ionicons name="checkmark-circle" size={14} color={colors.link} />
+          <Ionicons
+            name="checkmark-circle"
+            size={14}
+            color={colors.link}
+          />
           <Text style={styles.deadlinePillText}>
             Scheduled Deadline: {draft.deadlineDate} at {draft.deadlineTime}
           </Text>

@@ -8,7 +8,8 @@ export function fromPublicRow(row) {
     id: row.id,
     requesterId: row.requester_id,
     providerId: row.provider_id ?? null,
-    requesterName: row.requester_name || row.requester?.full_name || 'SuyoLink user',
+    requesterName:
+      row.requester_name || row.requester?.full_name || 'SuyoLink user',
     title: row.title,
     details: row.details,
     category: row.category,

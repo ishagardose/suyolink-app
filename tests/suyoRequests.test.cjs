@@ -1,9 +1,20 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { createRequest, readRequests, parseDeadline } = require('../data/suyoRequests.js');
+const {
+  createRequest,
+  readRequests,
+  parseDeadline,
+} = require('../data/suyoRequests.js');
 const user = { email: 'demo@example.com', name: 'Demo User' };
-const draft = { title: ' Groceries ', details: 'Rice and eggs', category: 'Groceries',
-  offerAmount: '150.25', deadline: '2099-12-31 18:30', location: 'Davao', notes: '' };
+const draft = {
+  title: ' Groceries ',
+  details: 'Rice and eggs',
+  category: 'Groceries',
+  offerAmount: '150.25',
+  deadline: '2099-12-31 18:30',
+  location: 'Davao',
+  notes: '',
+};
 test('new requests store money exactly, ownership and open status', () => {
   const result = createRequest(draft, user);
   assert.equal(result.title, 'Groceries');
@@ -15,9 +26,19 @@ test('new requests store money exactly, ownership and open status', () => {
   assert.deepEqual(readRequests(JSON.stringify([result])), [result]);
 });
 test('required fields, category, amounts and deadlines reject invalid input', () => {
-  for (const change of [{ title: ' ' }, { details: ' ' }, { location: ' ' }, { category: 'Unknown' },
-    { offerAmount: '0' }, { offerAmount: '-5' }, { offerAmount: '1.001' }, { offerAmount: 'Infinity' },
-    { offerAmount: '1000001' }, { deadline: '2000-01-01 12:00' }, { deadline: '2099-02-30 12:00' }]) {
+  for (const change of [
+    { title: ' ' },
+    { details: ' ' },
+    { location: ' ' },
+    { category: 'Unknown' },
+    { offerAmount: '0' },
+    { offerAmount: '-5' },
+    { offerAmount: '1.001' },
+    { offerAmount: 'Infinity' },
+    { offerAmount: '1000001' },
+    { deadline: '2000-01-01 12:00' },
+    { deadline: '2099-02-30 12:00' },
+  ]) {
     assert.throws(() => createRequest({ ...draft, ...change }, user));
   }
   assert.throws(() => createRequest(draft, null));
@@ -28,7 +49,7 @@ test('private and public location fields and phone are validated', () => {
     publicLocation: 'Davao City',
     exactAddress: '123 Private St',
     phone: '+639171234567',
-    coordinates: { latitude: 7.07, longitude: 125.6 }
+    coordinates: { latitude: 7.07, longitude: 125.6 },
   };
   const result = createRequest(fullDraft, user);
   assert.equal(result.publicLocation, 'Davao City');
@@ -40,7 +61,12 @@ test('private and public location fields and phone are validated', () => {
   assert.throws(() => createRequest({ ...fullDraft, phone: '' }, user));
   assert.throws(() => createRequest({ ...fullDraft, exactAddress: '' }, user));
   assert.throws(() => createRequest({ ...fullDraft, coordinates: null }, user));
-  assert.throws(() => createRequest({ ...fullDraft, coordinates: { latitude: 95, longitude: 125.6 } }, user));
+  assert.throws(() =>
+    createRequest(
+      { ...fullDraft, coordinates: { latitude: 95, longitude: 125.6 } },
+      user,
+    ),
+  );
 });
 
 test('deadline uses local time and validates calendar dates', () => {
@@ -52,5 +78,6 @@ test('deadline uses local time and validates calendar dates', () => {
 });
 test('bad storage is rejected instead of silently overwritten', () => {
   assert.deepEqual(readRequests(null), []);
-  for (const raw of ['bad json', '{}', '[null]', '[{}]']) assert.throws(() => readRequests(raw));
+  for (const raw of ['bad json', '{}', '[null]', '[{}]'])
+    assert.throws(() => readRequests(raw));
 });

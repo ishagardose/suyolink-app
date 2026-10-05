@@ -17,7 +17,11 @@ export default function RewardFields({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
-        <Ionicons name="cash-outline" size={18} color={colors.link} />
+        <Ionicons
+          name="cash-outline"
+          size={18}
+          color={colors.link}
+        />
         <Text style={styles.cardTitle}>Reward Offer (PHP)</Text>
       </View>
 
@@ -55,7 +59,8 @@ export default function RewardFields({
             style={styles.currencyInput}
             placeholder="150.00"
             placeholderTextColor={colors.muted}
-            accessibilityLabel="Reward amount" value={draft.offerAmount}
+            accessibilityLabel="Reward amount"
+            value={draft.offerAmount}
             onChangeText={(val) => {
               setDraft((p) => ({
                 ...p,

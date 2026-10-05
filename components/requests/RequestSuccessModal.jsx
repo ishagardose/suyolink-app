@@ -25,14 +25,19 @@ export default function RequestSuccessModal({
       <View style={styles.modalBackdrop}>
         <View style={styles.successModalCard}>
           <View style={styles.successIconCircle}>
-            <Ionicons name="checkmark-sharp" size={38} color="#FFFFFF" />
+            <Ionicons
+              name="checkmark-sharp"
+              size={38}
+              color="#FFFFFF"
+            />
           </View>
 
           <Text style={styles.successModalTitle}>
             Suyo Posted Successfully!
           </Text>
           <Text style={styles.successModalSub}>
-            Your suyo request "{draft.title}" is now available for doers to find.
+            Your suyo request "{draft.title}" is now available for doers to
+            find.
           </Text>
 
           <View style={styles.successSummaryBox}>

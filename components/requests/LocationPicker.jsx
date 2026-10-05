@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TaskMap from '../maps/TaskMap';
 import { useDeviceLocation } from '../../context/LocationContext';
@@ -20,8 +26,14 @@ export default function LocationPicker({ value, onChange, disabled }) {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={styles.headerTitleBlock}>
-          <Ionicons name="map-outline" size={16} color="#1E4D2B" />
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Task Location Pin</Text>
+          <Ionicons
+            name="map-outline"
+            size={16}
+            color="#1E4D2B"
+          />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Task Location Pin
+          </Text>
         </View>
         <TouchableOpacity
           style={[styles.locateButton, disabled && styles.disabledButton]}
@@ -30,10 +42,17 @@ export default function LocationPicker({ value, onChange, disabled }) {
           activeOpacity={0.75}
         >
           {loading ? (
-            <ActivityIndicator size="small" color="#1E4D2B" />
+            <ActivityIndicator
+              size="small"
+              color="#1E4D2B"
+            />
           ) : (
             <>
-              <Ionicons name="locate" size={14} color="#1E4D2B" />
+              <Ionicons
+                name="locate"
+                size={14}
+                color="#1E4D2B"
+              />
               <Text style={styles.locateButtonText}>My Location</Text>
             </>
           )}
@@ -41,16 +60,22 @@ export default function LocationPicker({ value, onChange, disabled }) {
       </View>
 
       <Text style={[styles.helperText, { color: colors.textMuted }]}>
-        Tap anywhere on the map to place or adjust the exact pickup / drop-off pin.
+        Tap anywhere on the map to place or adjust the exact pickup / drop-off
+        pin.
       </Text>
 
       {/* Map Viewport Card */}
       <View style={[styles.mapCard, { borderColor: colors.border }]}>
-        <View pointerEvents={disabled ? 'none' : 'auto'} style={styles.mapInner}>
+        <View
+          pointerEvents={disabled ? 'none' : 'auto'}
+          style={styles.mapInner}
+        >
           <TaskMap
             center={value || position}
             onPick={disabled ? undefined : onChange}
-            markers={value ? [{ ...value, id: 'task', title: 'Task location' }] : []}
+            markers={
+              value ? [{ ...value, id: 'task', title: 'Task location' }] : []
+            }
             height={220}
           />
         </View>
@@ -58,7 +83,12 @@ export default function LocationPicker({ value, onChange, disabled }) {
         {/* Pin Status Badge */}
         <View style={styles.pinStatusFooter}>
           <View style={styles.pinIndicator}>
-            <View style={[styles.pinDot, { backgroundColor: value ? '#1E4D2B' : '#C4D6CC' }]} />
+            <View
+              style={[
+                styles.pinDot,
+                { backgroundColor: value ? '#1E4D2B' : '#C4D6CC' },
+              ]}
+            />
             <Text style={styles.pinStatusText}>
               {value
                 ? `Pin: ${value.latitude.toFixed(4)}, ${value.longitude.toFixed(4)}`
@@ -67,7 +97,11 @@ export default function LocationPicker({ value, onChange, disabled }) {
           </View>
           {value && (
             <View style={styles.verifiedPinPill}>
-              <Ionicons name="checkmark-circle" size={12} color="#1E4D2B" />
+              <Ionicons
+                name="checkmark-circle"
+                size={12}
+                color="#1E4D2B"
+              />
               <Text style={styles.verifiedPinText}>Pin Set</Text>
             </View>
           )}
@@ -76,7 +110,11 @@ export default function LocationPicker({ value, onChange, disabled }) {
 
       {error ? (
         <View style={styles.errorBanner}>
-          <Ionicons name="alert-circle" size={14} color="#DC2626" />
+          <Ionicons
+            name="alert-circle"
+            size={14}
+            color="#DC2626"
+          />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : null}

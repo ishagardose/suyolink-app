@@ -19,15 +19,29 @@ export default function ApplicationsPanel({
   if (!request) return null;
 
   const own = request.requesterId === userId;
-  const eligible = request.status === 'open' && Date.parse(request.deadline) > Date.now();
-  const requestApplications = applications.filter((app) => app.request_id === request.id);
+  const eligible =
+    request.status === 'open' && Date.parse(request.deadline) > Date.now();
+  const requestApplications = applications.filter(
+    (app) => app.request_id === request.id,
+  );
   const mine = requestApplications.find((app) => app.applicant_id === userId);
 
   if (!own) {
     if (mine) {
       return (
-        <View style={{ gap: 8, padding: 14, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
-          <ThemedText style={{ fontWeight: '700' }}>Your application: {mine.status}</ThemedText>
+        <View
+          style={{
+            gap: 8,
+            padding: 14,
+            backgroundColor: colors.card,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <ThemedText style={{ fontWeight: '700' }}>
+            Your application: {mine.status}
+          </ThemedText>
           {mine.status === 'pending' ? (
             <ThemedButton
               title="Withdraw application"
@@ -53,14 +67,21 @@ export default function ApplicationsPanel({
 
   return (
     <View style={{ gap: 12 }}>
-      <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>Applicants</ThemedText>
+      <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>
+        Applicants
+      </ThemedText>
       {!requestApplications.length ? (
         <ThemedText>No applications yet.</ThemedText>
       ) : (
         requestApplications.map((application) => {
-          const reviews = ratings.filter((item) => item.provider_id === application.applicant_id);
+          const reviews = ratings.filter(
+            (item) => item.provider_id === application.applicant_id,
+          );
           const avgScore = reviews.length
-            ? (reviews.reduce((sum, item) => sum + item.score, 0) / reviews.length).toFixed(1)
+            ? (
+                reviews.reduce((sum, item) => sum + item.score, 0) /
+                reviews.length
+              ).toFixed(1)
             : null;
           return (
             <View
@@ -75,23 +96,32 @@ export default function ApplicationsPanel({
               }}
             >
               <ThemedText style={{ fontWeight: '600' }}>
-                {application.applicant?.full_name || 'Provider'} · {application.status}
+                {application.applicant?.full_name || 'Provider'} ·{' '}
+                {application.status}
               </ThemedText>
               <ThemedText tone="textMuted">
-                {avgScore ? `${avgScore} / 5 (${reviews.length} reviews)` : 'No ratings yet'}
+                {avgScore
+                  ? `${avgScore} / 5 (${reviews.length} reviews)`
+                  : 'No ratings yet'}
               </ThemedText>
               {application.status === 'pending' && eligible ? (
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <View style={{ flex: 1 }}>
                     <ThemedButton
-                      title={'Accept ' + (application.applicant?.full_name || 'provider')}
+                      title={
+                        'Accept ' +
+                        (application.applicant?.full_name || 'provider')
+                      }
                       disabled={busy || disabled}
                       onPress={() => onDecide(application.id, true)}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
                     <ThemedButton
-                      title={'Reject ' + (application.applicant?.full_name || 'provider')}
+                      title={
+                        'Reject ' +
+                        (application.applicant?.full_name || 'provider')
+                      }
                       variant="secondary"
                       disabled={busy || disabled}
                       onPress={() => onDecide(application.id, false)}

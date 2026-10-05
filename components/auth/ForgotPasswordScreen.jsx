@@ -18,7 +18,7 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const [email, setEmail] = useState(
-    typeof params.email === 'string' ? params.email : ''
+    typeof params.email === 'string' ? params.email : '',
   );
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +34,7 @@ export default function ForgotPasswordScreen() {
     if (!cooldown) return;
     const timer = setTimeout(
       () => setCooldown((value) => Math.max(0, value - 1)),
-      1000
+      1000,
     );
     return () => clearTimeout(timer);
   }, [cooldown]);
@@ -44,7 +44,7 @@ export default function ForgotPasswordScreen() {
       client.current = null;
       if (current) current.auth.signOut({ scope: 'local' }).catch(() => {});
     },
-    []
+    [],
   );
 
   const run = async (action) => {
@@ -60,7 +60,7 @@ export default function ForgotPasswordScreen() {
       setError(
         err.code === 'otp_expired'
           ? 'This code is invalid or expired. Request a new code and try again.'
-          : err.message || 'Please try again.'
+          : err.message || 'Please try again.',
       );
     } finally {
       lock.current = false;
@@ -75,14 +75,14 @@ export default function ForgotPasswordScreen() {
     }
     run(async (recovery) => {
       const { error } = await recovery.auth.resetPasswordForEmail(
-        email.trim().toLowerCase()
+        email.trim().toLowerCase(),
       );
       if (error) throw error;
       setCode('');
       setStep('code');
       setCooldown(60);
       setNotice(
-        'If this email has an account, a reset code is on its way. Check your inbox and spam folder.'
+        'If this email has an account, a reset code is on its way. Check your inbox and spam folder.',
       );
     });
   };
@@ -148,7 +148,10 @@ export default function ForgotPasswordScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <ThemedText accessibilityRole="header" style={styles.title}>
+          <ThemedText
+            accessibilityRole="header"
+            style={styles.title}
+          >
             {step === 'done'
               ? 'Password updated'
               : step === 'password'
@@ -191,7 +194,7 @@ export default function ForgotPasswordScreen() {
                       textContentType: 'oneTimeCode',
                       autoComplete: 'one-time-code',
                       maxLength: 10,
-                    }
+                    },
                   )}
                   <ThemedButton
                     title="Verify reset code"
@@ -249,7 +252,10 @@ export default function ForgotPasswordScreen() {
             </>
           )}
           {error ? (
-            <ThemedText tone="danger" accessibilityRole="alert">
+            <ThemedText
+              tone="danger"
+              accessibilityRole="alert"
+            >
               {error}
             </ThemedText>
           ) : null}

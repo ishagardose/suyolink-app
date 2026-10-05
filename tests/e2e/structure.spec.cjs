@@ -19,15 +19,15 @@ test('dashboard sections retain search, tab, notification and wallet state', asy
   const search = page.getByLabel('Search suyos', { exact: true });
   await search.fill('Mercury');
   await expect(
-    page.getByText('Prescription pickup at Mercury Drug', { exact: true })
+    page.getByText('Prescription pickup at Mercury Drug', { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText('Drop off documents - Unit 402', { exact: true })
+    page.getByText('Drop off documents - Unit 402', { exact: true }),
   ).toHaveCount(0);
   await page.getByRole('button', { name: 'MySuyo', exact: true }).click();
   await page.getByRole('button', { name: 'Doer Suyo', exact: true }).click();
   await expect(
-    page.getByText('Suyos Done as Doer', { exact: true })
+    page.getByText('Suyos Done as Doer', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Home', exact: true }).click();
   await expect(search).toHaveValue('Mercury');
@@ -90,13 +90,13 @@ test('account and rating dialogs update their parent screens', async ({
     .fill('Updated Profile');
   await page.getByText('Save Changes', { exact: true }).click();
   await expect(
-    page.getByText('Updated Profile', { exact: true })
+    page.getByText('Updated Profile', { exact: true }),
   ).toBeVisible();
   await page.goto('/rate-doer');
   await page.getByLabel('5 stars', { exact: true }).click();
   await page.getByText('Submit Rating', { exact: true }).click();
   await expect(
-    page.getByText('Rating Submitted!', { exact: true })
+    page.getByText('Rating Submitted!', { exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -113,7 +113,7 @@ test('notification actions and fulfillment proof navigation remain connected', a
   await page.getByText('Mark Complete & upload proof', { exact: true }).click();
   await expect(page).toHaveURL(/\/submit-proof\?/);
   await expect(
-    page.getByText('Submit Proof of Suyo', { exact: true })
+    page.getByText('Submit Proof of Suyo', { exact: true }),
   ).toBeVisible();
   await page
     .getByPlaceholder('e.g. Handed grocery bags to recipient at unit doorstep.')
@@ -129,7 +129,7 @@ test('grouped routes preserve public URLs and browser back navigation', async ({
   await page.getByRole('button', { name: 'Post', exact: true }).click();
   await expect(page).toHaveURL(/\/post-suyo$/);
   await expect(
-    page.getByPlaceholder('e.g. Drop off documents - Unit 402')
+    page.getByPlaceholder('e.g. Drop off documents - Unit 402'),
   ).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -153,16 +153,18 @@ test('location setup still guards grouped task routes', async ({ page }) => {
   const errors = captureErrors(page);
   await page.addInitScript(() =>
     localStorage.removeItem(
-      '@suyolink/location/11111111-1111-4111-8111-111111111111'
-    )
+      '@suyolink/location/11111111-1111-4111-8111-111111111111',
+    ),
   );
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/set-location$/);
   await expect(
-    page.getByRole('button', { name: 'Use my current location' })
+    page.getByRole('button', { name: 'Use my current location' }),
   ).toBeVisible();
   await page.goto('/account');
-  await expect(page).toHaveURL(/\/account$/);
-  await expect(page.getByText('My Profile', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/set-location$/);
+  await expect(
+    page.getByText('Set your location', { exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });

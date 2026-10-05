@@ -28,7 +28,9 @@ test('urgencyFor correctly categorizes deadlines', () => {
   assert.equal(res24h?.key, 'due_soon');
 
   // Immediately after 24 hours: null (no urgency tag)
-  const after24h = new Date(baseTime + 24 * 60 * 60 * 1000 + 1000).toISOString();
+  const after24h = new Date(
+    baseTime + 24 * 60 * 60 * 1000 + 1000,
+  ).toISOString();
   const resAfter24h = urgencyFor(after24h, baseTime);
   assert.equal(resAfter24h, null);
 

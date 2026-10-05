@@ -6,8 +6,14 @@ module.exports = defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     viewport: { width: 390, height: 844 },
-    ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
+    ...(process.env.PLAYWRIGHT_CHANNEL
+      ? { channel: process.env.PLAYWRIGHT_CHANNEL }
+      : {}),
     screenshot: 'only-on-failure',
   },
-  webServer: { command: 'node tests/serve.cjs', url: 'http://127.0.0.1:4173', reuseExistingServer: false },
+  webServer: {
+    command: 'node tests/serve.cjs',
+    url: 'http://127.0.0.1:4173',
+    reuseExistingServer: false,
+  },
 });

@@ -119,7 +119,14 @@ export default function ProofScreen() {
         }
       />
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 60, width: '100%', maxWidth: 760, alignSelf: 'center' }}
+        contentContainerStyle={{
+          padding: 20,
+          gap: 16,
+          paddingBottom: 60,
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+        }}
       >
         {request ? <SuyoSummary details={request} /> : null}
 
@@ -132,7 +139,10 @@ export default function ProofScreen() {
         </ThemedText>
 
         {error ? (
-          <ThemedText accessibilityRole="alert" tone="danger">
+          <ThemedText
+            accessibilityRole="alert"
+            tone="danger"
+          >
             {error}
           </ThemedText>
         ) : null}

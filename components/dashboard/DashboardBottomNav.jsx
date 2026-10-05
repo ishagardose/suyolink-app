@@ -28,39 +28,49 @@ export default function DashboardBottomNav({
         { paddingBottom: bottomInset, height: 64 + bottomInset },
       ]}
     >
-      <View style={{ width: '100%', maxWidth: 900, flexDirection: 'row', alignItems: 'center' }}>
-      {TABS.map((tab) => {
-        const isActive = activeTab === tab.id;
-        return (
-          <TouchableOpacity
-            key={tab.id}
-            accessibilityRole="button"
-            accessibilityLabel={tab.label}
-            accessibilityState={{ selected: isActive }}
-            style={[
-              styles.navItem,
-              isActive && { backgroundColor: colors.surfaceAlt },
-            ]}
-            onPress={() => {
-              if (tab.id === 'post') onPost();
-              else if (tab.id === 'account') onAccount();
-              else onTabChange(tab.id);
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={isActive ? tab.icon : `${tab.icon}-outline`}
-              size={22}
-              color={isActive ? colors.link : colors.muted}
-            />
-            <ThemedText
-              style={[styles.navItemText, isActive && styles.navItemTextActive]}
+      <View
+        style={{
+          width: '100%',
+          maxWidth: 900,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
+      >
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              accessibilityRole="button"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected: isActive }}
+              style={[
+                styles.navItem,
+                isActive && { backgroundColor: colors.surfaceAlt },
+              ]}
+              onPress={() => {
+                if (tab.id === 'post') onPost();
+                else if (tab.id === 'account') onAccount();
+                else onTabChange(tab.id);
+              }}
+              activeOpacity={0.7}
             >
-              {tab.label}
-            </ThemedText>
-          </TouchableOpacity>
-        );
-      })}
+              <Ionicons
+                name={isActive ? tab.icon : `${tab.icon}-outline`}
+                size={22}
+                color={isActive ? colors.link : colors.muted}
+              />
+              <ThemedText
+                style={[
+                  styles.navItemText,
+                  isActive && styles.navItemTextActive,
+                ]}
+              >
+                {tab.label}
+              </ThemedText>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );

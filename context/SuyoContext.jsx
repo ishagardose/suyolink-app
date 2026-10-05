@@ -1,4 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useAuth } from './AuthContext';
 import { supabase, authConfigError } from '../lib/supabase';
 import { createRequest } from '../data/suyoRequests';
@@ -53,7 +60,10 @@ export function SuyoProvider({ children }) {
   const workflowRevision = useRef(0);
   const saving = useRef(false);
   const revision = useRef(0);
-  useEffect(() => { setDetailsById({}); setDetailsError(''); }, [user?.id]);
+  useEffect(() => {
+    setDetailsById({});
+    setDetailsError('');
+  }, [user?.id]);
   const currentUser = useRef(user?.id);
   currentUser.current = user?.id;
 
@@ -84,10 +94,11 @@ export function SuyoProvider({ children }) {
       if (listFilters.scope === 'browse') {
         promises.push(
           apiListRequests({ scope: 'posted' }).catch(() => []),
-          apiListRequests({ scope: 'assigned' }).catch(() => [])
+          apiListRequests({ scope: 'assigned' }).catch(() => []),
         );
       }
-      const [data, postedData = [], assignedData = []] = await Promise.all(promises);
+      const [data, postedData = [], assignedData = []] =
+        await Promise.all(promises);
       if (run === revision.current && currentUser.current === user.id) {
         const mergedMap = new Map();
         [...data, ...postedData, ...assignedData].forEach((item) => {
@@ -97,7 +108,10 @@ export function SuyoProvider({ children }) {
       }
     } catch (err) {
       if (run === revision.current) {
-        setError(err.message || 'Could not load requests. Check your connection and retry.');
+        setError(
+          err.message ||
+            'Could not load requests. Check your connection and retry.',
+        );
       }
     } finally {
       if (run === revision.current) setIsLoading(false);
@@ -134,7 +148,7 @@ export function SuyoProvider({ children }) {
         setDetailsLoading(false);
       }
     },
-    [detailsById, user?.id]
+    [detailsById, user?.id],
   );
 
   const reloadWorkflow = useCallback(async () => {
@@ -147,25 +161,34 @@ export function SuyoProvider({ children }) {
           .from('applications')
           .select('*, applicant:profiles!applicant_id(full_name)')
           .order('created_at', { ascending: false }),
-        supabase.from('proofs').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('proofs')
+          .select('*')
+          .order('created_at', { ascending: false }),
         supabase.from('ratings').select('*'),
         supabase
           .from('notifications')
           .select('*')
           .eq('recipient_id', id)
           .order('created_at', { ascending: false }),
-        supabase.from('request_events').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('request_events')
+          .select('*')
+          .order('created_at', { ascending: false }),
       ]);
-      if (currentUser.current !== id || run !== workflowRevision.current) return;
+      if (currentUser.current !== id || run !== workflowRevision.current)
+        return;
       if (results.some((result) => result.error)) {
-        throw new Error('Could not load task activity. Please refresh to retry.');
+        throw new Error(
+          'Could not load task activity. Please refresh to retry.',
+        );
       }
       setWorkflow(
         Object.fromEntries(
           ['applications', 'proofs', 'ratings', 'notifications', 'events'].map(
-            (key, index) => [key, results[index].data]
-          )
-        )
+            (key, index) => [key, results[index].data],
+          ),
+        ),
       );
       setWorkflowError('');
     } catch (err) {
@@ -206,7 +229,13 @@ export function SuyoProvider({ children }) {
   }, [user?.id]);
 
   useEffect(() => {
-    setWorkflow({ applications: [], proofs: [], ratings: [], notifications: [], events: [] });
+    setWorkflow({
+      applications: [],
+      proofs: [],
+      ratings: [],
+      notifications: [],
+      events: [],
+    });
     setWorkflowError('');
     setWorkflowLoading(!!user?.id);
     reloadWorkflow();
@@ -262,7 +291,8 @@ export function SuyoProvider({ children }) {
   const postRequest = async (draft) => {
     if (!user?.id) throw new Error('Please log in before posting a suyo.');
     if (saving.current) throw new Error('A request is already being saved.');
-    if (isLoading || error) throw new Error('Retry loading requests before posting.');
+    if (isLoading || error)
+      throw new Error('Retry loading requests before posting.');
     const validated = createRequest(draft, user);
     if (!hasCoordinates(draft.coordinates)) {
       throw new Error('Choose a task location pin on the map.');

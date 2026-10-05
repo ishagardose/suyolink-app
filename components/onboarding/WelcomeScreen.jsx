@@ -23,7 +23,10 @@ export default function WelcomeScreen() {
           resizeMode="contain"
         />
         <ThemedText style={styles.title}>Welcome, {user?.name}!</ThemedText>
-        <ThemedText tone="textSecondary" style={styles.body}>
+        <ThemedText
+          tone="textSecondary"
+          style={styles.body}
+        >
           Your account is ready. Welcome to SuyoLink!
         </ThemedText>
         <ThemedButton

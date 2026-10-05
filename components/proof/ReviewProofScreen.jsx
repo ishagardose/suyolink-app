@@ -99,7 +99,14 @@ export default function ReviewProofScreen() {
         }
       />
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 60, width: '100%', maxWidth: 760, alignSelf: 'center' }}
+        contentContainerStyle={{
+          padding: 20,
+          gap: 16,
+          paddingBottom: 60,
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+        }}
       >
         {request ? <SuyoSummary details={request} /> : null}
 
@@ -108,7 +115,10 @@ export default function ReviewProofScreen() {
         </ThemedText>
 
         {error ? (
-          <ThemedText accessibilityRole="alert" tone="danger">
+          <ThemedText
+            accessibilityRole="alert"
+            tone="danger"
+          >
             {error}
           </ThemedText>
         ) : null}

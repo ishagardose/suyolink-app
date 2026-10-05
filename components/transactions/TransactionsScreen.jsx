@@ -36,25 +36,33 @@ export default function TransactionsScreen() {
       (transactions || [])
         .filter((t) => t.role === 'provider')
         .reduce((sum, t) => sum + (t.rewardCentavos || 0), 0),
-    [transactions]
+    [transactions],
   );
   const spentCentavos = useMemo(
     () =>
       (transactions || [])
         .filter((t) => t.role === 'requester')
         .reduce((sum, t) => sum + (t.rewardCentavos || 0), 0),
-    [transactions]
+    [transactions],
   );
 
   const renderItem = useCallback(
     ({ item }) => <TransactionCard transaction={item} />,
-    []
+    [],
   );
   const keyExtractor = useCallback((item) => item.requestId, []);
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
-      <ScreenHeader title="Transaction history" onBack={() => router.canGoBack() ? router.back() : router.replace('/dashboard')} />
+    <SafeAreaView
+      edges={['top']}
+      style={styles.container}
+    >
+      <ScreenHeader
+        title="Transaction history"
+        onBack={() =>
+          router.canGoBack() ? router.back() : router.replace('/dashboard')
+        }
+      />
 
       <View style={styles.totalsRow}>
         <View style={styles.totalCard}>
@@ -79,7 +87,10 @@ export default function TransactionsScreen() {
 
       {transactionsError ? (
         <View style={styles.center}>
-          <ThemedText tone="danger" accessibilityRole="alert">
+          <ThemedText
+            tone="danger"
+            accessibilityRole="alert"
+          >
             {transactionsError}
           </ThemedText>
           <TouchableOpacity
@@ -93,11 +104,18 @@ export default function TransactionsScreen() {
         </View>
       ) : transactionsLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator
+            size="large"
+            color={colors.primary}
+          />
         </View>
       ) : (transactions || []).length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="receipt-outline" size={48} color={colors.muted} />
+          <Ionicons
+            name="receipt-outline"
+            size={48}
+            color={colors.muted}
+          />
           <ThemedText style={styles.emptyText}>
             No completed transactions yet
           </ThemedText>

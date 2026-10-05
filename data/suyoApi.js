@@ -1,5 +1,9 @@
 import { supabase } from '../lib/supabase';
-import { fromPublicRow, fromDetailPayload, fromTransactionRow } from './supabaseRequests';
+import {
+  fromPublicRow,
+  fromDetailPayload,
+  fromTransactionRow,
+} from './supabaseRequests';
 
 /**
  * Standardized user-safe error message mapper.
@@ -116,7 +120,11 @@ export async function getLastLocation() {
 /**
  * Save user's browsing location.
  */
-export async function saveLastLocation({ latitude, longitude, source = 'manual' }) {
+export async function saveLastLocation({
+  latitude,
+  longitude,
+  source = 'manual',
+}) {
   if (!supabase) throw new Error('Database client not initialized');
 
   const { data, error } = await supabase.rpc('save_last_location', {

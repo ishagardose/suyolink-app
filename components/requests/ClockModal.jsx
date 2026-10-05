@@ -108,12 +108,22 @@ export default function ClockModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+      <Pressable
+        style={styles.backdrop}
+        onPress={onClose}
+      >
+        <Pressable
+          style={styles.modalCard}
+          onPress={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.headerTitleWrap}>
-              <Ionicons name="time" size={20} color="#1E4D2B" />
+              <Ionicons
+                name="time"
+                size={20}
+                color="#1E4D2B"
+              />
               <Text style={styles.headerTitle}>Clock Time Setter</Text>
             </View>
             <TouchableOpacity
@@ -123,7 +133,11 @@ export default function ClockModal({
               accessibilityRole="button"
               accessibilityLabel="Close clock"
             >
-              <Ionicons name="close" size={20} color="#4A6B56" />
+              <Ionicons
+                name="close"
+                size={20}
+                color="#4A6B56"
+              />
             </TouchableOpacity>
           </View>
 
@@ -212,7 +226,9 @@ export default function ClockModal({
 
           {/* Mode Subtitle */}
           <Text style={styles.modeHintText}>
-            {mode === 'hour' ? 'Tap an hour on the clock face' : 'Tap a minute position on the clock face'}
+            {mode === 'hour'
+              ? 'Tap an hour on the clock face'
+              : 'Tap a minute position on the clock face'}
           </Text>
 
           {/* Analog Clock Face Lookalike */}
@@ -273,7 +289,9 @@ export default function ClockModal({
                     const x = CENTER + RADIUS * Math.cos(angleRad);
                     const y = CENTER + RADIUS * Math.sin(angleRad);
                     // Match either exact minute or closest 5-minute bucket
-                    const isSelected = m === minute || (Math.abs(minute - m) < 3 && minute % 5 !== 0);
+                    const isSelected =
+                      m === minute ||
+                      (Math.abs(minute - m) < 3 && minute % 5 !== 0);
 
                     return (
                       <TouchableOpacity
@@ -333,7 +351,8 @@ export default function ClockModal({
             <View style={styles.selectedBadge}>
               <Text style={styles.selectedBadgeLabel}>Target Time</Text>
               <Text style={styles.selectedBadgeValue}>
-                {formatted12} <Text style={styles.selectedBadge24}>({formatted24})</Text>
+                {formatted12}{' '}
+                <Text style={styles.selectedBadge24}>({formatted24})</Text>
               </Text>
             </View>
             <TouchableOpacity

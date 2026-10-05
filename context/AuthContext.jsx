@@ -1,7 +1,15 @@
 import { unregisterPush } from '../lib/pushNotifications';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { AppState, Platform } from 'react-native';
 import { supabase, authConfigError } from '../lib/supabase';
+import { hasCoordinates } from '../lib/geo';
+import { stageSignupLocation } from '../lib/signupLocation';
 
 const AuthContext = createContext(null);
 
@@ -12,9 +20,14 @@ export function AuthProvider({ children }) {
   const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
-    if (!supabase) { setIsLoading(false); return; }
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
     // Keep this callback synchronous: queries inside it can block the auth lock.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setIsLoading(false);
     });
@@ -22,7 +35,10 @@ export function AuthProvider({ children }) {
       if (state === 'active') supabase.auth.startAutoRefresh();
       else supabase.auth.stopAutoRefresh();
     };
-    const listener = Platform.OS !== 'web' ? AppState.addEventListener('change', refresh) : null;
+    const listener =
+      Platform.OS !== 'web'
+        ? AppState.addEventListener('change', refresh)
+        : null;
     if (Platform.OS !== 'web') refresh(AppState.currentState);
     return () => {
       subscription.unsubscribe();
@@ -38,40 +54,82 @@ export function AuthProvider({ children }) {
     setProfileError('');
     if (account?.id) {
       Promise.all([
-        supabase.from('profiles').select('full_name').eq('id', account.id).single(),
-        supabase.from('profile_contacts').select('phone,address').eq('user_id', account.id).single(),
-      ]).then(([details, contacts]) => {
-        if (!active) return;
-        if (details.error || contacts.error) {
-          setProfileError('Could not load your profile. Reopen the app to retry.');
-          return;
-        }
-        setProfile({ id: account.id, name: details.data.full_name, ...contacts.data });
-      }).catch(() => { if (active) setProfileError('Could not load your profile. Reopen the app to retry.'); });
+        supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', account.id)
+          .single(),
+        supabase
+          .from('profile_contacts')
+          .select('phone,address')
+          .eq('user_id', account.id)
+          .single(),
+      ])
+        .then(([details, contacts]) => {
+          if (!active) return;
+          if (details.error || contacts.error) {
+            setProfileError(
+              'Could not load your profile. Reopen the app to retry.',
+            );
+            return;
+          }
+          setProfile({
+            id: account.id,
+            name: details.data.full_name,
+            ...contacts.data,
+          });
+        })
+        .catch(() => {
+          if (active)
+            setProfileError(
+              'Could not load your profile. Reopen the app to retry.',
+            );
+        });
     }
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [account?.id]);
 
   const value = useMemo(() => {
-    const user = account ? {
-      id: account.id,
-      name: account.user_metadata?.full_name || account.email?.split('@')[0] || 'SuyoLink user',
-      phone: '', address: '',
-      ...(profile?.id === account.id ? profile : {}),
-      email: account.email || '',
-      emailVerified: !!account.email_confirmed_at,
-    } : null;
+    const user = account
+      ? {
+          id: account.id,
+          name:
+            account.user_metadata?.full_name ||
+            account.email?.split('@')[0] ||
+            'SuyoLink user',
+          phone: '',
+          address: '',
+          ...(profile?.id === account.id ? profile : {}),
+          email: account.email || '',
+          emailVerified: !!account.email_confirmed_at,
+        }
+      : null;
     return {
-      user, isLoggedIn: !!account, isLoading, profileError, isProfileReady: profile?.id === account?.id && !!profile,
+      user,
+      isLoggedIn: !!account,
+      isLoading,
+      profileError,
+      isProfileReady: profile?.id === account?.id && !!profile,
       login: async ({ email, password }) => {
         if (!supabase) throw new Error(authConfigError);
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
         if (error) throw error;
       },
-      signup: async ({ email, password, name }) => {
+      signup: async ({ email, password, name, location, acknowledged }) => {
         if (!supabase) throw new Error(authConfigError);
+        if (!hasCoordinates(location?.position) || acknowledged !== true)
+          throw new Error(
+            'Choose your area and acknowledge location use before signing up.',
+          );
+        await stageSignupLocation(email, location.position, location.source);
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(), password,
+          email: email.trim().toLowerCase(),
+          password,
           options: { data: { full_name: name.trim() } },
         });
         if (error) throw error;
@@ -80,18 +138,23 @@ export function AuthProvider({ children }) {
       resendVerification: async (email) => {
         if (!supabase) throw new Error(authConfigError);
         const { error } = await supabase.auth.resend({
-          type: 'signup', email: email.trim().toLowerCase(),
+          type: 'signup',
+          email: email.trim().toLowerCase(),
         });
         if (error) throw error;
       },
       verifyEmailCode: async ({ email, token }) => {
         if (!supabase) throw new Error(authConfigError);
         const { data, error } = await supabase.auth.verifyOtp({
-          email: email.trim().toLowerCase(), token: token.trim(), type: 'email',
+          email: email.trim().toLowerCase(),
+          token: token.trim(),
+          type: 'email',
         });
         if (error) throw error;
         if (!data.session || !data.user?.email_confirmed_at) {
-          throw new Error('Your email is not confirmed yet. Request a new code and try again.');
+          throw new Error(
+            'Your email is not confirmed yet. Request a new code and try again.',
+          );
         }
       },
       logout: async () => {
@@ -101,19 +164,46 @@ export function AuthProvider({ children }) {
       },
       updateProfile: async (draft) => {
         if (!user) throw new Error('Please log in first.');
-        if (profileError || !profile) throw new Error('Your profile has not loaded. Reopen the app before editing.');
+        if (profileError || !profile)
+          throw new Error(
+            'Your profile has not loaded. Reopen the app before editing.',
+          );
         const name = draft.name.trim();
         const phone = draft.phone.trim();
         const address = draft.address.trim();
-        if (!name || name.length > 100 || phone.length > 40 || address.length > 250) {
-          throw new Error('Use a name up to 100 characters, phone up to 40, and address up to 250.');
+        if (
+          !name ||
+          name.length > 100 ||
+          phone.length > 40 ||
+          address.length > 250
+        ) {
+          throw new Error(
+            'Use a name up to 100 characters, phone up to 40, and address up to 250.',
+          );
         }
-        const details = await supabase.from('profiles').update({ full_name: name }).eq('id', user.id).select('full_name').single();
+        const details = await supabase
+          .from('profiles')
+          .update({ full_name: name })
+          .eq('id', user.id)
+          .select('full_name')
+          .single();
         if (details.error) throw details.error;
-        setProfile((current) => current?.id === user.id ? { ...current, name } : current);
-        const contacts = await supabase.from('profile_contacts').update({ phone, address }).eq('user_id', user.id).select('phone,address').single();
-        if (contacts.error) throw new Error('Name saved, but contact details could not be saved. Please retry.');
-        setProfile((current) => current?.id === user.id ? { ...current, phone, address } : current);
+        setProfile((current) =>
+          current?.id === user.id ? { ...current, name } : current,
+        );
+        const contacts = await supabase
+          .from('profile_contacts')
+          .update({ phone, address })
+          .eq('user_id', user.id)
+          .select('phone,address')
+          .single();
+        if (contacts.error)
+          throw new Error(
+            'Name saved, but contact details could not be saved. Please retry.',
+          );
+        setProfile((current) =>
+          current?.id === user.id ? { ...current, phone, address } : current,
+        );
       },
     };
   }, [account, profile, profileError, isLoading]);

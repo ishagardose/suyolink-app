@@ -76,7 +76,7 @@ export default function App() {
           duration: 900,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulse.start();
 
@@ -226,7 +226,11 @@ export default function App() {
               onPress={openOnboarding}
               style={styles.chevronButton}
             >
-              <Ionicons name="chevron-down" size={24} color={colors.text} />
+              <Ionicons
+                name="chevron-down"
+                size={24}
+                color={colors.text}
+              />
             </TouchableOpacity>
           </Animated.View>
         </SafeAreaView>
@@ -241,7 +245,10 @@ export default function App() {
         ]}
         pointerEvents={isOnboardingActive ? 'auto' : 'none'}
       >
-        <SafeAreaView edges={['top']} style={styles.secondScreenHeaderSafeArea}>
+        <SafeAreaView
+          edges={['top']}
+          style={styles.secondScreenHeaderSafeArea}
+        >
           {/* Top Hunter Green Navigation Bar */}
           <View style={styles.topNavBar}>
             <TouchableOpacity

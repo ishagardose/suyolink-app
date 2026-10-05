@@ -27,10 +27,13 @@ export default function StatusActions({
         />
       ) : null}
 
-      {(own || assigned) && ['open', 'assigned', 'in_progress'].includes(request.status) ? (
+      {(own || assigned) &&
+      ['open', 'assigned', 'in_progress'].includes(request.status) ? (
         confirmCancel ? (
           <View style={{ gap: 8 }}>
-            <ThemedText>Cancel this request? Pending applications will close.</ThemedText>
+            <ThemedText>
+              Cancel this request? Pending applications will close.
+            </ThemedText>
             <ThemedButton
               title="Confirm cancellation"
               variant="danger"

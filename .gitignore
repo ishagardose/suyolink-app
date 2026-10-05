@@ -3,12 +3,13 @@
 # dependencies
 node_modules/
 
-# Local documentation
-/docs/
+# Generated UI previews (keep documentation and email templates versionable)
+/docs/ui-preview/
 
 # Expo
 .expo/
 dist/
+/dist-*/
 web-build/
 expo-env.d.ts
 
@@ -20,6 +21,12 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.keystore
+*.apk
+*.aab
+*.ipa
+/credentials.json
+/build/
 
 # Metro
 .metro-health-check*
@@ -52,7 +59,6 @@ Desktop.ini
 # Browser test artifacts
 /test-results/
 /playwright-report/
-/dist-native/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
@@ -72,12 +78,6 @@ Desktop.ini
 *.swo
 *~
 
-# Keep local Supabase artifacts ignored, but version the database migrations.
-/supabase/*
-!/supabase/migrations/
-
-# Version deployable push worker and setup instructions.
-!/supabase/functions/
-!/supabase/config.toml
-!/supabase/DEPLOYMENT.md
-/dist-dynamic/
+# Local Supabase CLI state (keep migrations, functions, config and docs versionable)
+/supabase/.temp/
+/supabase/.branches/

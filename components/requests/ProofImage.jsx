@@ -9,12 +9,44 @@ export default function ProofImage({ path }) {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
-    setUrl(''); setError('');
-    supabase.storage.from('suyo-proofs').createSignedUrl(path, 600).then(({ data, error }) => {
-      if (active) { if (error) setError('Could not load proof image.'); else setUrl(data.signedUrl); }
-    }).catch(() => { if (active) setError('Could not load proof image.'); });
-    return () => { active = false; };
+    setUrl('');
+    setError('');
+    supabase.storage
+      .from('suyo-proofs')
+      .createSignedUrl(path, 600)
+      .then(({ data, error }) => {
+        if (active) {
+          if (error) setError('Could not load proof image.');
+          else setUrl(data.signedUrl);
+        }
+      })
+      .catch(() => {
+        if (active) setError('Could not load proof image.');
+      });
+    return () => {
+      active = false;
+    };
   }, [path, retry]);
-  return <View>{url ? <Image source={{ uri: url }} accessibilityLabel="Completion proof" style={{ width: '100%', height: 220 }} resizeMode="contain" onError={() => setError('Could not load proof image.')} /> : null}
-    {error ? <><ThemedText tone="danger">{error}</ThemedText><ThemedButton title="Reload image" onPress={() => setRetry(value => value + 1)} /></> : null}</View>;
+  return (
+    <View>
+      {url ? (
+        <Image
+          source={{ uri: url }}
+          accessibilityLabel="Completion proof"
+          style={{ width: '100%', height: 220 }}
+          resizeMode="contain"
+          onError={() => setError('Could not load proof image.')}
+        />
+      ) : null}
+      {error ? (
+        <>
+          <ThemedText tone="danger">{error}</ThemedText>
+          <ThemedButton
+            title="Reload image"
+            onPress={() => setRetry((value) => value + 1)}
+          />
+        </>
+      ) : null}
+    </View>
+  );
 }

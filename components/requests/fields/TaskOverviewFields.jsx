@@ -18,7 +18,11 @@ export default function TaskOverviewFields({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
-        <Ionicons name="create-outline" size={18} color={colors.link} />
+        <Ionicons
+          name="create-outline"
+          size={18}
+          color={colors.link}
+        />
         <Text style={styles.cardTitle}>Task Overview</Text>
       </View>
 
@@ -51,7 +55,8 @@ export default function TaskOverviewFields({
             style={styles.textInputInner}
             placeholder="e.g. Drop off documents - Unit 402"
             placeholderTextColor={colors.muted}
-            accessibilityLabel="Title" value={draft.title}
+            accessibilityLabel="Title"
+            value={draft.title}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, title: val }));
               if (fieldErrors.title)
@@ -111,14 +116,16 @@ export default function TaskOverviewFields({
         </View>
       </View>
 
-      {fieldErrors.category ? <Text style={styles.fieldErrorText}>{fieldErrors.category}</Text> : null}
-      {fieldErrors.details ? <Text style={styles.fieldErrorText}>{fieldErrors.details}</Text> : null}
+      {fieldErrors.category ? (
+        <Text style={styles.fieldErrorText}>{fieldErrors.category}</Text>
+      ) : null}
+      {fieldErrors.details ? (
+        <Text style={styles.fieldErrorText}>{fieldErrors.details}</Text>
+      ) : null}
       {/* Task Details */}
       <View style={styles.fieldBlock}>
         <View style={styles.fieldLabelRow}>
-          <Text style={styles.fieldLabel}>
-            Task details *
-          </Text>
+          <Text style={styles.fieldLabel}>Task details *</Text>
           <Text style={styles.counterText}>{draft.details.length}/2000</Text>
         </View>
         <View style={styles.textareaWrapper}>
@@ -126,7 +133,8 @@ export default function TaskOverviewFields({
             style={styles.textareaInput}
             placeholder="Step-by-step instructions, specific items, or handling details..."
             placeholderTextColor={colors.muted}
-            accessibilityLabel="Task details" value={draft.details}
+            accessibilityLabel="Task details"
+            value={draft.details}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, details: val }));
             }}

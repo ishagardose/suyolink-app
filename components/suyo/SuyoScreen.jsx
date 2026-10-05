@@ -99,11 +99,13 @@ export default function SuyoScreen() {
   const own = request?.requesterId === user?.id;
   const assigned = request?.providerId === user?.id;
   const requestProofs = proofs.filter((item) => item.request_id === id);
-  const rating = ratings.find((item) => item.request_id === id && item.reviewer_id === user?.id);
+  const rating = ratings.find(
+    (item) => item.request_id === id && item.reviewer_id === user?.id,
+  );
   const eligible =
     request?.status === 'open' && Date.parse(request.deadline) > Date.now();
   const providerRatings = ratings.filter(
-    (item) => item.provider_id === request?.providerId
+    (item) => item.provider_id === request?.providerId,
   );
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -114,7 +116,14 @@ export default function SuyoScreen() {
         }
       />
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 50, width: '100%', maxWidth: 760, alignSelf: 'center' }}
+        contentContainerStyle={{
+          padding: 20,
+          gap: 16,
+          paddingBottom: 50,
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+        }}
       >
         <ThemedButton
           title="Refresh task"
@@ -123,7 +132,10 @@ export default function SuyoScreen() {
           onPress={() => act(refresh)}
         />
         {loadError || workflowError || error ? (
-          <ThemedText accessibilityRole="alert" tone="danger">
+          <ThemedText
+            accessibilityRole="alert"
+            tone="danger"
+          >
             {error || loadError || workflowError}
           </ThemedText>
         ) : null}
@@ -136,7 +148,16 @@ export default function SuyoScreen() {
         ) : (
           <>
             <SuyoSummary details={request} />
-            <ThemedButton title="Requester profile" variant="secondary" onPress={() => router.push({ pathname: '/profile', params: { userId: request.requesterId } })} />
+            <ThemedButton
+              title="Requester profile"
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: '/profile',
+                  params: { userId: request.requesterId },
+                })
+              }
+            />
             <PrivateTaskDetails details={request} />
             {request.providerId ? (
               <ThemedText>
@@ -160,8 +181,15 @@ export default function SuyoScreen() {
                 Deadline passed. This task is no longer accepting applications.
               </ThemedText>
             ) : null}
-            {eligible && !own ? <ThemedButton title="Accept task" disabled={busy}
-              onPress={() => act(() => mutate('accept_suyo', { p_request_id: id }))} /> : null}
+            {eligible && !own ? (
+              <ThemedButton
+                title="Accept task"
+                disabled={busy}
+                onPress={() =>
+                  act(() => mutate('accept_suyo', { p_request_id: id }))
+                }
+              />
+            ) : null}
             <ApplicationsPanel
               request={request}
               applications={applications}
@@ -174,7 +202,7 @@ export default function SuyoScreen() {
               }
               onWithdraw={(appId) =>
                 act(() =>
-                  mutate('withdraw_application', { p_application_id: appId })
+                  mutate('withdraw_application', { p_application_id: appId }),
                 )
               }
               onDecide={(appId, accept) =>
@@ -182,7 +210,7 @@ export default function SuyoScreen() {
                   mutate('decide_application', {
                     p_application_id: appId,
                     p_accept: accept,
-                  })
+                  }),
                 )
               }
             />
@@ -196,7 +224,7 @@ export default function SuyoScreen() {
                   mutate('change_suyo_status', {
                     p_request_id: id,
                     p_status: 'in_progress',
-                  })
+                  }),
                 )
               }
               onCancelRequest={() =>
@@ -204,7 +232,7 @@ export default function SuyoScreen() {
                   mutate('change_suyo_status', {
                     p_request_id: id,
                     p_status: 'cancelled',
-                  })
+                  }),
                 )
               }
             />
@@ -253,7 +281,7 @@ export default function SuyoScreen() {
                     uploaded.current = null;
                     setNote('');
                   },
-                  !asset
+                  !asset,
                 )}
               </>
             ) : null}
@@ -295,7 +323,7 @@ export default function SuyoScreen() {
                       mutate('review_suyo_proof', {
                         p_proof_id: proof.id,
                         p_accept: true,
-                      })
+                      }),
                     )}
                     {input('Reason for requesting changes', reason, setReason)}
                     {button(
@@ -306,7 +334,7 @@ export default function SuyoScreen() {
                           p_accept: false,
                           p_reason: reason.trim(),
                         }),
-                      !reason.trim()
+                      !reason.trim(),
                     )}
                   </>
                 ) : null}
@@ -354,7 +382,7 @@ export default function SuyoScreen() {
                         p_score: score,
                         p_comment: comment,
                       }),
-                    !score
+                    !score,
                   )}
                 </>
               ) : null

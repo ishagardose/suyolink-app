@@ -80,9 +80,12 @@ export default function RequestForm({ onPosted }) {
     if (!draft.location.trim()) {
       errors.location = 'Address/meeting landmark/Drop off is required';
     }
-    if (!draft.publicLocation.trim()) errors.publicLocation = 'Enter a public area or landmark';
-    if (!draft.coordinates) errors.coordinates = 'Choose a location pin on the map';
-    if (!draft.details.trim()) errors.details = 'Describe what needs to be done';
+    if (!draft.publicLocation.trim())
+      errors.publicLocation = 'Enter a public area or landmark';
+    if (!draft.coordinates)
+      errors.coordinates = 'Choose a location pin on the map';
+    if (!draft.details.trim())
+      errors.details = 'Describe what needs to be done';
     // 5. Contact Info
     if (!draft.contactPhone.trim()) {
       errors.contactPhone = 'Contact info is required to post a suyo';
@@ -98,7 +101,7 @@ export default function RequestForm({ onPosted }) {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setGeneralError(
-        'Please complete all required fields highlighted in red below.'
+        'Please complete all required fields highlighted in red below.',
       );
 
       // If contact info is missing, lead the user directly back to the contact info input box
@@ -122,7 +125,7 @@ export default function RequestForm({ onPosted }) {
     // Validate deadline is in the future
     try {
       const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(
-        combinedDeadline
+        combinedDeadline,
       );
       if (!match) throw new Error('Invalid deadline date/time format.');
       const [, y, m, d, h, min] = match.map(Number);
@@ -162,7 +165,7 @@ export default function RequestForm({ onPosted }) {
       setIsSuccessModalOpen(true);
     } catch (err) {
       setGeneralError(
-        err.message || 'Failed to post request. Please check all details.'
+        err.message || 'Failed to post request. Please check all details.',
       );
     } finally {
       submitting.current = false;
@@ -183,13 +186,30 @@ export default function RequestForm({ onPosted }) {
       >
         <View style={styles.formContainer}>
           <View style={{ gap: 8, paddingVertical: 8 }}>
-            <Text style={{ fontSize: 27, fontWeight: '700', color: colors.text, letterSpacing: -0.6 }}>What do you need?</Text>
-            <Text style={{ fontSize: 14, lineHeight: 22, color: colors.textMuted }}>A few clear details help the right person lend a hand.</Text>
+            <Text
+              style={{
+                fontSize: 27,
+                fontWeight: '700',
+                color: colors.text,
+                letterSpacing: -0.6,
+              }}
+            >
+              What do you need?
+            </Text>
+            <Text
+              style={{ fontSize: 14, lineHeight: 22, color: colors.textMuted }}
+            >
+              A few clear details help the right person lend a hand.
+            </Text>
           </View>
           {/* GENERAL ERROR BANNER */}
           {generalError ? (
             <View style={styles.generalErrorBanner}>
-              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Ionicons
+                name="alert-circle"
+                size={18}
+                color="#DC2626"
+              />
               <Text style={styles.generalErrorText}>{generalError}</Text>
             </View>
           ) : null}
@@ -254,7 +274,10 @@ export default function RequestForm({ onPosted }) {
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.errorCardText}>{loadError}</Text>
-                <TouchableOpacity onPress={reload} style={styles.retryBtn}>
+                <TouchableOpacity
+                  onPress={reload}
+                  style={styles.retryBtn}
+                >
                   <Text style={styles.retryBtnText}>Retry Connection</Text>
                 </TouchableOpacity>
               </View>
@@ -274,10 +297,17 @@ export default function RequestForm({ onPosted }) {
             activeOpacity={0.85}
           >
             {busy ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
             ) : (
               <>
-                <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
+                <Ionicons
+                  name="paper-plane"
+                  size={20}
+                  color="#FFFFFF"
+                />
                 <Text style={styles.submitButtonText}>
                   Post Suyo Request • ₱{draft.offerAmount || '0.00'}
                 </Text>
@@ -320,7 +350,6 @@ export default function RequestForm({ onPosted }) {
           }
         }}
       />
-
     </KeyboardAvoidingView>
   );
 }

@@ -18,7 +18,11 @@ export default function ContactFields({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
-        <Ionicons name="call-outline" size={18} color={colors.link} />
+        <Ionicons
+          name="call-outline"
+          size={18}
+          color={colors.link}
+        />
         <Text style={styles.cardTitle}>Contact Info & Extra Instructions</Text>
       </View>
 
@@ -52,7 +56,8 @@ export default function ContactFields({
             style={styles.textInputInner}
             placeholder="e.g. 0917 842 1983"
             placeholderTextColor={colors.muted}
-            accessibilityLabel="Contact phone" value={draft.contactPhone}
+            accessibilityLabel="Contact phone"
+            value={draft.contactPhone}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, contactPhone: val }));
               if (fieldErrors.contactPhone)
@@ -79,7 +84,8 @@ export default function ContactFields({
             style={styles.textareaInput}
             placeholder="Call upon arrival at lobby guard, receipt required..."
             placeholderTextColor={colors.muted}
-            accessibilityLabel="Remarks" value={draft.notes}
+            accessibilityLabel="Remarks"
+            value={draft.notes}
             onChangeText={(val) => setDraft((p) => ({ ...p, notes: val }))}
             multiline
             numberOfLines={3}

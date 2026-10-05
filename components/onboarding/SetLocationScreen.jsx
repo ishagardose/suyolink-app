@@ -4,14 +4,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDeviceLocation } from '../../context/LocationContext';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../theme/ThemeContext';
 import TaskMap from '../maps/TaskMap';
 import ThemedText from '../themed/ThemedText';
 import ThemedButton from '../themed/ThemedButton';
+import LocationAcknowledgment from './LocationAcknowledgment';
 
 export default function SetLocationScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { logout } = useAuth();
   const {
     position,
     locate,
@@ -28,12 +31,13 @@ export default function SetLocationScreen() {
   const [source, setSource] = useState('manual');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [acknowledged, setAcknowledged] = useState(false);
   const lock = useRef(false);
   const choice = useRef(0);
   const pin = selected || (hasSavedLocation ? position : null);
 
   const save = async () => {
-    if (lock.current || !pin) return;
+    if (lock.current || !pin || !acknowledged) return;
     lock.current = true;
     setSaving(true);
     setSaveError('');
@@ -54,19 +58,33 @@ export default function SetLocationScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.icon, { backgroundColor: colors.surfaceAlt }]}>
-          <Ionicons name="location-outline" size={32} color={colors.link} />
+          <Ionicons
+            name="location-outline"
+            size={32}
+            color={colors.link}
+          />
         </View>
-        <ThemedText style={styles.eyebrow} tone="textMuted">
+        <ThemedText
+          style={styles.eyebrow}
+          tone="textMuted"
+        >
           FIND YOUR NEXT SUYO
         </ThemedText>
-        <ThemedText accessibilityRole="header" style={styles.title}>
+        <ThemedText
+          accessibilityRole="header"
+          style={styles.title}
+        >
           Set your location
         </ThemedText>
-        <ThemedText tone="textMuted" style={styles.body}>
-          Choose where you want to find tasks. Your location helps sort nearby suyos. You can also browse without sharing it.
+        <ThemedText
+          tone="textMuted"
+          style={styles.body}
+        >
+          Choose your area to continue to SuyoLink. Your saved location helps
+          you find nearby suyos. You can use GPS or choose a map pin.
         </ThemedText>
 
-        {/* Primary location actions: Allow location (or Use current) & Not now */}
+        {/* GPS is optional; selecting an area is required. */}
         <View style={{ gap: 8 }}>
           <ThemedButton
             title="Use my current location"
@@ -78,20 +96,10 @@ export default function SetLocationScreen() {
               if (next && request === choice.current) {
                 setSelected(next);
                 setSource('device');
+                setAcknowledged(false);
               }
             }}
           />
-
-          {!hasSavedLocation ? (
-            <ThemedButton
-              title="Not now"
-              variant="secondary"
-              disabled={saving}
-              onPress={() => {
-                router.replace('/dashboard');
-              }}
-            />
-          ) : null}
         </View>
 
         {/* Permission warning & settings link if denied */}
@@ -103,10 +111,16 @@ export default function SetLocationScreen() {
               { borderColor: colors.border, backgroundColor: colors.card },
             ]}
           >
-            <ThemedText tone="danger" style={{ fontWeight: '600' }}>
+            <ThemedText
+              tone="danger"
+              style={{ fontWeight: '600' }}
+            >
               Location access is disabled.
             </ThemedText>
-            <ThemedText tone="textMuted" style={{ fontSize: 13 }}>
+            <ThemedText
+              tone="textMuted"
+              style={{ fontSize: 13 }}
+            >
               You can still manually drop a pin on the map below, or open
               settings to enable permission.
             </ThemedText>
@@ -137,6 +151,7 @@ export default function SetLocationScreen() {
               setSelected(point);
               setSource('manual');
               setSaveError('');
+              setAcknowledged(false);
             }}
           />
         </View>
@@ -151,26 +166,40 @@ export default function SetLocationScreen() {
         ) : null}
 
         {error ? (
-          <ThemedText accessibilityRole="alert" tone="danger">
+          <ThemedText
+            accessibilityRole="alert"
+            tone="danger"
+          >
             {error}
           </ThemedText>
         ) : null}
         {saveError ? (
-          <ThemedText accessibilityRole="alert" tone="danger">
+          <ThemedText
+            accessibilityRole="alert"
+            tone="danger"
+          >
             {saveError}
           </ThemedText>
         ) : null}
 
-        <ThemedText tone="textMuted" style={{ fontSize: 12, lineHeight: 18 }}>
-          Your browsing area is saved for this account on this device. You can
-          change it anytime from the dashboard.
+        <ThemedText
+          tone="textMuted"
+          style={{ fontSize: 12, lineHeight: 18 }}
+        >
+          Your browsing area is saved to your account and on this device. You
+          can change it anytime from the dashboard.
         </ThemedText>
 
+        <LocationAcknowledgment
+          checked={acknowledged}
+          onChange={setAcknowledged}
+          disabled={saving}
+        />
         <ThemedButton
           title="Find nearby suyos"
           onPress={save}
           loading={saving}
-          disabled={!pin || !isReady}
+          disabled={!pin || !isReady || !acknowledged}
         />
 
         {hasSavedLocation ? (
@@ -180,7 +209,28 @@ export default function SetLocationScreen() {
             disabled={saving}
             onPress={() => router.replace('/dashboard')}
           />
-        ) : null}
+        ) : (
+          <ThemedButton
+            title="Sign out"
+            variant="secondary"
+            disabled={saving || loading}
+            onPress={async () => {
+              if (lock.current) return;
+              lock.current = true;
+              setSaving(true);
+              setSaveError('');
+              try {
+                await logout();
+                router.replace('/');
+              } catch {
+                setSaveError('Could not sign out. Please try again.');
+              } finally {
+                lock.current = false;
+                setSaving(false);
+              }
+            }}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

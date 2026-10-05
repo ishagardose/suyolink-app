@@ -18,18 +18,41 @@ export default function LocationFields({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
-        <Ionicons name="location-outline" size={18} color={colors.link} />
+        <Ionicons
+          name="location-outline"
+          size={18}
+          color={colors.link}
+        />
         <Text style={styles.cardTitle}>Location & Map Pin</Text>
       </View>
 
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>Public area / landmark *</Text>
-        <TextInput accessibilityLabel="Public area" style={[styles.inputWithIcon, styles.textareaInput, { padding: 12, minHeight: 50 }]}
-          placeholder="Neighborhood or nearby landmark" placeholderTextColor={colors.muted}
-          value={draft.publicLocation} editable={!busy} maxLength={250}
-          onChangeText={publicLocation => setDraft(p => ({ ...p, publicLocation }))} />
-        {fieldErrors.publicLocation ? <Text style={styles.fieldErrorText}>{fieldErrors.publicLocation}</Text> : null}
-        <Text style={styles.cardSubText}>Only the accepted doer can see your exact address and phone. Keep personal details out of public remarks.</Text>
+        <TextInput
+          accessibilityLabel="Public area"
+          style={[
+            styles.inputWithIcon,
+            styles.textareaInput,
+            { padding: 12, minHeight: 50 },
+          ]}
+          placeholder="Neighborhood or nearby landmark"
+          placeholderTextColor={colors.muted}
+          value={draft.publicLocation}
+          editable={!busy}
+          maxLength={250}
+          onChangeText={(publicLocation) =>
+            setDraft((p) => ({ ...p, publicLocation }))
+          }
+        />
+        {fieldErrors.publicLocation ? (
+          <Text style={styles.fieldErrorText}>
+            {fieldErrors.publicLocation}
+          </Text>
+        ) : null}
+        <Text style={styles.cardSubText}>
+          Only the accepted doer can see your exact address and phone. Keep
+          personal details out of public remarks.
+        </Text>
       </View>
       <View style={styles.fieldBlock}>
         <View style={styles.fieldLabelRow}>
@@ -59,7 +82,8 @@ export default function LocationFields({
             style={styles.textInputInner}
             placeholder="Address, landmark, or drop-off..."
             placeholderTextColor={colors.muted}
-            accessibilityLabel="Exact address" value={draft.location}
+            accessibilityLabel="Exact address"
+            value={draft.location}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, location: val }));
               if (fieldErrors.location)
@@ -74,7 +98,7 @@ export default function LocationFields({
         )}
       </View>
 
-<Text style={styles.fieldErrorText}>{fieldErrors.coordinates}</Text>
+      <Text style={styles.fieldErrorText}>{fieldErrors.coordinates}</Text>
       <LocationPicker
         value={draft.coordinates}
         disabled={busy}

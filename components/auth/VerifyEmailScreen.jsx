@@ -44,7 +44,7 @@ export default function VerifyEmailScreen() {
       ? window.location.href
       : `suyolink-app://verify-email?${callbackParams}#${typeof params['#'] === 'string' ? params['#'] : ''}`;
   const [email, setEmail] = useState(
-    typeof params.email === 'string' ? params.email : ''
+    typeof params.email === 'string' ? params.email : '',
   );
   const [checking, setChecking] = useState(false);
   const [code, setCode] = useState('');
@@ -111,7 +111,7 @@ export default function VerifyEmailScreen() {
       await resendVerification(email);
       setCode('');
       setNotice(
-        'If this account still needs verification, a new code is on its way. Check your inbox and spam folder.'
+        'If this account still needs verification, a new code is on its way. Check your inbox and spam folder.',
       );
       setCooldown(60);
     } catch (err) {
@@ -143,7 +143,7 @@ export default function VerifyEmailScreen() {
       setError(
         err.code === 'otp_expired'
           ? 'This code is invalid or has expired. Try the latest code or request a new one.'
-          : err.message || 'Unable to verify your email. Please try again.'
+          : err.message || 'Unable to verify your email. Please try again.',
       );
     } finally {
       verifyBusy.current = false;
@@ -171,7 +171,10 @@ export default function VerifyEmailScreen() {
               color={colors.white}
             />
           </ThemedView>
-          <ThemedText accessibilityRole="header" style={styles.title}>
+          <ThemedText
+            accessibilityRole="header"
+            style={styles.title}
+          >
             {checking
               ? 'Verifying your email...'
               : verified
@@ -180,7 +183,10 @@ export default function VerifyEmailScreen() {
                   ? "Let's try that again"
                   : 'Check your email'}
           </ThemedText>
-          <ThemedText tone="textMuted" style={styles.body}>
+          <ThemedText
+            tone="textMuted"
+            style={styles.body}
+          >
             {checking
               ? 'Finishing verification and signing you in.'
               : verified
@@ -231,7 +237,10 @@ export default function VerifyEmailScreen() {
                 style={[styles.input, { borderColor: colors.border }]}
               />
               {error ? (
-                <ThemedText tone="danger" accessibilityRole="alert">
+                <ThemedText
+                  tone="danger"
+                  accessibilityRole="alert"
+                >
                   {error}
                 </ThemedText>
               ) : null}
