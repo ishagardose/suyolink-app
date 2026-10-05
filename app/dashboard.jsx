@@ -1306,6 +1306,24 @@ export default function DashboardScreen() {
   const overallSuyosCount = providerTransactions.length;
   const displayWalletTotal = `₱${overallEarningsSum.toFixed(2)}`;
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const todayDateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${currentYear}`;
+
+  const monthlySuyosCount = useMemo(() => {
+    return providerTransactions.filter((t) => {
+      const dateStr = t.completedAt || t.created_at || t.createdAt;
+      const d = dateStr ? new Date(dateStr) : null;
+      return (
+        d &&
+        !isNaN(d.getTime()) &&
+        d.getFullYear() === currentYear &&
+        d.getMonth() === currentMonth
+      );
+    }).length;
+  }, [providerTransactions, currentYear, currentMonth]);
+
   // Overall available suyos in Dashboard: public suyos from different users + account owner's open posted suyos
   // Note: 'Waiting for doer' is a lifecycle status ONLY applied and visible to MySuyo nav;
   // on the main dashboard where public available suyos are listed for all users, the tag turns into
@@ -3460,27 +3478,27 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <Text style={styles.walletBalanceLabel}>Total Overall Earnings (2026)</Text>
-              <Text style={styles.walletBalanceAmount}>{displayWalletTotal}</Text>
+              <Text style={styles.walletBalanceLabel}>Today's Earnings - {todayDateFormatted}</Text>
+              <Text style={styles.walletBalanceAmount}>₱{todayEarningsSum.toFixed(2)}</Text>
 
               <View style={styles.walletSummaryRow}>
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>
-                    ₱{todayEarningsSum.toFixed(2)}
+                    {todaySuyosCount} Suyos
                   </Text>
-                  <Text style={styles.walletSummaryLabel}>Today Earnings</Text>
+                  <Text style={styles.walletSummaryLabel}>Today's Suyos</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>
-                    {todaySuyosCount} Suyos
+                    {monthlySuyosCount} Suyos
                   </Text>
-                  <Text style={styles.walletSummaryLabel}>Today Suyos</Text>
+                  <Text style={styles.walletSummaryLabel}>Monthly Suyos</Text>
                 </View>
                 <View style={styles.walletSummaryDivider} />
                 <View style={styles.walletSummaryItem}>
                   <Text style={styles.walletSummaryCount}>{overallSuyosCount} Suyos</Text>
-                  <Text style={styles.walletSummaryLabel}>Overall Suyos</Text>
+                  <Text style={styles.walletSummaryLabel}>Overall Completed</Text>
                 </View>
               </View>
 

@@ -131,7 +131,6 @@ export function calculateWalletChartData(transactions = [], activeRange = 'month
       metrics: [
         { label: `Peak (${peakWeekName})`, value: peakWeekVal },
         { label: 'Weekly Average', value: `₱${avg.toFixed(2)}` },
-        { label: 'Month Completed', value: `${totalSuyos} Suyos` },
       ],
     };
   } else {
@@ -225,7 +224,6 @@ export function calculateWalletChartData(transactions = [], activeRange = 'month
       metrics: [
         { label: `Peak (${peakQName})`, value: peakQVal },
         { label: 'Quarterly Avg', value: `₱${avg.toFixed(2)}` },
-        { label: 'Year Completed', value: `${totalSuyos} Suyos` },
       ],
     };
   }
@@ -503,20 +501,15 @@ export default function WalletIncomeLineGraph({
 
       {/* 4. Bottom Metrics Highlights */}
       <View style={styles.walletChartFooterMetrics}>
-        <View style={styles.walletFooterMetricItem}>
-          <Text style={styles.walletFooterMetricValue}>{current.metrics[0].value}</Text>
-          <Text style={styles.walletFooterMetricLabel}>{current.metrics[0].label}</Text>
-        </View>
-        <View style={styles.walletFooterMetricDivider} />
-        <View style={styles.walletFooterMetricItem}>
-          <Text style={styles.walletFooterMetricValue}>{current.metrics[1].value}</Text>
-          <Text style={styles.walletFooterMetricLabel}>{current.metrics[1].label}</Text>
-        </View>
-        <View style={styles.walletFooterMetricDivider} />
-        <View style={styles.walletFooterMetricItem}>
-          <Text style={styles.walletFooterMetricValue}>{current.metrics[2].value}</Text>
-          <Text style={styles.walletFooterMetricLabel}>{current.metrics[2].label}</Text>
-        </View>
+        {current.metrics.map((m, idx) => (
+          <React.Fragment key={m.label || idx}>
+            {idx > 0 && <View style={styles.walletFooterMetricDivider} />}
+            <View style={styles.walletFooterMetricItem}>
+              <Text style={styles.walletFooterMetricValue}>{m.value}</Text>
+              <Text style={styles.walletFooterMetricLabel}>{m.label}</Text>
+            </View>
+          </React.Fragment>
+        ))}
       </View>
     </View>
   );
