@@ -1434,6 +1434,68 @@ export default function DashboardScreen() {
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [openedFromFavorites, setOpenedFromFavorites] = useState(false);
 
+  // Sync live Supabase requests with MySuyo & Doer Hub state
+  useEffect(() => {
+    if (!requests || requests.length === 0) return;
+    const myPosted = requests
+      .filter((r) => r.requesterId === user?.id && r.status === 'open')
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category,
+        location: r.location,
+        distanceText: 'Nearby',
+        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+        rewardAmount: (r.offerCentavos || 0) / 100,
+        tag: 'Waiting for doer',
+        status: 'Open - waiting for a doer',
+        urgency: resolveUrgencyTag(r),
+        due: r.deadline ? `Due ${new Date(r.deadline).toLocaleDateString()}` : 'Due today',
+        dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
+        createdAt: Date.parse(r.createdAt || Date.now()),
+        formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today',
+        details: r.details,
+        notes: r.notes || '',
+        requesterName: r.requesterName || 'You',
+        rawRequest: r,
+      }));
+
+    if (myPosted.length > 0) {
+      setPostedSuyos((prev) => {
+        const liveIds = new Set(myPosted.map((m) => m.id));
+        const filteredPrev = prev.filter((p) => !liveIds.has(p.id) && !p.id.startsWith('POST-'));
+        return [...myPosted, ...filteredPrev];
+      });
+    }
+
+    const myAssigned = requests
+      .filter((r) => r.providerId === user?.id && ['assigned', 'in_progress'].includes(r.status))
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category,
+        location: r.location,
+        distanceText: 'Nearby',
+        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+        rewardAmount: (r.offerCentavos || 0) / 100,
+        tag: r.status === 'in_progress' ? 'In Progress' : 'Assigned',
+        status: r.status === 'in_progress' ? 'In Progress - On the way' : 'Accepted',
+        createdAt: Date.parse(r.createdAt || Date.now()),
+        details: r.details,
+        notes: r.notes || '',
+        requesterName: r.requesterName || 'Community Member',
+        rawRequest: r,
+      }));
+
+    if (myAssigned.length > 0) {
+      setDoerAcceptedSuyos((prev) => {
+        const liveIds = new Set(myAssigned.map((m) => m.id));
+        const filteredPrev = prev.filter((p) => !liveIds.has(p.id) && !p.id.startsWith('DOER-ACC-'));
+        return [...myAssigned, ...filteredPrev];
+      });
+    }
+  }, [requests, user?.id]);
+
   // Helper to ensure every public suyo on the dashboard has a valid urgency tag (Normal, Urgent, Due today, Due tomorrow)
   const resolveUrgencyTag = (item) => {
     if (item.urgency && ['Normal', 'Urgent', 'Due today', 'Due tomorrow'].includes(item.urgency)) {
@@ -2356,6 +2418,8 @@ export default function DashboardScreen() {
           style={styles.headerIconButton}
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Open sidebar"
         >
           <Ionicons name="menu-outline" size={26} color="#FFFFFF" />
         </TouchableOpacity>
@@ -6243,6 +6307,8 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={styles.sidebarMenuItem}
               activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Wallet"
               onPress={() => {
                 closeSidebar();
                 setActiveTab('wallet');

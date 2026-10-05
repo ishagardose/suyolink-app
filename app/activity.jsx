@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,11 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSuyos } from '../context/SuyoContext';
+import { useAuth } from '../context/AuthContext';
 
 const WALLET_EARNED_SUYOS = [
   {
@@ -159,9 +163,16 @@ const WALLET_INCOME_CHART_PRESETS = {
   },
 };
 
-function WalletIncomeLineGraph() {
+function WalletIncomeLineGraph({ totalOverride }) {
   const [activeRange, setActiveRange] = useState('monthly');
-  const current = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS.monthly;
+  const base = WALLET_INCOME_CHART_PRESETS[activeRange] || WALLET_INCOME_CHART_PRESETS.monthly;
+  const current = useMemo(() => {
+    if (!totalOverride) return base;
+    return {
+      ...base,
+      total: totalOverride,
+    };
+  }, [base, totalOverride]);
 
   const renderWebSvg = () => {
     return React.createElement(
@@ -447,10 +458,56 @@ export default function WalletScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 16);
+  const { transactions = [], transactionsLoading, reloadTransactions } = useSuyos();
+  const { user } = useAuth();
 
-  const todayEarnedList = WALLET_EARNED_SUYOS.filter((s) => s.date?.startsWith('Today'));
+  const providerTransactions = useMemo(
+    () => (transactions || []).filter((t) => t.role === 'provider'),
+    [transactions]
+  );
+
+  const hasLiveTransactions = providerTransactions.length > 0;
+  const overallEarningsSum = useMemo(
+    () => providerTransactions.reduce((sum, t) => sum + (t.rewardCentavos || 0), 0) / 100,
+    [providerTransactions]
+  );
+
+  const dynamicEarnedList = useMemo(() => {
+    if (!hasLiveTransactions) return WALLET_EARNED_SUYOS;
+    return providerTransactions.map((t, idx) => {
+      const d = t.completedAt ? new Date(t.completedAt) : new Date();
+      const isToday = d.toDateString() === new Date().toDateString();
+      const dateStr = isToday
+        ? `Today · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+        : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return {
+        id: t.requestId || `WAL-${idx}`,
+        title: t.title || 'Completed Suyo',
+        category: t.category || 'Documents',
+        icon:
+          t.category === 'Groceries'
+            ? 'cart'
+            : t.category === 'Medicine'
+            ? 'medkit'
+            : t.category === 'Delivery'
+            ? 'bicycle'
+            : 'document-text',
+        date: dateStr,
+        requesterName: t.otherUserName || 'Requester',
+        location: 'Direct Settlement',
+        earnedAmount: (t.rewardCentavos || 0) / 100,
+        status: 'Received',
+        paymentMethod: 'Direct Payment (Cash/P2P)',
+        refNo: `SYL-EARN-${String(t.requestId || idx).slice(0, 6).toUpperCase()}`,
+      };
+    });
+  }, [providerTransactions, hasLiveTransactions]);
+
+  const todayEarnedList = dynamicEarnedList.filter((s) => s.date?.startsWith('Today'));
   const todayEarningsSum = todayEarnedList.reduce((sum, s) => sum + (Number(s.earnedAmount) || 0), 0);
   const todaySuyosCount = todayEarnedList.length;
+  const overallSuyosCount = hasLiveTransactions ? providerTransactions.length : 84;
+  const displayTotal = hasLiveTransactions ? `₱${overallEarningsSum.toFixed(2)}` : '₱15,360.00';
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeContainer}>
@@ -479,6 +536,14 @@ export default function WalletScreen() {
           { paddingBottom: bottomInset + 30 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={Boolean(transactionsLoading)}
+            onRefresh={reloadTransactions}
+            tintColor="#059669"
+            colors={['#059669']}
+          />
+        }
       >
         {/* 1. Wallet Balance Hero Card */}
         <View style={styles.walletHeroCard}>
@@ -496,7 +561,7 @@ export default function WalletScreen() {
           </View>
 
           <Text style={styles.walletBalanceLabel}>Total Overall Earnings (2026)</Text>
-          <Text style={styles.walletBalanceAmount}>₱15,360.00</Text>
+          <Text style={styles.walletBalanceAmount}>{displayTotal}</Text>
 
           {/* 3 Interconnected Summary Items: Today Earnings, Today Suyos, Overall Suyos */}
           <View style={styles.walletSummaryRow}>
@@ -511,13 +576,13 @@ export default function WalletScreen() {
             </View>
             <View style={styles.walletSummaryDivider} />
             <View style={styles.walletSummaryItem}>
-              <Text style={styles.walletSummaryCount}>84 Suyos</Text>
+              <Text style={styles.walletSummaryCount}>{overallSuyosCount} Suyos</Text>
               <Text style={styles.walletSummaryLabel}>Overall Suyos</Text>
             </View>
           </View>
 
           {/* Literal Modern Graphical Line Graph */}
-          <WalletIncomeLineGraph />
+          <WalletIncomeLineGraph totalOverride={hasLiveTransactions ? displayTotal : null} />
 
           {/* Informative Note: Direct Settlement Outside App */}
           <View style={styles.walletPaymentNoticeRow}>
@@ -538,14 +603,14 @@ export default function WalletScreen() {
           </View>
           <View style={styles.walletCountChip}>
             <Text style={styles.walletCountChipText}>
-              {WALLET_EARNED_SUYOS.length} earned (₱1,280.00)
+              {dynamicEarnedList.length} earned ({displayTotal})
             </Text>
           </View>
         </View>
 
         {/* 3. The Clean List of Earned Accepted Suyo Requests */}
         <View style={styles.walletListWrapper}>
-          {WALLET_EARNED_SUYOS.map((item) => (
+          {dynamicEarnedList.map((item) => (
             <View key={item.id} style={styles.walletItemCard}>
               <View style={styles.walletItemLeft}>
                 <View

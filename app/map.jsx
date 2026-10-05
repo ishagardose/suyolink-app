@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,16 +6,114 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Linking,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useAuth } from "../context/AuthContext";
+import { useSuyos } from "../context/SuyoContext";
+import useTaskTracking from "../hooks/useTaskTracking";
+import { distanceKm } from "../lib/geo";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function MapScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const id = params.requestId || params.id;
+  const { user } = useAuth();
+  const { requests = [], mutate } = useSuyos();
+  const [acting, setActing] = useState(false);
+
+  const {
+    task,
+    position,
+    consent,
+    sharing,
+    error,
+    busy,
+    start,
+    stop,
+    refresh,
+  } = useTaskTracking(id, user?.id);
+
+  // If no specific task id passed, find the most relevant active task for current user
+  const activeTask =
+    task ||
+    (requests || []).find(
+      (r) =>
+        (r.providerId === user?.id || r.requesterId === user?.id) &&
+        ["assigned", "in_progress"].includes(r.status)
+    ) ||
+    (requests || [])[0];
+
+  const own = activeTask?.providerId === user?.id;
+  const doerName = own
+    ? activeTask?.requesterName || "Requester"
+    : activeTask?.providerName || "Alex M.";
+  const suyoTitle = activeTask?.title || "Drop off documents at Unit 402";
+
+  const destination = activeTask && {
+    latitude: activeTask.exactLatitude ?? activeTask.latitude,
+    longitude: activeTask.exactLongitude ?? activeTask.longitude,
+  };
+  const hasDestination =
+    destination?.latitude != null && destination?.longitude != null;
+  const fresh =
+    position && Date.now() - Date.parse(position.updated_at) < 30000;
+  const remaining =
+    fresh && hasDestination ? distanceKm(position, destination) : null;
+  const eta =
+    remaining != null && position.speed > 0.5
+      ? Math.ceil((remaining * 1000) / position.speed / 60)
+      : null;
+
+  const trackingText = eta
+    ? `Doer is ${eta} mins away`
+    : remaining != null
+    ? `Doer is ${remaining.toFixed(1)} km away`
+    : "Doer is 5 mins away";
+
+  const progressPercent =
+    activeTask?.status === "in_progress"
+      ? 78
+      : activeTask?.status === "assigned"
+      ? 45
+      : 85;
+
+  const handleCall = () => {
+    const phone = activeTask?.contactPhone || "09178421983";
+    Linking.openURL(`tel:${phone}`).catch(() => {
+      Alert.alert("Contact", `Phone number: ${phone}`);
+    });
+  };
+
+  const handleChat = () => {
+    if (activeTask?.id) {
+      router.push({ pathname: "/suyo", params: { id: activeTask.id } });
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!activeTask?.id) {
+      router.back();
+      return;
+    }
+    setActing(true);
+    try {
+      if (mutate) {
+        await mutate("cancel_suyo", { id: activeTask.id });
+      }
+      router.back();
+    } catch (e) {
+      Alert.alert("Cancel Suyo", e.message || "Could not cancel suyo.");
+    } finally {
+      setActing(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
@@ -44,8 +142,8 @@ export default function MapScreen() {
             <View style={styles.pulsingDot} />
             <Text style={styles.liveText}>LIVE TRACKING</Text>
           </View>
-          <Text style={styles.trackingLabel}>Doer is 5 mins away</Text>
-          <Text style={styles.trackingSub}>Suyo: Drop off documents at Unit 402</Text>
+          <Text style={styles.trackingLabel}>{trackingText}</Text>
+          <Text style={styles.trackingSub}>Suyo: {suyoTitle}</Text>
         </View>
       </View>
 
@@ -55,28 +153,51 @@ export default function MapScreen() {
             <Ionicons name="person" size={22} color="#FFFFFF" />
           </View>
           <View style={styles.doerMeta}>
-            <Text style={styles.doerName}>Alex M.</Text>
-            <Text style={styles.doerRating}>4.9 - 231 suyos done</Text>
+            <Text style={styles.doerName}>{doerName}</Text>
+            <Text style={styles.doerRating}>4.9 - Verified Partner</Text>
           </View>
-          <TouchableOpacity style={styles.callButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.callButton}
+            activeOpacity={0.7}
+            onPress={handleCall}
+            accessibilityRole="button"
+            accessibilityLabel="Call"
+          >
             <Ionicons name="call" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.chatButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.chatButton}
+            activeOpacity={0.7}
+            onPress={handleChat}
+            accessibilityRole="button"
+            accessibilityLabel="Chat"
+          >
             <Ionicons name="chatbubble-ellipses" size={18} color="#163523" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.progressRow}>
           <Text style={styles.progressLabel}>Route progress</Text>
-          <Text style={styles.progressPercent}>78%</Text>
+          <Text style={styles.progressPercent}>{progressPercent}%</Text>
         </View>
         <View style={styles.progressTrack}>
-          <View style={styles.progressFill} />
+          <View
+            style={[styles.progressFill, { width: `${progressPercent}%` }]}
+          />
         </View>
 
-        <TouchableOpacity style={styles.cancelButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          activeOpacity={0.8}
+          onPress={handleCancel}
+          disabled={acting}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel Suyo"
+        >
           <Ionicons name="close-circle-outline" size={18} color="#D32F2F" />
-          <Text style={styles.cancelText}>Cancel Suyo</Text>
+          <Text style={styles.cancelText}>
+            {acting ? "Cancelling..." : "Cancel Suyo"}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
