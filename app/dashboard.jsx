@@ -2490,7 +2490,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <View style={styles.mySuyoHeroBadge}>
-                <Ionicons name="receipt-outline" size={24} color="#1E4D2B" />
+                <Ionicons name="receipt-outline" size={24} color="#1C3A27" />
               </View>
             </View>
 
@@ -2989,7 +2989,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <View style={styles.mySuyoHeroBadge}>
-                <Ionicons name="bicycle-outline" size={24} color="#1E4D2B" />
+                <Ionicons name="bicycle-outline" size={24} color="#1C3A27" />
               </View>
             </View>
 
@@ -8349,7 +8349,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFCFA',
   },
   mySuyoHeroSection: {
-    backgroundColor: '#1E4D2B',
+    backgroundColor: '#1C3A27',
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 22,
@@ -10745,7 +10745,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFCFA',
   },
   doerHeroSection: {
-    backgroundColor: '#1E4D2B',
+    backgroundColor: '#1C3A27',
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 18,
