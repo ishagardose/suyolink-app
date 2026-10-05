@@ -20,7 +20,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
 import { useTheme } from '../../theme/ThemeContext';
 import { supabase } from '../../lib/supabase';
-import AppMenu from '../navigation/AppMenu';
 import ThemedText from '../themed/ThemedText';
 
 function formatFeedbackDate(dateStr) {
@@ -64,7 +63,6 @@ export default function AccountScreen() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Edit Profile Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -366,20 +364,7 @@ export default function AccountScreen() {
 
         <Text style={styles.headerTitle}>{own ? 'My Profile' : 'Profile'}</Text>
 
-        {own ? (
-          <TouchableOpacity
-            style={styles.headerIconButton}
-            onPress={() => setMenuOpen(true)}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel="Open sidebar"
-          >
-            <Ionicons name="menu-outline" size={22} color="#163523" />
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 40 }} />
-        )}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -603,33 +588,6 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {/* SIGN OUT BUTTON (For Own Account) */}
-        {own ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Sign out"
-            disabled={busy}
-            onPress={async () => {
-              setBusy(true);
-              setError('');
-              try {
-                await logout();
-                router.replace('/');
-              } catch (e) {
-                setError(e.message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-            style={styles.signOutButton}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="log-out-outline" size={18} color="#DC2626" />
-            <Text style={styles.signOutButtonText}>
-              {busy ? 'Please wait…' : 'Sign out'}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
       </ScrollView>
 
       {/* EDIT PROFILE MODAL */}
@@ -735,17 +693,6 @@ export default function AccountScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* SIDEBAR DRAWER (Accessible via Hamburger Icon on Header) */}
-      <AppMenu
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        active="account"
-        onDashboardTab={(tab) => {
-          setMenuOpen(false);
-          router.push({ pathname: '/dashboard', params: { tab } });
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -1153,25 +1100,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 280,
-  },
-
-  /* SIGN OUT */
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
-    borderColor: '#FCA5A5',
-    marginTop: 24,
-  },
-  signOutButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#DC2626',
   },
 
   /* MODALS */

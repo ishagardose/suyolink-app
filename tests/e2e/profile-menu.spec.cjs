@@ -59,6 +59,8 @@ test('hamburger menu closes and navigates between dashboard tabs and profile', a
   await page.getByRole('button', { name: 'Open sidebar', exact: true }).click();
   await page.getByRole('button', { name: 'My profile', exact: true }).click();
   await expect(page).toHaveURL(/account$/);
+  await page.getByRole('button', { name: 'Go back', exact: true }).click();
+  await expect(page).toHaveURL(/dashboard/);
   await page.getByRole('button', { name: 'Open sidebar', exact: true }).click();
   await page
     .getByRole('button', { name: 'My posted suyos', exact: true })
@@ -126,6 +128,7 @@ test('profile and menu fit small phones and desktop', async ({ page }) => {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await page.getByRole('button', { name: 'Go back', exact: true }).click();
     await page
       .getByRole('button', { name: 'Open sidebar', exact: true })
       .click();

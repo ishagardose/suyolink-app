@@ -2463,13 +2463,6 @@ export default function DashboardScreen() {
                   Try clearing your search or adjusting your distance and
                   category filters.
                 </Text>
-                <TouchableOpacity
-                  style={styles.emptyResetBtn}
-                  onPress={clearAllFilters}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.emptyResetBtnText}>Clear all filters</Text>
-                </TouchableOpacity>
               </View>
             )}
           </View>
