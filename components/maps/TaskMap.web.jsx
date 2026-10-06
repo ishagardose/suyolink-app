@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { DEFAULT_MAP_CENTER } from '../../lib/geo';
+import { taskMarkerIcon } from './mapMarkerIcons.web';
 
 export default function TaskMap({
   center,
   markers = [],
+  connection = [],
   onPick,
   onSelect,
   height = 300,
+  fitMarkers = false,
 }) {
   const element = useRef(null);
   const instance = useRef(null);
@@ -16,6 +19,9 @@ export default function TaskMap({
   handlers.current = { onPick, onSelect };
   const [ready, setReady] = useState(false);
   const [tileError, setTileError] = useState(false);
+  const markerCoordinates = markers
+    .map((marker) => `${marker.latitude},${marker.longitude}`)
+    .join(';');
   useEffect(() => {
     const L = require('leaflet');
     const initial = center || DEFAULT_MAP_CENTER;
@@ -55,16 +61,41 @@ export default function TaskMap({
     if (!ready) return;
     const L = require('leaflet');
     layer.current.clearLayers();
+    if (connection.length > 1) {
+      const coordinates = connection.map((point) => [
+        point.latitude,
+        point.longitude,
+      ]);
+      L.polyline(coordinates, {
+        color: '#FFFFFF',
+        weight: 7,
+        opacity: 1,
+        interactive: false,
+      }).addTo(layer.current);
+      L.polyline(coordinates, {
+        color: '#2563EB',
+        weight: 4,
+        opacity: 1,
+        dashArray: '8 6',
+        interactive: false,
+        className: 'suyo-map-connection',
+      }).addTo(layer.current);
+    }
     markers.forEach((marker) => {
       const label = document.createElement('span');
       label.textContent = marker.title;
-      L.circleMarker([marker.latitude, marker.longitude], {
-        radius: marker.isMe ? 8 : 11,
-        color: '#FFFFFF',
-        weight: 2,
-        fillColor: marker.isMe ? '#2563EB' : '#1E4D2B',
-        fillOpacity: 1,
-      })
+      const coordinates = [marker.latitude, marker.longitude];
+      const icon = taskMarkerIcon(L, marker.kind);
+      const pin = icon
+        ? L.marker(coordinates, { icon, title: marker.title })
+        : L.circleMarker(coordinates, {
+            radius: marker.isMe ? 8 : 11,
+            color: '#FFFFFF',
+            weight: 2,
+            fillColor: marker.isMe ? '#2563EB' : '#1E4D2B',
+            fillOpacity: 1,
+          });
+      pin
         .bindTooltip(label)
         .on('click', (event) => {
           L.DomEvent.stopPropagation(event.originalEvent);
@@ -72,7 +103,21 @@ export default function TaskMap({
         })
         .addTo(layer.current);
     });
-  }, [ready, markers]);
+  }, [ready, markers, connection]);
+  useEffect(() => {
+    if (!ready || !fitMarkers || !markers.length) return;
+    const L = require('leaflet');
+    instance.current.fitBounds(
+      L.latLngBounds(
+        markers.map((marker) => [marker.latitude, marker.longitude]),
+      ),
+      {
+        padding: [35, 35],
+        maxZoom: 16,
+        animate: true,
+      },
+    );
+  }, [ready, fitMarkers, markerCoordinates]);
   return (
     <div style={{ width: '100%' }}>
       <div

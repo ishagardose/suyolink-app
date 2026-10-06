@@ -23,6 +23,15 @@ export const STATUS_LABELS = {
   cancelled: 'Cancelled',
 };
 
+export function getRequestStatusLabel(request, now = Date.now()) {
+  if (
+    request.status === REQUEST_STATUS.OPEN &&
+    Date.parse(request.deadline) <= now
+  )
+    return 'Expired';
+  return STATUS_LABELS[request.status] || request.status;
+}
+
 export function parseDeadline(value) {
   const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(value.trim());
   if (!match) throw new Error('Choose a deadline date and time.');

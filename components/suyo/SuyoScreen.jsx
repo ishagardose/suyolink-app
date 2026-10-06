@@ -17,6 +17,7 @@ import SuyoSummary from './SuyoSummary';
 import PrivateTaskDetails from './PrivateTaskDetails';
 import ApplicationsPanel from './ApplicationsPanel';
 import StatusActions from './StatusActions';
+import LiveTrackingCard from './LiveTrackingCard';
 
 export default function SuyoScreen() {
   const { id } = useLocalSearchParams();
@@ -159,6 +160,10 @@ export default function SuyoScreen() {
               }
             />
             <PrivateTaskDetails details={request} />
+            <LiveTrackingCard
+              request={request}
+              userId={user?.id}
+            />
             {request.providerId ? (
               <ThemedText>
                 Provider rating:{' '}
@@ -167,7 +172,12 @@ export default function SuyoScreen() {
                   : 'No ratings yet'}
               </ThemedText>
             ) : null}
-            {request.latitude != null ? (
+            {request.latitude != null &&
+            !(
+              (own || assigned) &&
+              request.providerId &&
+              ['assigned', 'in_progress'].includes(request.status)
+            ) ? (
               <ThemedButton
                 title="View task location"
                 variant="secondary"

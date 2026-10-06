@@ -2,7 +2,8 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
-import { formatOffer, STATUS_LABELS } from '../../data/suyoRequests';
+import { formatOffer } from '../../data/suyoRequests';
+import useRequestStatusLabel from '../../hooks/useRequestStatusLabel';
 import ThemedText from '../themed/ThemedText';
 const icons = {
   Delivery: 'bicycle-outline',
@@ -14,6 +15,7 @@ const icons = {
 };
 export default function TaskListCard({ task, onOpen }) {
   const { colors } = useTheme();
+  const statusLabel = useRequestStatusLabel(task);
   return (
     <View
       style={[
@@ -94,7 +96,7 @@ export default function TaskListCard({ task, onOpen }) {
             tone="textMuted"
             style={{ fontSize: 11 }}
           >
-            {STATUS_LABELS[task.status]}
+            {statusLabel}
           </ThemedText>
         </View>
         <TouchableOpacity

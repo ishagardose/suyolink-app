@@ -3,13 +3,15 @@ import { distanceKm } from '../../lib/geo';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
-import { formatOffer, STATUS_LABELS } from '../../data/suyoRequests';
+import { formatOffer } from '../../data/suyoRequests';
+import useRequestStatusLabel from '../../hooks/useRequestStatusLabel';
 import ThemedText from '../themed/ThemedText';
 import { urgencyFor } from '../../lib/urgency';
 
 export default function SuyoSummary({ details }) {
   const { colors } = useTheme();
   const { position } = useDeviceLocation();
+  const statusLabel = useRequestStatusLabel(details);
   if (!details) return null;
   const km = distanceKm(position, details);
 
@@ -38,7 +40,7 @@ export default function SuyoSummary({ details }) {
           ) : null}
           <View style={[styles.badge, { backgroundColor: colors.surfaceAlt }]}>
             <ThemedText style={[styles.badgeText, { color: colors.link }]}>
-              {STATUS_LABELS[details.status] || details.status}
+              {statusLabel}
             </ThemedText>
           </View>
         </View>
