@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import {
   Animated,
   PanResponder,
@@ -7,7 +7,9 @@ import {
   Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { styles } from './legacyDashboard.styles';
+import { createLegacyDashboardStyles } from './legacyDashboard.styles';
+import { useTheme } from '../../theme/ThemeContext';
+import { resolveLegacyColor } from '../../theme/legacyColors';
 import { SCREEN_WIDTH, USE_NATIVE_DRIVER } from './legacyDashboardLayout';
 
 export default function SwipeableNotificationItem({
@@ -15,13 +17,51 @@ export default function SwipeableNotificationItem({
   onPress,
   onMarkRead,
   onRemove,
+  disabled = false,
 }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(
+    () => createLegacyDashboardStyles(colors, isDark),
+    [colors, isDark],
+  );
+  const resolveColor = (value, property = 'color') =>
+    resolveLegacyColor(value, property, colors, isDark);
   const translateX = useRef(new Animated.Value(0)).current;
+
+  const removing = useRef(false);
+  const latest = useRef({ onRemove, disabled, id: item.id });
+  latest.current = { onRemove, disabled, id: item.id };
+  const resetPosition = () =>
+    Animated.spring(translateX, {
+      toValue: 0,
+      friction: 7,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start();
+  const handleManualDelete = () => {
+    if (latest.current.disabled || removing.current) return;
+    removing.current = true;
+    Animated.timing(translateX, {
+      toValue: -SCREEN_WIDTH,
+      duration: 180,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start(async () => {
+      try {
+        const success = await latest.current.onRemove(latest.current.id);
+        if (!success) resetPosition();
+      } catch (_) {
+        resetPosition();
+      } finally {
+        removing.current = false;
+      }
+    });
+  };
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return (
+          !latest.current.disabled &&
+          !removing.current &&
           Math.abs(gestureState.dx) > 10 &&
           Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
         );
@@ -35,13 +75,7 @@ export default function SwipeableNotificationItem({
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx < -70 || gestureState.vx < -0.45) {
-          Animated.timing(translateX, {
-            toValue: -SCREEN_WIDTH,
-            duration: 180,
-            useNativeDriver: USE_NATIVE_DRIVER,
-          }).start(() => {
-            onRemove(item.id);
-          });
+          handleManualDelete();
         } else {
           Animated.spring(translateX, {
             toValue: 0,
@@ -53,27 +87,18 @@ export default function SwipeableNotificationItem({
     }),
   ).current;
 
-  const handleManualDelete = () => {
-    Animated.timing(translateX, {
-      toValue: -SCREEN_WIDTH,
-      duration: 180,
-      useNativeDriver: USE_NATIVE_DRIVER,
-    }).start(() => {
-      onRemove(item.id);
-    });
-  };
-
   return (
     <View style={styles.notifSwipeContainer}>
       <TouchableOpacity
         style={styles.notifDeleteActionBg}
         activeOpacity={0.8}
+        disabled={disabled}
         onPress={handleManualDelete}
       >
         <Ionicons
           name="trash"
           size={20}
-          color="#FFFFFF"
+          color={resolveColor('#FFFFFF', 'color')}
         />
         <Text style={styles.notifDeleteActionText}>Remove</Text>
       </TouchableOpacity>
@@ -89,6 +114,9 @@ export default function SwipeableNotificationItem({
         <TouchableOpacity
           style={styles.notifCardInnerTouch}
           activeOpacity={0.88}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={`${item.title}: ${item.body}`}
           onPress={() => onPress(item)}
         >
           <View style={styles.notifCardLeftCol}>
@@ -109,12 +137,12 @@ export default function SwipeableNotificationItem({
                 size={15}
                 color={
                   item.category === 'doer'
-                    ? '#1E4D2B'
+                    ? resolveColor('#1E4D2B', 'color')
                     : item.category === 'task'
-                      ? '#059669'
+                      ? resolveColor('#059669', 'color')
                       : item.category === 'payment'
-                        ? '#D97706'
-                        : '#0D9488'
+                        ? resolveColor('#D97706', 'color')
+                        : resolveColor('#0D9488', 'color')
                 }
               />
             </View>
@@ -150,7 +178,7 @@ export default function SwipeableNotificationItem({
             <View style={styles.notifCardBottomActionRow}>
               {item.targetScreen ? (
                 <Text style={styles.notifActionLinkText}>
-                  Tap to view fulfillment →
+                  Tap to view request →
                 </Text>
               ) : (
                 <Text style={styles.notifSwipeHintText}>
@@ -169,12 +197,14 @@ export default function SwipeableNotificationItem({
                     }}
                     style={styles.notifMarkSingleReadBtn}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    disabled={disabled}
+                    accessibilityRole="button"
                     accessibilityLabel="Mark read"
                   >
                     <Ionicons
                       name="checkmark"
                       size={12}
-                      color="#1E4D2B"
+                      color={resolveColor('#1E4D2B', 'color')}
                     />
                   </TouchableOpacity>
                 )}
@@ -186,12 +216,14 @@ export default function SwipeableNotificationItem({
                   }}
                   style={styles.notifTrashIconBtn}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  disabled={disabled}
+                  accessibilityRole="button"
                   accessibilityLabel="Remove notification"
                 >
                   <Ionicons
                     name="trash-outline"
                     size={12}
-                    color="#94A3B8"
+                    color={resolveColor('#94A3B8', 'color')}
                   />
                 </TouchableOpacity>
               </View>

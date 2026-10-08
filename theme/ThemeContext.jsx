@@ -36,14 +36,27 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const value = useMemo(() => {
-    return {
-      themeMode: 'light',
-      isLoading: false,
-      isDark: false,
-      colors: light,
-      setThemeMode: () => Promise.resolve(),
+    const isDark =
+      themeMode === 'dark' ||
+      (themeMode === 'system' && deviceScheme === 'dark');
+    const setThemeMode = (mode) => {
+      if (!MODES.includes(mode))
+        return Promise.reject(new Error('Invalid appearance mode.'));
+      setMode(mode);
+      writes.current = writes.current
+        .catch(() => {})
+        .then(() => AsyncStorage.setItem(STORAGE_KEY, mode));
+      return writes.current;
     };
-  }, []);
+    return {
+      themeMode,
+      isLoading,
+      isDark,
+      colors: isDark ? dark : light,
+      setThemeMode,
+      toggleTheme: () => setThemeMode(isDark ? 'light' : 'dark'),
+    };
+  }, [themeMode, deviceScheme, isLoading]);
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

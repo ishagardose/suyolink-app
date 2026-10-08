@@ -911,6 +911,67 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
     'Anonymous profile reads denied',
   );
 
+  await db.exec('reset role');
+  const ownNotice =
+    await row(`insert into public.notifications(recipient_id,kind,body)
+    values ('${A}','status_update','Owner notification') returning id`);
+  const otherNotice =
+    await row(`insert into public.notifications(recipient_id,kind,body)
+    values ('${B}','status_update','Other notification') returning id`);
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610080002_notification_deletion.sql',
+      ),
+      'utf8',
+    ),
+  );
+  await actor(A);
+  await db.exec(
+    `update public.notifications set read_at=now() where id='${ownNotice.id}'`,
+  );
+  ok(
+    (
+      await row(
+        `select read_at from public.notifications where id='${ownNotice.id}'`,
+      )
+    ).read_at != null,
+    'Recipient can persist notification read status',
+  );
+  await denied(
+    `update public.notifications set body='Forged' where id='${ownNotice.id}'`,
+    'Notification content remains server controlled',
+  );
+  await db.exec(
+    `delete from public.notifications where id='${otherNotice.id}'`,
+  );
+  await db.exec(`delete from public.notifications where id='${ownNotice.id}'`);
+  await db.exec('reset role');
+  ok(
+    (
+      await row(
+        `select count(*)::int as n from public.notifications where id='${ownNotice.id}'`,
+      )
+    ).n === 0,
+    'Recipient can delete own notification',
+  );
+  ok(
+    (
+      await row(
+        `select count(*)::int as n from public.notifications where id='${otherNotice.id}'`,
+      )
+    ).n === 1,
+    'Recipient cannot delete someone else notification',
+  );
+  await db.exec(
+    "select set_config('request.jwt.claim.sub', '', false); set role anon;",
+  );
+  await denied(
+    `delete from public.notifications where id='${otherNotice.id}'`,
+    'Anonymous deletion denied',
+  );
+
   await db.close();
   console.log(
     'PASS: migration + ' +

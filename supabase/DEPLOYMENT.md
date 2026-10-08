@@ -40,3 +40,7 @@ Optional chat and identity-document verification are not part of this implementa
 Deploy `202610080001_backend_profiles.sql` before the updated app. It adds public handle/bio fields with owner-only writes and an authenticated `get_suyo_profile` RPC. Completed counts include tasks participated in as requester or doer, preserving the existing profile meaning; ratings average reviews received. Empty profiles have zero completed tasks and no rating. Contact phone/address remain private under existing RLS. There is no identity-verification field, so the app no longer displays a verification badge.
 
 Handles and bios previously stored only on a device are not uploaded automatically. Users can save them through Edit Profile to persist them in Supabase. No hosted project is linked in this checkout; local tests do not apply migrations to your hosted database.
+
+## Dashboard notification actions
+
+Apply `migrations/202610080002_notification_deletion.sql` to enable Remove and Clear All in the dashboard inbox. It grants authenticated recipients permission to delete only their own notifications. Existing read-status updates need no migration. Task history is retained; queued pushes tied to deleted notifications are removed by the existing foreign-key cascade. The dashboard keeps its existing notification layout and reads actual notification bodies, timestamps, and request IDs from Supabase.

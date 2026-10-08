@@ -1,6 +1,22 @@
+import { themeLegacyStyles } from '../../theme/legacyColors';
 import { StyleSheet, Platform } from 'react-native';
 
-export const styles = StyleSheet.create({
+const definitions = {
+  filterPillsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DFECE5',
+  },
+  filterPillActive: { backgroundColor: '#1E4D2B', borderColor: '#1E4D2B' },
+  filterPillText: { color: '#334155', fontSize: 11.5, fontWeight: '700' },
+  filterPillTextActive: { color: '#FFFFFF' },
   safeContainer: {
     flex: 1,
     backgroundColor: '#1E4D2B',
@@ -525,4 +541,7 @@ export const styles = StyleSheet.create({
     lineHeight: 19,
     maxWidth: 290,
   },
-});
+};
+
+export const createActivityStyles = (colors, isDark) =>
+  StyleSheet.create(themeLegacyStyles(definitions, colors, isDark));

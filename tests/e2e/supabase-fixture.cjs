@@ -112,13 +112,30 @@ async function mockSupabase(
     ) {
       const table = path.split('/').pop();
       json = workflow[table] || [];
-      if (request.method() === 'PATCH') {
-        const id = new URL(request.url()).searchParams
-          .get('id')
-          ?.replace('eq.', '');
-        json
-          .filter((item) => item.id === id)
-          .forEach((item) => Object.assign(item, body));
+      if (request.method() === 'PATCH' || request.method() === 'DELETE') {
+        if (workflow.notificationWriteError && table === 'notifications') {
+          return route.fulfill({
+            status: 403,
+            json: { message: 'Notification update denied' },
+          });
+        }
+        const params = new URL(request.url()).searchParams;
+        const idFilter = params.get('id');
+        const selected = json.filter((item) => {
+          const idMatches =
+            !idFilter ||
+            (idFilter.startsWith('in.')
+              ? idFilter.slice(4, -1).split(',').includes(item.id)
+              : item.id === idFilter.replace('eq.', ''));
+          return (
+            idMatches &&
+            (params.get('read_at') !== 'is.null' || item.read_at == null)
+          );
+        });
+        if (request.method() === 'PATCH')
+          selected.forEach((item) => Object.assign(item, body));
+        else workflow[table] = json.filter((item) => !selected.includes(item));
+        json = selected;
       }
     } else if (
       path === '/rest/v1/rpc/create_suyo_request_v2' ||

@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -47,7 +47,8 @@
           "locationWhenInUsePermission": "Allow SuyoLink to use your location to place a task pin and show nearby request distances."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-system-ui"
     ]
   }
 }

@@ -1,5 +1,8 @@
+import { toNotificationCard } from './notificationData';
 import SwipeableNotificationItem from './SwipeableNotificationItem';
-import { styles } from './legacyDashboard.styles';
+import { createLegacyDashboardStyles } from './legacyDashboard.styles';
+import { resolveLegacyColor } from '../../theme/legacyColors';
+import AppearanceSelector from '../themed/AppearanceSelector';
 import {
   SCREEN_WIDTH,
   SIDEBAR_WIDTH,
@@ -70,11 +73,22 @@ export default function DashboardScreen() {
   const bottomInset = Math.max(insets.bottom, 16);
   const [activeTab, setActiveTab] = useState('home');
   const { user, logout } = useAuth();
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(
+    () => createLegacyDashboardStyles(colors, isDark),
+    [colors, isDark],
+  );
+  const resolveColor = (value, property = 'color') =>
+    resolveLegacyColor(value, property, colors, isDark);
   const {
     requests,
     transactions = [],
     workflowError,
+    workflowLoading,
+    notifications: backendNotifications = [],
+    markRead,
+    markNotificationsRead,
+    deleteNotifications,
     error,
     refresh,
     isLoading,
@@ -601,7 +615,7 @@ export default function DashboardScreen() {
                             : 'checkmark-circle'
               }
               size={15}
-              color="#FFFFFF"
+              color={resolveColor('#FFFFFF', 'color')}
             />
           </View>
           <Text style={styles.poppingToastText}>{toastConfig.message}</Text>
@@ -1127,121 +1141,73 @@ export default function DashboardScreen() {
     triggerToast('suyo is successfully posted', 'paper-plane');
   };
 
-  // Functional Notifications state
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'NOTIF-1',
-      title: 'Doer Assigned',
-      body: 'Alex M. accepted your suyo "Drop off documents - Unit 402". Estimated arrival in 5 mins.',
-      time: '5m ago',
-      category: 'doer',
-      icon: 'bicycle',
-      unread: true,
-      targetScreen: '/requester-fulfill',
-    },
-    {
-      id: 'NOTIF-2',
-      title: 'Task Accepted',
-      body: 'You are now fulfilling "Buy groceries - SM Tagum". Tap to view task directions.',
-      time: '25m ago',
-      category: 'task',
-      icon: 'cart-outline',
-      unread: true,
-      targetScreen: '/fulfill',
-      taskParams: {
-        id: 'SYL-102',
-        title: 'Buy groceries - SM Tagum',
-        category: 'Groceries',
-        location: 'SM Tagum',
-        reward: '₱150',
-        requesterName: 'Maria Clarissa',
-      },
-    },
-    {
-      id: 'NOTIF-3',
-      title: 'Reward Credited',
-      body: '₱300 has been credited to your account for completing suyo #SYL-984.',
-      time: '1h ago',
-      category: 'payment',
-      icon: 'cash-outline',
-      unread: true,
-      targetScreen: null,
-    },
-    {
-      id: 'NOTIF-4',
-      title: 'New Suyo Nearby',
-      body: 'An urgent suyo "Prescription pickup at Mercury Drug" was posted 1.1 km away.',
-      time: '3h ago',
-      category: 'nearby',
-      icon: 'location-outline',
-      unread: false,
-      targetScreen: null,
-    },
-  ]);
+  const notifications = useMemo(
+    () => backendNotifications.map((item) => toNotificationCard(item)),
+    [backendNotifications],
+  );
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] =
     useState(false);
-  const [notificationFilter, setNotificationFilter] = useState('All'); // 'All' | 'Unread'
-
+  const [notificationFilter, setNotificationFilter] = useState('All');
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const notificationActionPending = useRef(false);
+  const [notificationError, setNotificationError] = useState('');
   const unreadNotificationsCount = notifications.filter((n) => n.unread).length;
 
-  const markNotificationRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n)),
-    );
-    triggerToast('Notification marked as read', 'checkmark-circle');
-  };
-
-  const markAllNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-    triggerToast('All notifications marked as read', 'checkmark-done');
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    triggerToast('All notifications cleared', 'trash-outline');
-  };
-
-  const removeNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    triggerToast('Notification removed', 'trash-outline');
-  };
-
-  const handleTapNotification = (notif) => {
-    // Mark as read
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notif.id ? { ...n, unread: false } : n)),
-    );
-    setIsNotificationsModalOpen(false);
-
-    if (notif.targetScreen === '/requester-fulfill') {
-      router.push('/requester-fulfill');
-    } else if (notif.targetScreen === '/fulfill') {
-      router.push({
-        pathname: '/fulfill',
-        params: notif.taskParams || {
-          id: 'SYL-102',
-          title: 'Buy groceries - SM Tagum',
-          category: 'Groceries',
-          location: 'SM Tagum',
-          reward: '₱150',
-          requesterName: 'Maria Clarissa',
-        },
-      });
-    } else if (notif.category === 'payment') {
-      triggerToast(
-        '₱300 reward credited to your SuyoLink Wallet',
-        'cash-outline',
+  const runNotificationAction = async (action, message, icon) => {
+    if (notificationActionPending.current) return false;
+    notificationActionPending.current = true;
+    setNotificationBusy(true);
+    setNotificationError('');
+    try {
+      await action();
+      if (message) triggerToast(message, icon);
+      return true;
+    } catch (err) {
+      setNotificationError(
+        err.message || 'Could not update notifications. Please retry.',
       );
-    } else if (notif.category === 'nearby') {
-      const urgentSuyo =
-        filteredSuyos.find((s) => s.tag === 'Urgent') || filteredSuyos[0];
-      if (urgentSuyo) {
-        handleOpenSuyoDetail(urgentSuyo);
-      } else {
-        router.push('/map');
-      }
-    } else {
-      triggerToast(notif.title, 'notifications');
+      return false;
+    } finally {
+      notificationActionPending.current = false;
+      setNotificationBusy(false);
+    }
+  };
+
+  const markNotificationRead = (id) =>
+    runNotificationAction(
+      () => markRead(id),
+      'Notification marked as read',
+      'checkmark-circle',
+    );
+  const markAllNotificationsRead = () =>
+    runNotificationAction(
+      () =>
+        markNotificationsRead(
+          notifications.filter((n) => n.unread).map((n) => n.id),
+        ),
+      'All notifications marked as read',
+      'checkmark-done',
+    );
+  const clearAllNotifications = () =>
+    runNotificationAction(
+      () => deleteNotifications(notifications.map((n) => n.id)),
+      'All notifications cleared',
+      'trash-outline',
+    );
+  const removeNotification = (id) =>
+    runNotificationAction(
+      () => deleteNotifications([id]),
+      'Notification removed',
+      'trash-outline',
+    );
+  const handleTapNotification = async (notif) => {
+    const success = await runNotificationAction(async () => {
+      if (notif.unread) await markRead(notif.id);
+    });
+    if (!success) return;
+    if (notif.request_id) {
+      setIsNotificationsModalOpen(false);
+      router.push({ pathname: '/suyo', params: { id: notif.request_id } });
     }
   };
 
@@ -1423,7 +1389,7 @@ export default function DashboardScreen() {
           <Ionicons
             name="menu-outline"
             size={26}
-            color="#FFFFFF"
+            color={resolveColor('#FFFFFF', 'color')}
           />
         </TouchableOpacity>
 
@@ -1440,7 +1406,7 @@ export default function DashboardScreen() {
             <Ionicons
               name="heart-outline"
               size={22}
-              color="#FFFFFF"
+              color={resolveColor('#FFFFFF', 'color')}
             />
             {favoriteSuyoIds.length > 0 && (
               <View style={styles.unreadBadgeDot} />
@@ -1459,7 +1425,7 @@ export default function DashboardScreen() {
             <Ionicons
               name="notifications-outline"
               size={22}
-              color="#FFFFFF"
+              color={resolveColor('#FFFFFF', 'color')}
             />
             {unreadNotificationsCount > 0 && (
               <View style={styles.headerNotifBadge}>
@@ -1492,7 +1458,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="location-sharp"
                     size={11}
-                    color="#4ADE80"
+                    color={resolveColor('#4ADE80', 'color')}
                   />
                   <Text style={styles.locationPillText}>Makati CBD</Text>
                 </View>
@@ -1523,13 +1489,16 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="search-outline"
                     size={20}
-                    color="#7A9384"
+                    color={resolveColor('#7A9384', 'color')}
                     style={styles.searchIcon}
                   />
                   <TextInput
                     style={styles.searchInput}
                     placeholder="Search suyos..."
-                    placeholderTextColor="#688676"
+                    placeholderTextColor={resolveColor(
+                      '#688676',
+                      'placeholderTextColor',
+                    )}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     accessibilityLabel="Search suyos"
@@ -1542,7 +1511,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="close-circle"
                         size={18}
-                        color="#8FA497"
+                        color={resolveColor('#8FA497', 'color')}
                       />
                     </TouchableOpacity>
                   )}
@@ -1561,7 +1530,11 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="options-outline"
                     size={22}
-                    color={activeFiltersCount > 0 ? '#FFFFFF' : '#1E4D2B'}
+                    color={
+                      activeFiltersCount > 0
+                        ? resolveColor('#FFFFFF', 'color')
+                        : resolveColor('#1E4D2B', 'color')
+                    }
                   />
                   {activeFiltersCount > 0 && (
                     <View style={styles.filterActiveBadgeDot}>
@@ -1608,7 +1581,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="close-circle-outline"
                       size={13}
-                      color="#64748B"
+                      color={resolveColor('#64748B', 'color')}
                     />
                     <Text style={styles.clearFiltersText}>Clear all</Text>
                   </TouchableOpacity>
@@ -1621,7 +1594,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="location-outline"
                       size={13}
-                      color="#1E4D2B"
+                      color={resolveColor('#1E4D2B', 'color')}
                     />
                     <Text style={styles.nearestHeaderText}>Nearest</Text>
                   </TouchableOpacity>
@@ -1688,7 +1661,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="search"
                       size={32}
-                      color="#8FA497"
+                      color={resolveColor('#8FA497', 'color')}
                     />
                     <Text style={styles.emptyStateTitle}>No suyos found</Text>
                     <Text style={styles.emptyStateSub}>
@@ -1718,7 +1691,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="receipt-outline"
                   size={24}
-                  color="#1C3A27"
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
             </View>
@@ -2013,7 +1986,7 @@ export default function DashboardScreen() {
                                   : 'bookmark-outline'
                         }
                         size={40}
-                        color="#A3B8AC"
+                        color={resolveColor('#A3B8AC', 'color')}
                       />
                       <Text style={styles.mySuyoEmptyTitle}>
                         {mySuyoNavTab === 'posted'
@@ -2085,7 +2058,7 @@ export default function DashboardScreen() {
                                 <Ionicons
                                   name="checkmark"
                                   size={11}
-                                  color="#FFFFFF"
+                                  color={resolveColor('#FFFFFF', 'color')}
                                 />
                               )}
                             </View>
@@ -2108,14 +2081,18 @@ export default function DashboardScreen() {
                           style={[
                             styles.mySuyoCardStatusText,
                             suyo.status === 'Cancelled'
-                              ? { color: '#DC2626' }
+                              ? { color: resolveColor('#DC2626', 'color') }
                               : suyo.status?.includes('Completed')
-                                ? { color: '#15803D' }
+                                ? { color: resolveColor('#15803D', 'color') }
                                 : suyo.status?.includes('In Progress')
-                                  ? { color: '#0284C7' }
+                                  ? { color: resolveColor('#0284C7', 'color') }
                                   : suyo.status === 'Archived Template'
-                                    ? { color: '#64748B' }
-                                    : { color: '#0369A1' },
+                                    ? {
+                                        color: resolveColor('#64748B', 'color'),
+                                      }
+                                    : {
+                                        color: resolveColor('#0369A1', 'color'),
+                                      },
                           ]}
                         >
                           {suyo.status}
@@ -2145,7 +2122,7 @@ export default function DashboardScreen() {
                               <Ionicons
                                 name="sparkles"
                                 size={13}
-                                color="#059669"
+                                color={resolveColor('#059669', 'color')}
                               />
                               <Text style={styles.mySuyoCardBoostPromptText}>
                                 No doer yet? Boost reward
@@ -2178,7 +2155,7 @@ export default function DashboardScreen() {
                                 <Text
                                   style={[
                                     styles.mySuyoCardQuickBoostText,
-                                    { color: '#FFFFFF' },
+                                    { color: resolveColor('#FFFFFF', 'color') },
                                   ]}
                                 >
                                   +₱50
@@ -2197,7 +2174,10 @@ export default function DashboardScreen() {
                           >
                             Courier:{' '}
                             <Text
-                              style={{ fontWeight: '700', color: '#163523' }}
+                              style={{
+                                fontWeight: '700',
+                                color: resolveColor('#163523', 'color'),
+                              }}
                             >
                               {suyo.doer.name}
                             </Text>{' '}
@@ -2215,7 +2195,10 @@ export default function DashboardScreen() {
                           >
                             Fulfilled by{' '}
                             <Text
-                              style={{ fontWeight: '700', color: '#163523' }}
+                              style={{
+                                fontWeight: '700',
+                                color: resolveColor('#163523', 'color'),
+                              }}
                             >
                               {suyo.doer.name}
                             </Text>{' '}
@@ -2230,7 +2213,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="location-sharp"
                             size={13}
-                            color="#0D9488"
+                            color={resolveColor('#0D9488', 'color')}
                           />
                           <Text
                             style={styles.mySuyoCardLocationText}
@@ -2279,8 +2262,8 @@ export default function DashboardScreen() {
                     size={14}
                     color={
                       selectedMySuyoIdsToDelete.length > 0
-                        ? '#FFFFFF'
-                        : '#8CA395'
+                        ? resolveColor('#FFFFFF', 'color')
+                        : resolveColor('#8CA395', 'color')
                     }
                   />
                   <Text
@@ -2316,7 +2299,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="bicycle-outline"
                   size={24}
-                  color="#1C3A27"
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
             </View>
@@ -2505,7 +2488,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="bicycle-outline"
                         size={28}
-                        color="#8CA395"
+                        color={resolveColor('#8CA395', 'color')}
                       />
                     </View>
                     <Text style={styles.doerEmptyTitle}>
@@ -2523,7 +2506,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="search"
                         size={15}
-                        color="#FFFFFF"
+                        color={resolveColor('#FFFFFF', 'color')}
                       />
                       <Text style={styles.doerBrowseBtnText}>
                         Browse Available Suyos
@@ -2536,7 +2519,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="information-circle-outline"
                         size={16}
-                        color="#059669"
+                        color={resolveColor('#059669', 'color')}
                       />
                       <Text style={styles.doerInfoCalloutText}>
                         You are assigned as the doer. You can proceed to
@@ -2557,7 +2540,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name={suyo.icon || 'receipt'}
                               size={13}
-                              color="#1E4D2B"
+                              color={resolveColor('#1E4D2B', 'color')}
                             />
                             <Text style={styles.doerCategoryChipText}>
                               {suyo.category}
@@ -2578,12 +2561,15 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="person-circle-outline"
                             size={15}
-                            color="#557261"
+                            color={resolveColor('#557261', 'color')}
                           />
                           <Text style={styles.doerRequesterText}>
                             Requester:{' '}
                             <Text
-                              style={{ fontWeight: '700', color: '#163523' }}
+                              style={{
+                                fontWeight: '700',
+                                color: resolveColor('#163523', 'color'),
+                              }}
                             >
                               {suyo.requesterName}
                             </Text>
@@ -2600,7 +2586,7 @@ export default function DashboardScreen() {
                               <Ionicons
                                 name="call"
                                 size={11}
-                                color="#059669"
+                                color={resolveColor('#059669', 'color')}
                               />
                               <Text style={styles.doerCallMiniBtnText}>
                                 Call
@@ -2614,7 +2600,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="location-outline"
                             size={14}
-                            color="#8CA395"
+                            color={resolveColor('#8CA395', 'color')}
                           />
                           <Text
                             style={styles.doerLocationText}
@@ -2626,7 +2612,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="time-outline"
                             size={14}
-                            color="#8CA395"
+                            color={resolveColor('#8CA395', 'color')}
                           />
                           <Text style={styles.doerDeadlineText}>
                             {suyo.deadline}
@@ -2638,7 +2624,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="information-circle-outline"
                             size={12}
-                            color="#059669"
+                            color={resolveColor('#059669', 'color')}
                           />
                           <Text style={styles.doerTapDetailsHintText}>
                             Tap tile to view details & requester profile
@@ -2646,7 +2632,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="chevron-forward"
                             size={12}
-                            color="#059669"
+                            color={resolveColor('#059669', 'color')}
                           />
                         </View>
 
@@ -2676,7 +2662,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="bicycle"
                               size={15}
-                              color="#FFFFFF"
+                              color={resolveColor('#FFFFFF', 'color')}
                             />
                             <Text style={styles.doerContinueBtnText}>
                               Continue Suyo
@@ -2694,7 +2680,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="close-circle-outline"
                               size={15}
-                              color="#DC2626"
+                              color={resolveColor('#DC2626', 'color')}
                             />
                             <Text style={styles.doerCancelBtnText}>
                               Cancel as Doer
@@ -2717,7 +2703,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="checkmark-done"
                         size={28}
-                        color="#059669"
+                        color={resolveColor('#059669', 'color')}
                       />
                     </View>
                     <Text style={styles.doerEmptyTitle}>
@@ -2741,7 +2727,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name={item.icon || 'checkmark-done'}
                             size={18}
-                            color="#059669"
+                            color={resolveColor('#059669', 'color')}
                           />
                         </View>
                         <View style={styles.doerCompletedTextCol}>
@@ -2758,7 +2744,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="time-outline"
                               size={12}
-                              color="#8CA395"
+                              color={resolveColor('#8CA395', 'color')}
                             />
                             <Text style={styles.doerCompletedDate}>
                               {item.date}
@@ -2782,7 +2768,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="star"
                             size={10}
-                            color="#F59E0B"
+                            color={resolveColor('#F59E0B', 'color')}
                           />
                           <Text style={styles.doerCompletedRatingText}>
                             5.0★
@@ -2804,7 +2790,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="shield-checkmark-outline"
                         size={28}
-                        color="#059669"
+                        color={resolveColor('#059669', 'color')}
                       />
                     </View>
                     <Text style={styles.doerEmptyTitle}>
@@ -2869,7 +2855,7 @@ export default function DashboardScreen() {
                                   <Ionicons
                                     name="checkmark"
                                     size={11}
-                                    color="#FFFFFF"
+                                    color={resolveColor('#FFFFFF', 'color')}
                                   />
                                 )}
                               </View>
@@ -2884,7 +2870,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="return-up-back"
                             size={13}
-                            color="#6B7280"
+                            color={resolveColor('#6B7280', 'color')}
                           />
                           <Text style={styles.doerCancelledNoticeText}>
                             Released back to public board for other couriers.
@@ -2924,8 +2910,8 @@ export default function DashboardScreen() {
                         size={14}
                         color={
                           selectedDoerCancelledIds.length > 0
-                            ? '#FFFFFF'
-                            : '#8CA395'
+                            ? resolveColor('#FFFFFF', 'color')
+                            : resolveColor('#8CA395', 'color')
                         }
                       />
                       <Text
@@ -2959,7 +2945,7 @@ export default function DashboardScreen() {
               <Ionicons
                 name="arrow-back"
                 size={16}
-                color="#1E4D2B"
+                color={resolveColor('#1E4D2B', 'color')}
               />
               <Text style={styles.walletReturnHeaderText}>
                 Back to Dashboard
@@ -2974,7 +2960,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="wallet"
                       size={17}
-                      color="#1E4D2B"
+                      color={resolveColor('#1E4D2B', 'color')}
                     />
                   </View>
                   <Text style={styles.walletHeroSuper}>SUYOLINK WALLET</Text>
@@ -2983,7 +2969,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="checkmark-circle"
                     size={13}
-                    color="#059669"
+                    color={resolveColor('#059669', 'color')}
                   />
                   <Text style={styles.walletVerifiedPillText}>
                     Verified User
@@ -3035,7 +3021,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="call"
                   size={13}
-                  color="#059669"
+                  color={resolveColor('#059669', 'color')}
                 />
                 <Text style={styles.walletPaymentNoticeText}>
                   Payments are received directly via call & conversation with
@@ -3069,7 +3055,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="wallet-outline"
                       size={28}
-                      color="#1E4D2B"
+                      color={resolveColor('#1E4D2B', 'color')}
                     />
                   </View>
                   <Text style={styles.doerEmptyTitle}>
@@ -3091,14 +3077,39 @@ export default function DashboardScreen() {
                         style={[
                           styles.walletCategoryIconCircle,
                           item.category === 'Groceries'
-                            ? { backgroundColor: '#DCFCE7' }
+                            ? {
+                                backgroundColor: resolveColor(
+                                  '#DCFCE7',
+                                  'backgroundColor',
+                                ),
+                              }
                             : item.category === 'Medicine'
-                              ? { backgroundColor: '#F3E8FF' }
+                              ? {
+                                  backgroundColor: resolveColor(
+                                    '#F3E8FF',
+                                    'backgroundColor',
+                                  ),
+                                }
                               : item.category === 'Documents'
-                                ? { backgroundColor: '#E0F2FE' }
+                                ? {
+                                    backgroundColor: resolveColor(
+                                      '#E0F2FE',
+                                      'backgroundColor',
+                                    ),
+                                  }
                                 : item.category === 'Queuing & Bills'
-                                  ? { backgroundColor: '#FEF3C7' }
-                                  : { backgroundColor: '#EAF4EF' },
+                                  ? {
+                                      backgroundColor: resolveColor(
+                                        '#FEF3C7',
+                                        'backgroundColor',
+                                      ),
+                                    }
+                                  : {
+                                      backgroundColor: resolveColor(
+                                        '#EAF4EF',
+                                        'backgroundColor',
+                                      ),
+                                    },
                         ]}
                       >
                         <Ionicons
@@ -3106,14 +3117,14 @@ export default function DashboardScreen() {
                           size={18}
                           color={
                             item.category === 'Groceries'
-                              ? '#15803D'
+                              ? resolveColor('#15803D', 'color')
                               : item.category === 'Medicine'
-                                ? '#7E22CE'
+                                ? resolveColor('#7E22CE', 'color')
                                 : item.category === 'Documents'
-                                  ? '#0369A1'
+                                  ? resolveColor('#0369A1', 'color')
                                   : item.category === 'Queuing & Bills'
-                                    ? '#B45309'
-                                    : '#1E4D2B'
+                                    ? resolveColor('#B45309', 'color')
+                                    : resolveColor('#1E4D2B', 'color')
                           }
                         />
                       </View>
@@ -3130,12 +3141,15 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="person-circle-outline"
                             size={13}
-                            color="#557261"
+                            color={resolveColor('#557261', 'color')}
                           />
                           <Text style={styles.walletItemRequesterText}>
                             From:{' '}
                             <Text
-                              style={{ fontWeight: '700', color: '#163523' }}
+                              style={{
+                                fontWeight: '700',
+                                color: resolveColor('#163523', 'color'),
+                              }}
                             >
                               {item.requesterName}
                             </Text>
@@ -3146,7 +3160,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="time-outline"
                             size={12}
-                            color="#8CA395"
+                            color={resolveColor('#8CA395', 'color')}
                           />
                           <Text style={styles.walletItemDateText}>
                             {item.date}
@@ -3155,7 +3169,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="location-outline"
                             size={12}
-                            color="#8CA395"
+                            color={resolveColor('#8CA395', 'color')}
                           />
                           <Text
                             style={styles.walletItemLocationText}
@@ -3175,7 +3189,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="checkmark-circle"
                           size={10}
-                          color="#15803D"
+                          color={resolveColor('#15803D', 'color')}
                         />
                         <Text style={styles.walletStatusChipText}>
                           {item.status}
@@ -3209,7 +3223,9 @@ export default function DashboardScreen() {
             onPress={() => router.push('/requester-fulfill')}
           >
             <LinearGradient
-              colors={['#E5F4EC', '#F4FAF6']}
+              colors={['#E5F4EC', '#F4FAF6'].map((value) =>
+                resolveColor(value, 'backgroundColor'),
+              )}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.floatingActiveModalGradient}
@@ -3225,7 +3241,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="map-outline"
                     size={11.5}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                     style={{ marginRight: 3 }}
                   />
                   <Text style={styles.floatingTrackingText}>
@@ -3251,7 +3267,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="chevron-forward"
                     size={13}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                 </View>
               </View>
@@ -3287,7 +3303,11 @@ export default function DashboardScreen() {
           <Ionicons
             name={activeTab === 'home' ? 'home' : 'home-outline'}
             size={22}
-            color={activeTab === 'home' ? '#1E4D2B' : '#8FA497'}
+            color={
+              activeTab === 'home'
+                ? resolveColor('#1E4D2B', 'color')
+                : resolveColor('#8FA497', 'color')
+            }
           />
           <Text
             style={[
@@ -3307,7 +3327,11 @@ export default function DashboardScreen() {
           <Ionicons
             name={activeTab === 'mysuyo' ? 'receipt' : 'receipt-outline'}
             size={22}
-            color={activeTab === 'mysuyo' ? '#1E4D2B' : '#8FA497'}
+            color={
+              activeTab === 'mysuyo'
+                ? resolveColor('#1E4D2B', 'color')
+                : resolveColor('#8FA497', 'color')
+            }
           />
           <Text
             style={[
@@ -3327,12 +3351,12 @@ export default function DashboardScreen() {
           <Ionicons
             name="add-circle"
             size={24}
-            color="#1E4D2B"
+            color={resolveColor('#1E4D2B', 'color')}
           />
           <Text
             style={[
               styles.navItemText,
-              { color: '#1E4D2B', fontWeight: '700' },
+              { color: resolveColor('#1E4D2B', 'color'), fontWeight: '700' },
             ]}
           >
             Post
@@ -3347,7 +3371,11 @@ export default function DashboardScreen() {
           <Ionicons
             name={activeTab === 'doer' ? 'bicycle' : 'bicycle-outline'}
             size={22}
-            color={activeTab === 'doer' ? '#1E4D2B' : '#8FA497'}
+            color={
+              activeTab === 'doer'
+                ? resolveColor('#1E4D2B', 'color')
+                : resolveColor('#8FA497', 'color')
+            }
           />
           <Text
             style={[
@@ -3369,7 +3397,11 @@ export default function DashboardScreen() {
           <Ionicons
             name={activeTab === 'account' ? 'person' : 'person-outline'}
             size={22}
-            color={activeTab === 'account' ? '#1E4D2B' : '#8FA497'}
+            color={
+              activeTab === 'account'
+                ? resolveColor('#1E4D2B', 'color')
+                : resolveColor('#8FA497', 'color')
+            }
           />
           <Text
             style={[
@@ -3400,7 +3432,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="options-outline"
                   size={20}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
                 <Text style={styles.modalTitle}>Filter Suyos</Text>
               </View>
@@ -3412,7 +3444,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="close"
                   size={20}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -3439,7 +3471,9 @@ export default function DashboardScreen() {
                         onPress={() => setSelectedCategory(cat)}
                       >
                         <LinearGradient
-                          colors={config.gradient}
+                          colors={config.gradient.map((value) =>
+                            resolveColor(value, 'backgroundColor'),
+                          )}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
                           style={[
@@ -3488,7 +3522,9 @@ export default function DashboardScreen() {
                         onPress={() => setSelectedUrgency(urg)}
                       >
                         <LinearGradient
-                          colors={config.gradient}
+                          colors={config.gradient.map((value) =>
+                            resolveColor(value, 'backgroundColor'),
+                          )}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
                           style={[
@@ -3538,7 +3574,11 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="chevron-back"
                     size={16}
-                    color={currentDistanceKm === 'Any' ? '#B8CCC0' : '#1E4D2B'}
+                    color={
+                      currentDistanceKm === 'Any'
+                        ? resolveColor('#B8CCC0', 'color')
+                        : resolveColor('#1E4D2B', 'color')
+                    }
                   />
                 </TouchableOpacity>
 
@@ -3563,7 +3603,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="chevron-forward"
                     size={16}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                 </TouchableOpacity>
               </View>
@@ -3611,7 +3651,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="time-outline"
                     size={13}
-                    color="#658172"
+                    color={resolveColor('#658172', 'color')}
                   />
                   <Text style={styles.detailPostedTimeText}>
                     {selectedSuyoContext === 'posted'
@@ -3643,8 +3683,8 @@ export default function DashboardScreen() {
                         size={22}
                         color={
                           favoriteSuyoIds.includes(selectedSuyo.id)
-                            ? '#DC2626'
-                            : '#6B8576'
+                            ? resolveColor('#DC2626', 'color')
+                            : resolveColor('#6B8576', 'color')
                         }
                       />
                     </TouchableOpacity>
@@ -3659,7 +3699,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="close"
                       size={19}
-                      color="#6B8576"
+                      color={resolveColor('#6B8576', 'color')}
                     />
                   </TouchableOpacity>
                 </View>
@@ -3675,32 +3715,57 @@ export default function DashboardScreen() {
                   style={[
                     styles.detailStatusPillInline,
                     selectedSuyo.status === 'Cancelled'
-                      ? { backgroundColor: '#FEE2E2' }
+                      ? {
+                          backgroundColor: resolveColor(
+                            '#FEE2E2',
+                            'backgroundColor',
+                          ),
+                        }
                       : selectedSuyoContext === 'completed' ||
                           selectedSuyo.status?.includes('Completed')
-                        ? { backgroundColor: '#DCFCE7' }
+                        ? {
+                            backgroundColor: resolveColor(
+                              '#DCFCE7',
+                              'backgroundColor',
+                            ),
+                          }
                         : selectedSuyoContext === 'accepted' ||
                             selectedSuyo.status?.includes('In Progress')
-                          ? { backgroundColor: '#E0F2FE' }
+                          ? {
+                              backgroundColor: resolveColor(
+                                '#E0F2FE',
+                                'backgroundColor',
+                              ),
+                            }
                           : selectedSuyoContext === 'archived'
-                            ? { backgroundColor: '#F1F5F9' }
-                            : { backgroundColor: '#E0F2FE' },
+                            ? {
+                                backgroundColor: resolveColor(
+                                  '#F1F5F9',
+                                  'backgroundColor',
+                                ),
+                              }
+                            : {
+                                backgroundColor: resolveColor(
+                                  '#E0F2FE',
+                                  'backgroundColor',
+                                ),
+                              },
                   ]}
                 >
                   <Text
                     style={[
                       styles.detailStatusPillInlineText,
                       selectedSuyo.status === 'Cancelled'
-                        ? { color: '#DC2626' }
+                        ? { color: resolveColor('#DC2626', 'color') }
                         : selectedSuyoContext === 'completed' ||
                             selectedSuyo.status?.includes('Completed')
-                          ? { color: '#15803D' }
+                          ? { color: resolveColor('#15803D', 'color') }
                           : selectedSuyoContext === 'accepted' ||
                               selectedSuyo.status?.includes('In Progress')
-                            ? { color: '#0369A1' }
+                            ? { color: resolveColor('#0369A1', 'color') }
                             : selectedSuyoContext === 'archived'
-                              ? { color: '#475569' }
-                              : { color: '#0369A1' },
+                              ? { color: resolveColor('#475569', 'color') }
+                              : { color: resolveColor('#0369A1', 'color') },
                     ]}
                   >
                     {selectedSuyo.status === 'Cancelled'
@@ -3759,7 +3824,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="checkmark-circle"
                           size={14}
-                          color="#059669"
+                          color={resolveColor('#059669', 'color')}
                         />
                       )}
                     </View>
@@ -3855,7 +3920,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="call"
                               size={11}
-                              color="#6D8777"
+                              color={resolveColor('#6D8777', 'color')}
                             />
                             <Text style={styles.detailRequestorPhoneText}>
                               {isOwnSuyo
@@ -3885,7 +3950,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="pencil"
                             size={17}
-                            color="#1E4D2B"
+                            color={resolveColor('#1E4D2B', 'color')}
                           />
                         </TouchableOpacity>
                       ) : (
@@ -3907,7 +3972,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="call"
                               size={18}
-                              color="#1E4D2B"
+                              color={resolveColor('#1E4D2B', 'color')}
                             />
                           </TouchableOpacity>
                         )
@@ -3939,7 +4004,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="location-sharp"
                       size={17}
-                      color="#0D9488"
+                      color={resolveColor('#0D9488', 'color')}
                     />
                     <Text
                       style={styles.detailLocationName}
@@ -3965,7 +4030,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="attach"
                         size={15}
-                        color="#1E4D2B"
+                        color={resolveColor('#1E4D2B', 'color')}
                       />
                       <Text style={styles.detailAttachmentsHeading}>
                         Attached Photos & Files (
@@ -3995,7 +4060,7 @@ export default function DashboardScreen() {
                                   <Ionicons
                                     name="image"
                                     size={10}
-                                    color="#FFFFFF"
+                                    color={resolveColor('#FFFFFF', 'color')}
                                   />
                                   <Text style={styles.detailAttachmentTagText}>
                                     Photo
@@ -4007,7 +4072,7 @@ export default function DashboardScreen() {
                                 <Ionicons
                                   name="document-text"
                                   size={18}
-                                  color="#B45309"
+                                  color={resolveColor('#B45309', 'color')}
                                 />
                                 <Text
                                   style={styles.detailAttachmentDocName}
@@ -4033,7 +4098,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="sparkles"
                           size={15}
-                          color="#059669"
+                          color={resolveColor('#059669', 'color')}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
@@ -4060,7 +4125,7 @@ export default function DashboardScreen() {
                           style={[
                             styles.detailBoostChipText,
                             selectedSuyo.currentBoost === 0 && {
-                              color: '#FFFFFF',
+                              color: resolveColor('#FFFFFF', 'color'),
                             },
                           ]}
                         >
@@ -4081,7 +4146,7 @@ export default function DashboardScreen() {
                           style={[
                             styles.detailBoostChipText,
                             selectedSuyo.currentBoost === 20 && {
-                              color: '#FFFFFF',
+                              color: resolveColor('#FFFFFF', 'color'),
                             },
                           ]}
                         >
@@ -4102,7 +4167,7 @@ export default function DashboardScreen() {
                           style={[
                             styles.detailBoostChipText,
                             selectedSuyo.currentBoost === 50 && {
-                              color: '#FFFFFF',
+                              color: resolveColor('#FFFFFF', 'color'),
                             },
                           ]}
                         >
@@ -4123,7 +4188,7 @@ export default function DashboardScreen() {
                           style={[
                             styles.detailBoostChipText,
                             selectedSuyo.currentBoost === 100 && {
-                              color: '#FFFFFF',
+                              color: resolveColor('#FFFFFF', 'color'),
                             },
                           ]}
                         >
@@ -4148,7 +4213,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="pencil"
                           size={15}
-                          color="#163523"
+                          color={resolveColor('#163523', 'color')}
                         />
                         <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
                       </TouchableOpacity>
@@ -4161,7 +4226,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="close-circle-outline"
                           size={15}
-                          color="#DC2626"
+                          color={resolveColor('#DC2626', 'color')}
                         />
                         <Text style={styles.detailCancelSuyoBtnText}>
                           Cancel
@@ -4177,7 +4242,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="refresh"
                         size={16}
-                        color="#FFFFFF"
+                        color={resolveColor('#FFFFFF', 'color')}
                       />
                       <Text style={styles.detailPrimaryActionBtnText}>
                         Re-post Suyo
@@ -4200,7 +4265,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="call"
                         size={15}
-                        color="#163523"
+                        color={resolveColor('#163523', 'color')}
                       />
                       <Text style={styles.detailCallDoerBtnText}>
                         Call Doer
@@ -4228,7 +4293,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="navigate"
                         size={16}
-                        color="#FFFFFF"
+                        color={resolveColor('#FFFFFF', 'color')}
                       />
                       <Text style={styles.detailTrackCourierBtnText}>
                         Track
@@ -4260,7 +4325,11 @@ export default function DashboardScreen() {
                           <Ionicons
                             name={isArchived ? 'bookmark' : 'bookmark-outline'}
                             size={15}
-                            color={isArchived ? '#78350F' : '#163523'}
+                            color={
+                              isArchived
+                                ? resolveColor('#78350F', 'color')
+                                : resolveColor('#163523', 'color')
+                            }
                           />
                           <Text
                             style={[
@@ -4281,7 +4350,7 @@ export default function DashboardScreen() {
                           <Ionicons
                             name="refresh"
                             size={15}
-                            color="#FFFFFF"
+                            color={resolveColor('#FFFFFF', 'color')}
                           />
                           <Text style={styles.detailRepeatSuyoBtnText}>
                             Repeat Suyo
@@ -4312,7 +4381,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="trash-outline"
                         size={15}
-                        color="#DC2626"
+                        color={resolveColor('#DC2626', 'color')}
                       />
                       <Text style={styles.detailCancelSuyoBtnText}>Delete</Text>
                     </TouchableOpacity>
@@ -4325,7 +4394,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="refresh"
                         size={15}
-                        color="#FFFFFF"
+                        color={resolveColor('#FFFFFF', 'color')}
                       />
                       <Text style={styles.detailRepeatSuyoBtnText}>
                         Re-post Suyo
@@ -4345,7 +4414,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="pencil"
                         size={15}
-                        color="#163523"
+                        color={resolveColor('#163523', 'color')}
                       />
                       <Text style={styles.detailEditSuyoBtnText}>Edit</Text>
                     </TouchableOpacity>
@@ -4358,7 +4427,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="paper-plane"
                         size={15}
-                        color="#FFFFFF"
+                        color={resolveColor('#FFFFFF', 'color')}
                       />
                       <Text style={styles.detailRepeatSuyoBtnText}>
                         Post Suyo
@@ -4435,7 +4504,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="bicycle"
                       size={18}
-                      color="#FFFFFF"
+                      color={resolveColor('#FFFFFF', 'color')}
                     />
                     <Text style={styles.detailFulfillBtnText}>
                       Fulfill Suyo
@@ -4464,7 +4533,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="warning-outline"
                   size={26}
-                  color="#DC2626"
+                  color={resolveColor('#DC2626', 'color')}
                 />
               </View>
               <Text style={styles.doerCancelModalTitle}>
@@ -4541,7 +4610,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name={selectedDoerSuyo.icon || 'bicycle'}
                       size={17}
-                      color="#1E4D2B"
+                      color={resolveColor('#1E4D2B', 'color')}
                     />
                   </View>
                   <View style={{ gap: 2 }}>
@@ -4564,7 +4633,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="close"
                     size={18}
-                    color="#163523"
+                    color={resolveColor('#163523', 'color')}
                   />
                 </TouchableOpacity>
               </View>
@@ -4592,10 +4661,10 @@ export default function DashboardScreen() {
                       size={14}
                       color={
                         selectedDoerSuyo.status === 'Completed'
-                          ? '#059669'
+                          ? resolveColor('#059669', 'color')
                           : selectedDoerSuyo.status === 'Cancelled'
-                            ? '#DC2626'
-                            : '#0284C7'
+                            ? resolveColor('#DC2626', 'color')
+                            : resolveColor('#0284C7', 'color')
                       }
                     />
                     <Text
@@ -4604,10 +4673,10 @@ export default function DashboardScreen() {
                         {
                           color:
                             selectedDoerSuyo.status === 'Completed'
-                              ? '#059669'
+                              ? resolveColor('#059669', 'color')
                               : selectedDoerSuyo.status === 'Cancelled'
-                                ? '#DC2626'
-                                : '#0284C7',
+                                ? resolveColor('#DC2626', 'color')
+                                : resolveColor('#0284C7', 'color'),
                         },
                       ]}
                     >
@@ -4663,7 +4732,7 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="chevron-forward"
                         size={10}
-                        color="#059669"
+                        color={resolveColor('#059669', 'color')}
                       />
                     </View>
                   </View>
@@ -4693,7 +4762,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="checkmark-circle"
                           size={13}
-                          color="#059669"
+                          color={resolveColor('#059669', 'color')}
                         />
                       </View>
                       <Text style={styles.doerRequesterSubMeta}>
@@ -4713,7 +4782,12 @@ export default function DashboardScreen() {
                           <TouchableOpacity
                             style={[
                               styles.doerRequesterCallPill,
-                              { backgroundColor: '#1E4D2B' },
+                              {
+                                backgroundColor: resolveColor(
+                                  '#1E4D2B',
+                                  'backgroundColor',
+                                ),
+                              },
                             ]}
                             activeOpacity={0.8}
                             onPress={(e) => {
@@ -4730,7 +4804,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="pencil"
                               size={12}
-                              color="#FFFFFF"
+                              color={resolveColor('#FFFFFF', 'color')}
                             />
                             <Text style={styles.doerRequesterCallPillText}>
                               Edit
@@ -4756,7 +4830,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="call"
                               size={12}
-                              color="#FFFFFF"
+                              color={resolveColor('#FFFFFF', 'color')}
                             />
                             <Text style={styles.doerRequesterCallPillText}>
                               Call
@@ -4777,13 +4851,18 @@ export default function DashboardScreen() {
                       <View
                         style={[
                           styles.doerInfoIconCircle,
-                          { backgroundColor: '#E0F2FE' },
+                          {
+                            backgroundColor: resolveColor(
+                              '#E0F2FE',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       >
                         <Ionicons
                           name="location-sharp"
                           size={13}
-                          color="#0284C7"
+                          color={resolveColor('#0284C7', 'color')}
                         />
                       </View>
                       <Text style={styles.doerInfoGridLabel}>LOCATION</Text>
@@ -4802,13 +4881,18 @@ export default function DashboardScreen() {
                       <View
                         style={[
                           styles.doerInfoIconCircle,
-                          { backgroundColor: '#FEF3C7' },
+                          {
+                            backgroundColor: resolveColor(
+                              '#FEF3C7',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       >
                         <Ionicons
                           name="time"
                           size={13}
-                          color="#D97706"
+                          color={resolveColor('#D97706', 'color')}
                         />
                       </View>
                       <Text style={styles.doerInfoGridLabel}>DEADLINE</Text>
@@ -4830,13 +4914,18 @@ export default function DashboardScreen() {
                     <View
                       style={[
                         styles.doerInfoIconCircle,
-                        { backgroundColor: '#E8F5EE' },
+                        {
+                          backgroundColor: resolveColor(
+                            '#E8F5EE',
+                            'backgroundColor',
+                          ),
+                        },
                       ]}
                     >
                       <Ionicons
                         name="reader-outline"
                         size={13}
-                        color="#1E4D2B"
+                        color={resolveColor('#1E4D2B', 'color')}
                       />
                     </View>
                     <Text style={styles.doerSectionHeaderText}>
@@ -4856,19 +4945,24 @@ export default function DashboardScreen() {
                       <View
                         style={[
                           styles.doerInfoIconCircle,
-                          { backgroundColor: '#FEF3C7' },
+                          {
+                            backgroundColor: resolveColor(
+                              '#FEF3C7',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       >
                         <Ionicons
                           name="bulb-outline"
                           size={13}
-                          color="#B45309"
+                          color={resolveColor('#B45309', 'color')}
                         />
                       </View>
                       <Text
                         style={[
                           styles.doerSectionHeaderText,
-                          { color: '#B45309' },
+                          { color: resolveColor('#B45309', 'color') },
                         ]}
                       >
                         SPECIAL INSTRUCTIONS
@@ -4888,13 +4982,18 @@ export default function DashboardScreen() {
                         <View
                           style={[
                             styles.doerInfoIconCircle,
-                            { backgroundColor: '#E8F5EE' },
+                            {
+                              backgroundColor: resolveColor(
+                                '#E8F5EE',
+                                'backgroundColor',
+                              ),
+                            },
                           ]}
                         >
                           <Ionicons
                             name="attach"
                             size={13}
-                            color="#1E4D2B"
+                            color={resolveColor('#1E4D2B', 'color')}
                           />
                         </View>
                         <Text style={styles.doerSectionHeaderText}>
@@ -4925,7 +5024,7 @@ export default function DashboardScreen() {
                                     <Ionicons
                                       name="image"
                                       size={10}
-                                      color="#FFFFFF"
+                                      color={resolveColor('#FFFFFF', 'color')}
                                     />
                                     <Text
                                       style={styles.detailAttachmentTagText}
@@ -4939,7 +5038,7 @@ export default function DashboardScreen() {
                                   <Ionicons
                                     name="document-text"
                                     size={18}
-                                    color="#B45309"
+                                    color={resolveColor('#B45309', 'color')}
                                   />
                                   <Text
                                     style={styles.detailAttachmentDocName}
@@ -4961,7 +5060,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="information-circle"
                     size={15}
-                    color="#059669"
+                    color={resolveColor('#059669', 'color')}
                   />
                   <Text style={styles.doerModalInfoHintText}>
                     Review the details above to decide whether to continue or
@@ -4997,7 +5096,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="close"
                     size={18}
-                    color="#163523"
+                    color={resolveColor('#163523', 'color')}
                   />
                 </TouchableOpacity>
               </View>
@@ -5012,7 +5111,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="shield-checkmark"
                       size={12}
-                      color="#FFFFFF"
+                      color={resolveColor('#FFFFFF', 'color')}
                     />
                   </View>
                 </View>
@@ -5023,7 +5122,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="checkmark-circle"
                     size={12}
-                    color="#059669"
+                    color={resolveColor('#059669', 'color')}
                   />
                   <Text style={styles.doerVerifiedTagText}>
                     Verified Courier & Doer
@@ -5059,7 +5158,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="bicycle"
                     size={15}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                   <Text style={styles.doerInfoLabel}>Transport:</Text>
                   <Text style={styles.doerInfoValue}>
@@ -5070,7 +5169,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="call"
                     size={15}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                   <Text style={styles.doerInfoLabel}>Contact:</Text>
                   <Text style={styles.doerInfoValue}>
@@ -5081,7 +5180,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={15}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                   <Text style={styles.doerInfoLabel}>Joined:</Text>
                   <Text style={styles.doerInfoValue}>
@@ -5113,7 +5212,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="call"
                     size={15}
-                    color="#FFFFFF"
+                    color={resolveColor('#FFFFFF', 'color')}
                   />
                   <Text style={styles.doerProfileCallBtnText}>Call Doer</Text>
                 </TouchableOpacity>
@@ -5130,7 +5229,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="chatbubble-ellipses"
                     size={15}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                   <Text style={styles.doerProfileMsgBtnText}>Message</Text>
                 </TouchableOpacity>
@@ -5161,7 +5260,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="close"
                   size={18}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -5178,7 +5277,10 @@ export default function DashboardScreen() {
                   setEditingSuyoData((prev) => ({ ...prev, title: text }))
                 }
                 placeholder="e.g. Buy groceries at SM Tagum"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={resolveColor(
+                  '#94A3B8',
+                  'placeholderTextColor',
+                )}
               />
 
               <Text style={styles.editSuyoInputLabel}>Reward Offer (₱)</Text>
@@ -5197,7 +5299,10 @@ export default function DashboardScreen() {
                   }
                   keyboardType="numeric"
                   placeholder="150"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={resolveColor(
+                    '#94A3B8',
+                    'placeholderTextColor',
+                  )}
                 />
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <TouchableOpacity
@@ -5237,7 +5342,10 @@ export default function DashboardScreen() {
                 multiline={true}
                 numberOfLines={3}
                 placeholder="Detailed task description..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={resolveColor(
+                  '#94A3B8',
+                  'placeholderTextColor',
+                )}
               />
 
               <Text style={styles.editSuyoInputLabel}>
@@ -5252,7 +5360,10 @@ export default function DashboardScreen() {
                 multiline={true}
                 numberOfLines={2}
                 placeholder="e.g. Please ask for the receipt"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={resolveColor(
+                  '#94A3B8',
+                  'placeholderTextColor',
+                )}
               />
             </ScrollView>
 
@@ -5272,7 +5383,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="checkmark-sharp"
                   size={16}
-                  color="#FFFFFF"
+                  color={resolveColor('#FFFFFF', 'color')}
                 />
                 <Text style={styles.editSuyoSaveBtnText}>Save Changes</Text>
               </TouchableOpacity>
@@ -5301,13 +5412,20 @@ export default function DashboardScreen() {
                   <View
                     style={[
                       styles.favoritesCountPill,
-                      isFavDeleteMode && { backgroundColor: '#FEE2E2' },
+                      isFavDeleteMode && {
+                        backgroundColor: resolveColor(
+                          '#FEE2E2',
+                          'backgroundColor',
+                        ),
+                      },
                     ]}
                   >
                     <Text
                       style={[
                         styles.favoritesCountText,
-                        isFavDeleteMode && { color: '#DC2626' },
+                        isFavDeleteMode && {
+                          color: resolveColor('#DC2626', 'color'),
+                        },
                       ]}
                     >
                       {isFavDeleteMode
@@ -5326,7 +5444,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="close"
                   size={18}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -5384,7 +5502,7 @@ export default function DashboardScreen() {
                     toastConfig.icon === 'heart-dislike' ? 'trash' : 'heart'
                   }
                   size={12}
-                  color="#DC2626"
+                  color={resolveColor('#DC2626', 'color')}
                 />
                 <Text style={styles.favModalToastText}>
                   {toastConfig.message}
@@ -5432,7 +5550,7 @@ export default function DashboardScreen() {
                               <Ionicons
                                 name="checkmark"
                                 size={11}
-                                color="#FFFFFF"
+                                color={resolveColor('#FFFFFF', 'color')}
                               />
                             )}
                           </View>
@@ -5449,7 +5567,7 @@ export default function DashboardScreen() {
                             <Ionicons
                               name="location-sharp"
                               size={10.5}
-                              color="#0D9488"
+                              color={resolveColor('#0D9488', 'color')}
                             />{' '}
                             {suyo.location || 'Quezon City'} •{' '}
                             {suyo.distanceText || '0.8 km away'}
@@ -5525,7 +5643,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="bookmark-outline"
                   size={36}
-                  color="#A3B8AC"
+                  color={resolveColor('#A3B8AC', 'color')}
                 />
                 <Text style={styles.favEmptyTitle}>No saved suyos yet</Text>
                 <Text style={styles.favEmptySub}>
@@ -5558,7 +5676,9 @@ export default function DashboardScreen() {
                     name="trash-outline"
                     size={13.5}
                     color={
-                      selectedFavIdsToDelete.length > 0 ? '#FFFFFF' : '#8CA395'
+                      selectedFavIdsToDelete.length > 0
+                        ? resolveColor('#FFFFFF', 'color')
+                        : resolveColor('#8CA395', 'color')
                     }
                   />
                   <Text
@@ -5597,14 +5717,19 @@ export default function DashboardScreen() {
         onRequestClose={() => setIsNotificationsModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.notificationsModalCard}>
+          <View
+            style={styles.notificationsModalCard}
+            accessibilityRole={Platform.OS === 'web' ? 'dialog' : undefined}
+            accessibilityLabel="Notifications"
+            accessibilityViewIsModal
+          >
             {/* Header */}
             <View style={styles.notifModalHeader}>
               <View style={styles.notifTitleRow}>
                 <Ionicons
                   name="notifications"
                   size={20}
-                  color="#1E4D2B"
+                  color={resolveColor('#1E4D2B', 'color')}
                 />
                 <Text style={styles.notifModalTitle}>Notifications</Text>
                 {unreadNotificationsCount > 0 && (
@@ -5619,12 +5744,14 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 onPress={() => setIsNotificationsModalOpen(false)}
                 style={styles.modalCloseButton}
+                accessibilityRole="button"
+                accessibilityLabel="Close notifications"
                 activeOpacity={0.7}
               >
                 <Ionicons
                   name="close"
                   size={20}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -5675,6 +5802,9 @@ export default function DashboardScreen() {
 
               {unreadNotificationsCount > 0 && (
                 <TouchableOpacity
+                  disabled={notificationBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mark all notifications read"
                   onPress={markAllNotificationsRead}
                   style={styles.notifMarkAllReadBtn}
                   activeOpacity={0.7}
@@ -5682,13 +5812,33 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="checkmark-done"
                     size={14}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                   <Text style={styles.notifMarkAllReadText}>Mark read</Text>
                 </TouchableOpacity>
               )}
             </View>
 
+            {notificationError || workflowError ? (
+              <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+                <Text
+                  accessibilityRole="alert"
+                  style={{ color: colors.danger }}
+                >
+                  {notificationError || workflowError}
+                </Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry notifications"
+                  onPress={() => {
+                    setNotificationError('');
+                    refresh();
+                  }}
+                >
+                  <Text style={styles.notifActionLinkText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
             {/* Notifications List */}
             {notifications.filter((n) =>
               notificationFilter === 'Unread' ? n.unread : true,
@@ -5709,6 +5859,7 @@ export default function DashboardScreen() {
                       onPress={handleTapNotification}
                       onMarkRead={markNotificationRead}
                       onRemove={removeNotification}
+                      disabled={notificationBusy}
                     />
                   ))}
               </ScrollView>
@@ -5717,17 +5868,19 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="notifications-off-outline"
                   size={46}
-                  color="#A3B8AC"
+                  color={resolveColor('#A3B8AC', 'color')}
                 />
                 <Text style={styles.notifEmptyTitle}>
-                  {notificationFilter === 'Unread'
-                    ? 'No unread notifications'
-                    : 'No notifications'}
+                  {workflowLoading
+                    ? 'Loading notifications...'
+                    : notificationFilter === 'Unread'
+                      ? 'No unread notifications'
+                      : 'No notifications'}
                 </Text>
                 <Text style={styles.notifEmptySub}>
                   {notificationFilter === 'Unread'
-                    ? 'You are all caught up with your suyo updates and rewards.'
-                    : 'Important activity, doer arrivals, and reward credits will appear here.'}
+                    ? 'You are all caught up with your suyo updates.'
+                    : 'Application decisions and task updates will appear here.'}
                 </Text>
               </View>
             )}
@@ -5737,13 +5890,16 @@ export default function DashboardScreen() {
               {notifications.length > 0 && (
                 <TouchableOpacity
                   style={styles.notifClearBtn}
+                  disabled={notificationBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear all notifications"
                   onPress={clearAllNotifications}
                   activeOpacity={0.7}
                 >
                   <Ionicons
                     name="trash-outline"
                     size={15}
-                    color="#64748B"
+                    color={resolveColor('#64748B', 'color')}
                   />
                   <Text style={styles.notifClearBtnText}>Clear All</Text>
                 </TouchableOpacity>
@@ -5781,7 +5937,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="checkmark-done-circle"
                     size={18}
-                    color="#15803D"
+                    color={resolveColor('#15803D', 'color')}
                   />
                 </View>
                 <Text style={styles.receiptModalHeaderTitle}>
@@ -5796,7 +5952,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="close"
                   size={18}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -5832,7 +5988,10 @@ export default function DashboardScreen() {
                     <Text
                       style={[
                         styles.receiptValue,
-                        { color: '#15803D', fontWeight: '700' },
+                        {
+                          color: resolveColor('#15803D', 'color'),
+                          fontWeight: '700',
+                        },
                       ]}
                     >
                       {selectedReceipt.status} · Verified
@@ -5927,7 +6086,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="shield-checkmark"
                       size={17}
-                      color="#059669"
+                      color={resolveColor('#059669', 'color')}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.receiptProofTitle}>
@@ -5964,7 +6123,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="share-social-outline"
                       size={15}
-                      color="#163523"
+                      color={resolveColor('#163523', 'color')}
                     />
                     <Text style={styles.receiptShareActionBtnText}>
                       Save / Share Receipt
@@ -6004,7 +6163,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="stats-chart"
                     size={17}
-                    color="#0284C7"
+                    color={resolveColor('#0284C7', 'color')}
                   />
                 </View>
                 <Text style={styles.modalTitle}>Suyo Statistics</Text>
@@ -6017,7 +6176,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="close"
                   size={20}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -6035,7 +6194,12 @@ export default function DashboardScreen() {
                   <Text style={styles.statsTileSub}>7 Accepted Suyos</Text>
                 </View>
                 <View style={styles.statsMetricTile}>
-                  <Text style={[styles.statsTileValue, { color: '#059669' }]}>
+                  <Text
+                    style={[
+                      styles.statsTileValue,
+                      { color: resolveColor('#059669', 'color') },
+                    ]}
+                  >
                     100%
                   </Text>
                   <Text style={styles.statsTileLabel}>Completion</Text>
@@ -6050,7 +6214,12 @@ export default function DashboardScreen() {
                   <Text style={styles.statsTileSub}>142 Reviews</Text>
                 </View>
                 <View style={styles.statsMetricTile}>
-                  <Text style={[styles.statsTileValue, { color: '#059669' }]}>
+                  <Text
+                    style={[
+                      styles.statsTileValue,
+                      { color: resolveColor('#059669', 'color') },
+                    ]}
+                  >
                     99.4%
                   </Text>
                   <Text style={styles.statsTileLabel}>Satisfaction</Text>
@@ -6073,7 +6242,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="star"
                       size={12}
-                      color="#F59E0B"
+                      color={resolveColor('#F59E0B', 'color')}
                     />
                     <Text style={styles.statsSatisfactionScoreText}>
                       4.95 / 5.0
@@ -6090,14 +6259,20 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="star"
                         size={10}
-                        color="#F59E0B"
+                        color={resolveColor('#F59E0B', 'color')}
                       />
                     </View>
                     <View style={styles.csatTrack}>
                       <View
                         style={[
                           styles.csatFill,
-                          { width: '94%', backgroundColor: '#059669' },
+                          {
+                            width: '94%',
+                            backgroundColor: resolveColor(
+                              '#059669',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       />
                     </View>
@@ -6111,14 +6286,20 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="star"
                         size={10}
-                        color="#F59E0B"
+                        color={resolveColor('#F59E0B', 'color')}
                       />
                     </View>
                     <View style={styles.csatTrack}>
                       <View
                         style={[
                           styles.csatFill,
-                          { width: '5%', backgroundColor: '#0284C7' },
+                          {
+                            width: '5%',
+                            backgroundColor: resolveColor(
+                              '#0284C7',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       />
                     </View>
@@ -6132,14 +6313,20 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="star"
                         size={10}
-                        color="#F59E0B"
+                        color={resolveColor('#F59E0B', 'color')}
                       />
                     </View>
                     <View style={styles.csatTrack}>
                       <View
                         style={[
                           styles.csatFill,
-                          { width: '1%', backgroundColor: '#D97706' },
+                          {
+                            width: '1%',
+                            backgroundColor: resolveColor(
+                              '#D97706',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       />
                     </View>
@@ -6153,14 +6340,20 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="star"
                         size={10}
-                        color="#CBD5E1"
+                        color={resolveColor('#CBD5E1', 'color')}
                       />
                     </View>
                     <View style={styles.csatTrack}>
                       <View
                         style={[
                           styles.csatFill,
-                          { width: '0%', backgroundColor: '#94A3B8' },
+                          {
+                            width: '0%',
+                            backgroundColor: resolveColor(
+                              '#94A3B8',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       />
                     </View>
@@ -6174,14 +6367,20 @@ export default function DashboardScreen() {
                       <Ionicons
                         name="star"
                         size={10}
-                        color="#CBD5E1"
+                        color={resolveColor('#CBD5E1', 'color')}
                       />
                     </View>
                     <View style={styles.csatTrack}>
                       <View
                         style={[
                           styles.csatFill,
-                          { width: '0%', backgroundColor: '#94A3B8' },
+                          {
+                            width: '0%',
+                            backgroundColor: resolveColor(
+                              '#94A3B8',
+                              'backgroundColor',
+                            ),
+                          },
                         ]}
                       />
                     </View>
@@ -6195,7 +6394,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={12}
-                      color="#059669"
+                      color={resolveColor('#059669', 'color')}
                     />
                     <Text
                       style={styles.csatHighlightText}
@@ -6208,7 +6407,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="shield-checkmark"
                       size={12}
-                      color="#0284C7"
+                      color={resolveColor('#0284C7', 'color')}
                     />
                     <Text
                       style={styles.csatHighlightText}
@@ -6225,7 +6424,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="call-outline"
                   size={14}
-                  color="#1E4D2B"
+                  color={resolveColor('#1E4D2B', 'color')}
                 />
                 <Text style={styles.statsInfoNoticeText}>
                   All payment settlements are arranged directly between
@@ -6279,7 +6478,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="paper-plane"
                   size={16}
-                  color="#1E4D2B"
+                  color={resolveColor('#1E4D2B', 'color')}
                 />
               </View>
               <Text style={styles.sidebarBrandTitle}>SuyoLink</Text>
@@ -6292,7 +6491,7 @@ export default function DashboardScreen() {
               <Ionicons
                 name="close"
                 size={20}
-                color="#163523"
+                color={resolveColor('#163523', 'color')}
               />
             </TouchableOpacity>
           </View>
@@ -6341,7 +6540,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name="pencil"
                       size={13}
-                      color="#1E4D2B"
+                      color={resolveColor('#1E4D2B', 'color')}
                     />
                   </TouchableOpacity>
                 </View>
@@ -6352,7 +6551,7 @@ export default function DashboardScreen() {
                   <Ionicons
                     name="call"
                     size={11}
-                    color="#6D8777"
+                    color={resolveColor('#6D8777', 'color')}
                   />
                   <Text style={styles.detailRequestorPhoneText}>
                     {userProfile?.phone || '+63 917 123 4567'}
@@ -6379,13 +6578,18 @@ export default function DashboardScreen() {
                 <View
                   style={[
                     styles.menuItemIconCircle,
-                    { backgroundColor: '#DCFCE7' },
+                    {
+                      backgroundColor: resolveColor(
+                        '#DCFCE7',
+                        'backgroundColor',
+                      ),
+                    },
                   ]}
                 >
                   <Ionicons
                     name="wallet-outline"
                     size={18}
-                    color="#059669"
+                    color={resolveColor('#059669', 'color')}
                   />
                 </View>
                 <View style={styles.menuItemTextCol}>
@@ -6398,7 +6602,7 @@ export default function DashboardScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color="#7A9384"
+                color={resolveColor('#7A9384', 'color')}
               />
             </TouchableOpacity>
 
@@ -6417,13 +6621,18 @@ export default function DashboardScreen() {
                 <View
                   style={[
                     styles.menuItemIconCircle,
-                    { backgroundColor: '#DCFCE7' },
+                    {
+                      backgroundColor: resolveColor(
+                        '#DCFCE7',
+                        'backgroundColor',
+                      ),
+                    },
                   ]}
                 >
                   <Ionicons
                     name="receipt-outline"
                     size={18}
-                    color="#059669"
+                    color={resolveColor('#059669', 'color')}
                   />
                 </View>
                 <View style={styles.menuItemTextCol}>
@@ -6436,7 +6645,7 @@ export default function DashboardScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color="#7A9384"
+                color={resolveColor('#7A9384', 'color')}
               />
             </TouchableOpacity>
 
@@ -6450,13 +6659,18 @@ export default function DashboardScreen() {
                 <View
                   style={[
                     styles.menuItemIconCircle,
-                    { backgroundColor: '#F4ECE4' },
+                    {
+                      backgroundColor: resolveColor(
+                        '#F4ECE4',
+                        'backgroundColor',
+                      ),
+                    },
                   ]}
                 >
                   <Ionicons
                     name="information-circle-outline"
                     size={18}
-                    color="#9E581B"
+                    color={resolveColor('#9E581B', 'color')}
                   />
                 </View>
                 <View style={styles.menuItemTextCol}>
@@ -6471,7 +6685,7 @@ export default function DashboardScreen() {
                   expandedSection === 'about' ? 'chevron-up' : 'chevron-down'
                 }
                 size={18}
-                color="#7A9384"
+                color={resolveColor('#7A9384', 'color')}
               />
             </TouchableOpacity>
 
@@ -6491,19 +6705,36 @@ export default function DashboardScreen() {
               </View>
             )}
 
+            <View
+              style={{
+                marginTop: 12,
+                paddingTop: 20,
+                paddingBottom: 24,
+                borderTopWidth: 1,
+                borderTopColor: resolveColor('#D8E5DF', 'borderColor'),
+              }}
+            >
+              <AppearanceSelector />
+            </View>
+
             {/* Push Notifications (Placed under About SuyoLink) */}
             <View style={styles.sidebarMenuItem}>
               <View style={styles.menuItemLeft}>
                 <View
                   style={[
                     styles.menuItemIconCircle,
-                    { backgroundColor: '#EAF4EF' },
+                    {
+                      backgroundColor: resolveColor(
+                        '#EAF4EF',
+                        'backgroundColor',
+                      ),
+                    },
                   ]}
                 >
                   <Ionicons
                     name="notifications-outline"
                     size={18}
-                    color="#1E4D2B"
+                    color={resolveColor('#1E4D2B', 'color')}
                   />
                 </View>
                 <View style={styles.menuItemTextCol}>
@@ -6522,8 +6753,15 @@ export default function DashboardScreen() {
                     'notifications',
                   );
                 }}
-                trackColor={{ false: '#D4E2DA', true: '#1E4D2B' }}
-                thumbColor={pushNotifications ? '#4ADE80' : '#FFFFFF'}
+                trackColor={{
+                  false: resolveColor('#D4E2DA', 'trackColor'),
+                  true: resolveColor('#1E4D2B', 'trackColor'),
+                }}
+                thumbColor={
+                  pushNotifications
+                    ? resolveColor('#4ADE80', 'thumbColor')
+                    : resolveColor('#FFFFFF', 'thumbColor')
+                }
               />
             </View>
           </ScrollView>
@@ -6544,7 +6782,7 @@ export default function DashboardScreen() {
               <Ionicons
                 name="log-out-outline"
                 size={20}
-                color="#D32F2F"
+                color={resolveColor('#D32F2F', 'color')}
               />
               <Text style={styles.logoutButtonText}>Log Out</Text>
             </TouchableOpacity>
@@ -6573,7 +6811,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="close"
                   size={20}
-                  color="#163523"
+                  color={resolveColor('#163523', 'color')}
                 />
               </TouchableOpacity>
             </View>
@@ -6586,7 +6824,10 @@ export default function DashboardScreen() {
                 setTempProfile({ ...tempProfile, name: text })
               }
               placeholder="Full Name"
-              placeholderTextColor="#8FA497"
+              placeholderTextColor={resolveColor(
+                '#8FA497',
+                'placeholderTextColor',
+              )}
             />
 
             <Text style={styles.modalInputLabel}>Email Address</Text>
@@ -6598,7 +6839,10 @@ export default function DashboardScreen() {
               }
               placeholder="Email"
               keyboardType="email-address"
-              placeholderTextColor="#8FA497"
+              placeholderTextColor={resolveColor(
+                '#8FA497',
+                'placeholderTextColor',
+              )}
             />
 
             <Text style={styles.modalInputLabel}>Contact Number</Text>
@@ -6610,7 +6854,10 @@ export default function DashboardScreen() {
               }
               placeholder="Phone"
               keyboardType="phone-pad"
-              placeholderTextColor="#8FA497"
+              placeholderTextColor={resolveColor(
+                '#8FA497',
+                'placeholderTextColor',
+              )}
             />
 
             <View style={styles.modalButtonsRow}>
@@ -6630,7 +6877,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="checkmark"
                   size={16}
-                  color="#FFFFFF"
+                  color={resolveColor('#FFFFFF', 'color')}
                 />
                 <Text style={styles.modalSaveButtonText}>Save Changes</Text>
               </TouchableOpacity>

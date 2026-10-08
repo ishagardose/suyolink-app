@@ -1,4 +1,6 @@
-import { styles } from '../components/wallet/activity.styles';
+import { createActivityStyles } from '../components/wallet/activity.styles';
+import { useTheme } from '../theme/ThemeContext';
+import { resolveLegacyColor } from '../theme/legacyColors';
 import React, { useState, useMemo } from 'react';
 import {
   Text,
@@ -21,6 +23,13 @@ import { useAuth } from '../context/AuthContext';
 import WalletIncomeLineGraph from '../components/wallet/WalletIncomeLineGraph';
 
 export default function WalletScreen() {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(
+    () => createActivityStyles(colors, isDark),
+    [colors, isDark],
+  );
+  const resolveColor = (value, property = 'color') =>
+    resolveLegacyColor(value, property, colors, isDark);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 16);
@@ -39,7 +48,7 @@ export default function WalletScreen() {
 
   const spentTransactions = useMemo(
     () => (transactions || []).filter((t) => t.role === 'requester'),
-    [transactions]
+    [transactions],
   );
 
   const hasLiveTransactions = providerTransactions.length > 0;
@@ -60,19 +69,25 @@ export default function WalletScreen() {
   const dynamicList = useMemo(() => {
     return (transactions || []).map((t, idx) => {
       const isProvider = t.role === 'provider';
-      const d = t.completedAt ? new Date(t.completedAt) : new Date();
-      const isToday = !isNaN(d.getTime()) && d.toDateString() === new Date().toDateString();
-      const dateStr = !isNaN(d.getTime())
-        ? isToday
-          ? `Today · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-          : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'Recently';
+      const d = t.completedAt ? new Date(t.completedAt) : null;
+      const isToday =
+        d &&
+        !isNaN(d.getTime()) &&
+        d.toDateString() === new Date().toDateString();
+      const dateStr =
+        d && !isNaN(d.getTime())
+          ? isToday
+            ? `Today · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+            : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : 'Recently';
 
       return {
         id: t.requestId ? `${t.requestId}_${t.role || 'tx'}` : `TX-${idx}`,
         requestId: t.requestId,
         role: t.role || 'provider',
-        title: t.title || (isProvider ? 'Completed Suyo Task' : 'Requested Suyo Errand'),
+        title:
+          t.title ||
+          (isProvider ? 'Completed Suyo Task' : 'Requested Suyo Errand'),
         category: t.category || (isProvider ? 'Delivery' : 'General'),
         icon:
           t.category === 'Groceries'
@@ -83,10 +98,11 @@ export default function WalletScreen() {
                 ? 'bicycle'
                 : 'document-text',
         date: dateStr,
+        isToday: Boolean(isToday),
         requesterName: t.otherUserName || 'Requester',
         location: 'Direct Settlement',
         earnedAmount: (t.rewardCentavos || 0) / 100,
-        status: 'Received',
+        status: 'Task completed',
         paymentMethod: 'Direct Payment (Cash/P2P)',
         refNo: `SYL-EARN-${String(t.requestId || idx)
           .slice(0, 6)
@@ -105,8 +121,8 @@ export default function WalletScreen() {
     return dynamicList;
   }, [dynamicList, activityFilter]);
 
-  const todayEarnedList = dynamicEarnedList.filter((s) =>
-    s.date?.startsWith('Today'),
+  const todayEarnedList = dynamicList.filter(
+    (s) => s.role === 'provider' && s.isToday,
   );
   const todayEarningsSum = todayEarnedList.reduce(
     (sum, s) => sum + (Number(s.earnedAmount) || 0),
@@ -125,6 +141,7 @@ export default function WalletScreen() {
       const dateStr = t.completedAt || t.created_at || t.createdAt;
       const d = dateStr ? new Date(dateStr) : null;
       return (
+        d &&
         d &&
         !isNaN(d.getTime()) &&
         d.getFullYear() === currentYear &&
@@ -151,7 +168,7 @@ export default function WalletScreen() {
           <Ionicons
             name="arrow-back"
             size={24}
-            color="#FFFFFF"
+            color={resolveColor('#FFFFFF', 'color')}
           />
         </TouchableOpacity>
 
@@ -163,7 +180,11 @@ export default function WalletScreen() {
           activeOpacity={0.75}
           accessibilityLabel="Transaction History"
         >
-          <Ionicons name="receipt-outline" size={22} color="#FFFFFF" />
+          <Ionicons
+            name="receipt-outline"
+            size={22}
+            color={resolveColor('#FFFFFF', 'color')}
+          />
         </TouchableOpacity>
       </View>
 
@@ -178,7 +199,7 @@ export default function WalletScreen() {
           <RefreshControl
             refreshing={Boolean(transactionsLoading)}
             onRefresh={reloadTransactions}
-            tintColor="#059669"
+            tintColor={resolveColor('#059669', 'tintColor')}
             colors={['#059669']}
           />
         }
@@ -191,7 +212,7 @@ export default function WalletScreen() {
                 <Ionicons
                   name="wallet"
                   size={17}
-                  color="#1E4D2B"
+                  color={resolveColor('#1E4D2B', 'color')}
                 />
               </View>
               <Text style={styles.walletHeroSuper}>SUYOLINK WALLET</Text>
@@ -200,7 +221,7 @@ export default function WalletScreen() {
               <Ionicons
                 name="checkmark-circle"
                 size={13}
-                color="#059669"
+                color={resolveColor('#059669', 'color')}
               />
               <Text style={styles.walletVerifiedPillText}>Verified User</Text>
             </View>
@@ -242,7 +263,7 @@ export default function WalletScreen() {
             <Ionicons
               name="call"
               size={13}
-              color="#059669"
+              color={resolveColor('#059669', 'color')}
             />
             <Text style={styles.walletPaymentNoticeText}>
               Payments are received directly via call & conversation with
@@ -260,7 +281,7 @@ export default function WalletScreen() {
 
         {/* 2. Section Header with Link to History */}
         <View style={styles.walletSectionHeader}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.walletSectionTitle}>
               Accepted Suyo Earnings
             </Text>
@@ -274,7 +295,11 @@ export default function WalletScreen() {
             activeOpacity={0.75}
           >
             <Text style={styles.viewHistoryButtonText}>Full History</Text>
-            <Ionicons name="chevron-forward" size={13} color="#059669" />
+            <Ionicons
+              name="chevron-forward"
+              size={13}
+              color={resolveColor('#059669', 'color')}
+            />
           </TouchableOpacity>
         </View>
 
@@ -291,7 +316,11 @@ export default function WalletScreen() {
             <Ionicons
               name="arrow-down-circle"
               size={13}
-              color={activityFilter === 'earned' ? '#FFFFFF' : '#15803D'}
+              color={
+                activityFilter === 'earned'
+                  ? resolveColor('#FFFFFF', 'color')
+                  : resolveColor('#15803D', 'color')
+              }
             />
             <Text
               style={[
@@ -314,7 +343,11 @@ export default function WalletScreen() {
             <Ionicons
               name="arrow-up-circle"
               size={13}
-              color={activityFilter === 'spent' ? '#FFFFFF' : '#DC2626'}
+              color={
+                activityFilter === 'spent'
+                  ? resolveColor('#FFFFFF', 'color')
+                  : resolveColor('#DC2626', 'color')
+              }
             />
             <Text
               style={[
@@ -353,15 +386,15 @@ export default function WalletScreen() {
                 <Ionicons
                   name="wallet-outline"
                   size={32}
-                  color="#1E4D2B"
+                  color={resolveColor('#1E4D2B', 'color')}
                 />
               </View>
               <Text style={styles.walletEmptyTitle}>
                 {activityFilter === 'earned'
                   ? 'No suyo earnings yet'
                   : activityFilter === 'spent'
-                  ? 'No spending records yet'
-                  : 'No transaction activity yet'}
+                    ? 'No spending records yet'
+                    : 'No transaction activity yet'}
               </Text>
               <Text style={styles.walletEmptySub}>
                 When you accept and complete suyos for others, your settled
@@ -372,12 +405,18 @@ export default function WalletScreen() {
                 activeOpacity={0.8}
                 onPress={() => router.push('/dashboard')}
               >
-                <Ionicons name="compass-outline" size={15} color="#FFFFFF" />
-                <Text style={styles.emptyActionBtnText}>Browse Available Suyos</Text>
+                <Ionicons
+                  name="compass-outline"
+                  size={15}
+                  color={resolveColor('#FFFFFF', 'color')}
+                />
+                <Text style={styles.emptyActionBtnText}>
+                  Browse Available Suyos
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
-            dynamicEarnedList.map((item) => (
+            displayedList.map((item) => (
               <View
                 key={item.id}
                 style={styles.walletItemCard}
@@ -387,14 +426,39 @@ export default function WalletScreen() {
                     style={[
                       styles.walletCategoryIconCircle,
                       item.category === 'Groceries'
-                        ? { backgroundColor: '#DCFCE7' }
+                        ? {
+                            backgroundColor: resolveColor(
+                              '#DCFCE7',
+                              'backgroundColor',
+                            ),
+                          }
                         : item.category === 'Medicine'
-                          ? { backgroundColor: '#F3E8FF' }
+                          ? {
+                              backgroundColor: resolveColor(
+                                '#F3E8FF',
+                                'backgroundColor',
+                              ),
+                            }
                           : item.category === 'Documents'
-                            ? { backgroundColor: '#E0F2FE' }
+                            ? {
+                                backgroundColor: resolveColor(
+                                  '#E0F2FE',
+                                  'backgroundColor',
+                                ),
+                              }
                             : item.category === 'Queuing & Bills'
-                              ? { backgroundColor: '#FEF3C7' }
-                              : { backgroundColor: '#EAF4EF' },
+                              ? {
+                                  backgroundColor: resolveColor(
+                                    '#FEF3C7',
+                                    'backgroundColor',
+                                  ),
+                                }
+                              : {
+                                  backgroundColor: resolveColor(
+                                    '#EAF4EF',
+                                    'backgroundColor',
+                                  ),
+                                },
                     ]}
                   >
                     <Ionicons
@@ -402,14 +466,14 @@ export default function WalletScreen() {
                       size={18}
                       color={
                         item.category === 'Groceries'
-                          ? '#15803D'
+                          ? resolveColor('#15803D', 'color')
                           : item.category === 'Medicine'
-                            ? '#7E22CE'
+                            ? resolveColor('#7E22CE', 'color')
                             : item.category === 'Documents'
-                              ? '#0369A1'
+                              ? resolveColor('#0369A1', 'color')
                               : item.category === 'Queuing & Bills'
-                                ? '#B45309'
-                                : '#1E4D2B'
+                                ? resolveColor('#B45309', 'color')
+                                : resolveColor('#1E4D2B', 'color')
                       }
                     />
                   </View>
@@ -426,11 +490,16 @@ export default function WalletScreen() {
                       <Ionicons
                         name="person-circle-outline"
                         size={13}
-                        color="#557261"
+                        color={resolveColor('#557261', 'color')}
                       />
                       <Text style={styles.walletItemRequesterText}>
                         From:{' '}
-                        <Text style={{ fontWeight: '700', color: '#163523' }}>
+                        <Text
+                          style={{
+                            fontWeight: '700',
+                            color: resolveColor('#163523', 'color'),
+                          }}
+                        >
                           {item.requesterName}
                         </Text>
                       </Text>
@@ -440,14 +509,14 @@ export default function WalletScreen() {
                       <Ionicons
                         name="time-outline"
                         size={12}
-                        color="#8CA395"
+                        color={resolveColor('#8CA395', 'color')}
                       />
                       <Text style={styles.walletItemDateText}>{item.date}</Text>
                       <Text style={styles.walletItemDot}>•</Text>
                       <Ionicons
                         name="location-outline"
                         size={12}
-                        color="#8CA395"
+                        color={resolveColor('#8CA395', 'color')}
                       />
                       <Text
                         style={styles.walletItemLocationText}
@@ -467,7 +536,7 @@ export default function WalletScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={10}
-                      color="#15803D"
+                      color={resolveColor('#15803D', 'color')}
                     />
                     <Text style={styles.walletStatusChipText}>
                       {item.status}

@@ -1,10 +1,11 @@
+import { themeLegacyStyles } from '../../theme/legacyColors';
 import { StyleSheet, Platform, Dimensions } from 'react-native';
 import { SCREEN_WIDTH } from './legacyDashboardLayout';
 
-export const styles = StyleSheet.create({
+const definitions = {
   safeContainer: {
     flex: 1,
-    backgroundColor: '#1C3A27',
+    backgroundColor: '#163925',
   },
 
   /* Fixed Top Bar */
@@ -15,7 +16,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: '#1C3A27',
+    backgroundColor: '#163925',
     zIndex: 100,
   },
   headerRightActions: {
@@ -53,7 +54,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#1C3A27',
+    borderColor: '#163925',
   },
   headerNotifBadgeText: {
     fontSize: 9.5,
@@ -76,7 +77,7 @@ export const styles = StyleSheet.create({
   headerHeroSection: {
     width: '100%',
     height: 185,
-    backgroundColor: '#1C3A27',
+    backgroundColor: '#163925',
     overflow: 'hidden',
     position: 'relative',
     flexDirection: 'row',
@@ -1932,7 +1933,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#FAFCFA',
   },
   mySuyoHeroSection: {
-    backgroundColor: '#1C3A27',
+    backgroundColor: '#163925',
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 22,
@@ -4328,7 +4329,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#FAFCFA',
   },
   doerHeroSection: {
-    backgroundColor: '#1C3A27',
+    backgroundColor: '#163925',
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 18,
@@ -4958,4 +4959,7 @@ export const styles = StyleSheet.create({
     color: '#92400E',
     flex: 1,
   },
-});
+};
+
+export const createLegacyDashboardStyles = (colors, isDark) =>
+  StyleSheet.create(themeLegacyStyles(definitions, colors, isDark));

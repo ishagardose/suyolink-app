@@ -1,3 +1,8 @@
+import { useTheme } from '../../theme/ThemeContext';
+import {
+  resolveLegacyColor,
+  themeLegacyStyles,
+} from '../../theme/legacyColors';
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
@@ -24,13 +29,26 @@ function formatMoneyBadge(amount) {
   return `₱${Math.round(amount)}`;
 }
 
-export function calculateWalletChartData(transactions = [], activeRange = 'monthly') {
+export function calculateWalletChartData(
+  transactions = [],
+  activeRange = 'monthly',
+) {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   const currentMonthName = monthNames[currentMonth];
 
@@ -114,15 +132,17 @@ export function calculateWalletChartData(transactions = [], activeRange = 'month
     ];
 
     const peakWeekName = peakIdx >= 0 ? `W${peakIdx + 1}` : 'None';
-    const peakWeekVal = peakIdx >= 0 ? `₱${weekTotals[peakIdx].toFixed(2)}` : '₱0.00';
+    const peakWeekVal =
+      peakIdx >= 0 ? `₱${weekTotals[peakIdx].toFixed(2)}` : '₱0.00';
 
     return {
       title: 'Monthly Income Trend',
       subtitle: `Weekly breakdown for ${currentMonthName} ${currentYear}`,
       total: `₱${total.toFixed(2)}`,
-      totalNote: totalSuyos > 0
-        ? `Total ${currentMonthName} Income (${totalSuyos} ${totalSuyos === 1 ? 'Suyo' : 'Suyos'})`
-        : `No earnings recorded in ${currentMonthName} yet`,
+      totalNote:
+        totalSuyos > 0
+          ? `Total ${currentMonthName} Income (${totalSuyos} ${totalSuyos === 1 ? 'Suyo' : 'Suyos'})`
+          : `No earnings recorded in ${currentMonthName} yet`,
       growth: total > 0 ? '+ Active' : '0.0%',
       pts,
       pathD,
@@ -175,7 +195,12 @@ export function calculateWalletChartData(transactions = [], activeRange = 'month
       else yMax = Math.ceil(maxVal / 1000) * 1000;
     }
 
-    const quarterLabels = ['Q1 (Jan–Mar)', 'Q2 (Apr–Jun)', 'Q3 (Jul–Sep)', 'Q4 (Oct–Dec)'];
+    const quarterLabels = [
+      'Q1 (Jan–Mar)',
+      'Q2 (Apr–Jun)',
+      'Q3 (Jul–Sep)',
+      'Q4 (Oct–Dec)',
+    ];
 
     const pts = quarterTotals.map((val, idx) => {
       const ratio = yMax > 0 && maxVal > 0 ? Math.min(val / yMax, 1) : 0;
@@ -207,15 +232,17 @@ export function calculateWalletChartData(transactions = [], activeRange = 'month
     ];
 
     const peakQName = peakIdx >= 0 ? `Q${peakIdx + 1}` : 'None';
-    const peakQVal = peakIdx >= 0 ? `₱${quarterTotals[peakIdx].toFixed(2)}` : '₱0.00';
+    const peakQVal =
+      peakIdx >= 0 ? `₱${quarterTotals[peakIdx].toFixed(2)}` : '₱0.00';
 
     return {
       title: 'Yearly Income Trend',
       subtitle: `Quarterly breakdown for ${currentYear}`,
       total: `₱${total.toFixed(2)}`,
-      totalNote: totalSuyos > 0
-        ? `Total ${currentYear} Annual Income (${totalSuyos} ${totalSuyos === 1 ? 'Suyo' : 'Suyos'})`
-        : `No earnings recorded in ${currentYear} yet`,
+      totalNote:
+        totalSuyos > 0
+          ? `Total ${currentYear} Annual Income (${totalSuyos} ${totalSuyos === 1 ? 'Suyo' : 'Suyos'})`
+          : `No earnings recorded in ${currentYear} yet`,
       growth: total > 0 ? '+ Active' : '0.0%',
       pts,
       pathD,
@@ -234,6 +261,13 @@ export default function WalletIncomeLineGraph({
   totalOverride,
   hasTransactions,
 }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(
+    () => StyleSheet.create(themeLegacyStyles(definitions, colors, isDark)),
+    [colors, isDark],
+  );
+  const resolveColor = (value, property = 'color') =>
+    resolveLegacyColor(value, property, colors, isDark);
   const [activeRange, setActiveRange] = useState('monthly');
 
   const current = useMemo(() => {
@@ -255,10 +289,22 @@ export default function WalletIncomeLineGraph({
         React.createElement(
           'linearGradient',
           { id: 'walletIncomeGradShared', x1: '0', y1: '0', x2: '0', y2: '1' },
-          React.createElement('stop', { offset: '0%', stopColor: '#10B981', stopOpacity: '0.35' }),
-          React.createElement('stop', { offset: '70%', stopColor: '#10B981', stopOpacity: '0.08' }),
-          React.createElement('stop', { offset: '100%', stopColor: '#10B981', stopOpacity: '0.0' })
-        )
+          React.createElement('stop', {
+            offset: '0%',
+            stopColor: resolveColor('#10B981', 'stopColor'),
+            stopOpacity: '0.35',
+          }),
+          React.createElement('stop', {
+            offset: '70%',
+            stopColor: resolveColor('#10B981', 'stopColor'),
+            stopOpacity: '0.08',
+          }),
+          React.createElement('stop', {
+            offset: '100%',
+            stopColor: resolveColor('#10B981', 'stopColor'),
+            stopOpacity: '0.0',
+          }),
+        ),
       ),
       // Y Grid Lines & Labels
       current.yLabels.map((lbl, idx) => {
@@ -271,7 +317,10 @@ export default function WalletIncomeLineGraph({
             y1: yPos,
             x2: 468,
             y2: yPos,
-            stroke: idx === 4 ? '#CBD5E1' : '#F1F5F9',
+            stroke:
+              idx === 4
+                ? resolveColor('#CBD5E1', 'borderColor')
+                : resolveColor('#F1F5F9', 'borderColor'),
             strokeWidth: idx === 4 ? 1.5 : 1,
             strokeDasharray: idx === 4 ? undefined : '4,4',
           }),
@@ -280,14 +329,14 @@ export default function WalletIncomeLineGraph({
             {
               x: 46,
               y: yPos + 3.5,
-              fill: '#94A3B8',
+              fill: resolveColor('#94A3B8', 'color'),
               fontSize: 10,
               fontWeight: '600',
               textAnchor: 'end',
               fontFamily: 'sans-serif',
             },
-            lbl
-          )
+            lbl,
+          ),
         );
       }),
       // Vertical Drop Lines
@@ -298,10 +347,10 @@ export default function WalletIncomeLineGraph({
           y1: pt.y,
           x2: pt.x,
           y2: 168,
-          stroke: '#E2E8F0',
+          stroke: resolveColor('#E2E8F0', 'borderColor'),
           strokeWidth: 1.2,
           strokeDasharray: '3,3',
-        })
+        }),
       ),
       // Gradient Fill Area Under Curve
       React.createElement('path', {
@@ -312,7 +361,7 @@ export default function WalletIncomeLineGraph({
       React.createElement('path', {
         d: current.pathD,
         fill: 'none',
-        stroke: '#059669',
+        stroke: resolveColor('#059669', 'color'),
         strokeWidth: 3.5,
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
@@ -326,18 +375,18 @@ export default function WalletIncomeLineGraph({
             cx: pt.x,
             cy: pt.y,
             r: 7.5,
-            fill: '#10B981',
+            fill: resolveColor('#10B981', 'backgroundColor'),
             opacity: 0.22,
           }),
           React.createElement('circle', {
             cx: pt.x,
             cy: pt.y,
             r: pt.isPeak ? 5 : 4,
-            fill: '#FFFFFF',
-            stroke: '#059669',
+            fill: resolveColor('#FFFFFF', 'backgroundColor'),
+            stroke: resolveColor('#059669', 'color'),
             strokeWidth: pt.isPeak ? 2.8 : 2.2,
-          })
-        )
+          }),
+        ),
       ),
       // Point Value Badges
       current.pts.map((pt, idx) => {
@@ -351,21 +400,21 @@ export default function WalletIncomeLineGraph({
               width: 88,
               height: 19,
               rx: 9.5,
-              fill: '#064E3B',
+              fill: resolveColor('#064E3B', 'backgroundColor'),
             }),
             React.createElement(
               'text',
               {
                 x: pt.x,
                 y: pt.y - 12,
-                fill: '#FFFFFF',
+                fill: resolveColor('#FFFFFF', 'color'),
                 fontSize: 9.5,
                 fontWeight: '800',
                 textAnchor: 'middle',
                 fontFamily: 'sans-serif',
               },
-              `${pt.val} Peak`
-            )
+              `${pt.val} Peak`,
+            ),
           );
         }
         return React.createElement(
@@ -377,8 +426,8 @@ export default function WalletIncomeLineGraph({
             width: 48,
             height: 16,
             rx: 8,
-            fill: '#FFFFFF',
-            stroke: '#A7F3D0',
+            fill: resolveColor('#FFFFFF', 'backgroundColor'),
+            stroke: resolveColor('#A7F3D0', 'borderColor'),
             strokeWidth: 1.2,
           }),
           React.createElement(
@@ -386,14 +435,14 @@ export default function WalletIncomeLineGraph({
             {
               x: pt.x,
               y: pt.y - 11.5,
-              fill: '#065F46',
+              fill: resolveColor('#065F46', 'color'),
               fontSize: 9.5,
               fontWeight: '700',
               textAnchor: 'middle',
               fontFamily: 'sans-serif',
             },
-            pt.val
-          )
+            pt.val,
+          ),
         );
       }),
       // X-Axis Labels
@@ -404,45 +453,80 @@ export default function WalletIncomeLineGraph({
             key: `x-lbl-${idx}`,
             x: pt.x,
             y: 188,
-            fill: '#64748B',
+            fill: resolveColor('#64748B', 'color'),
             fontSize: 10,
             fontWeight: '600',
             textAnchor: 'middle',
             fontFamily: 'sans-serif',
           },
-          pt.label
-        )
-      )
+          pt.label,
+        ),
+      ),
     );
   };
 
   const renderNativeFallback = () => {
-    const maxVal = Math.max(...current.pts.map((p) => Number(p.amount) || 0), 10);
+    const maxVal = Math.max(
+      ...current.pts.map((p) => Number(p.amount) || 0),
+      10,
+    );
     return (
       <View style={styles.walletNativeChartContainer}>
         <View style={styles.walletNativeChartGrid}>
           {current.pts.map((pt, idx) => {
             const amt = Number(pt.amount) || 0;
-            const barHeight = Math.max(16, Math.min(68, Math.round((amt / maxVal) * 68)));
+            const barHeight = Math.max(
+              16,
+              Math.min(68, Math.round((amt / maxVal) * 68)),
+            );
             const parts = pt.label ? pt.label.split(' ') : [pt.label];
             const mainLabel = parts[0] || pt.label;
             const subLabel = parts[1] ? parts[1].replace(/[()]/g, '') : null;
             return (
-              <View key={`n-bar-${idx}`} style={styles.walletNativeBarCol}>
-                <View style={[styles.walletNativeValBadge, pt.isPeak && styles.walletNativeValBadgePeak]}>
+              <View
+                key={`n-bar-${idx}`}
+                style={styles.walletNativeBarCol}
+              >
+                <View
+                  style={[
+                    styles.walletNativeValBadge,
+                    pt.isPeak && styles.walletNativeValBadgePeak,
+                  ]}
+                >
                   <Text
-                    style={[styles.walletNativeValText, pt.isPeak && styles.walletNativeValTextPeak]}
+                    style={[
+                      styles.walletNativeValText,
+                      pt.isPeak && styles.walletNativeValTextPeak,
+                    ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                   >
-                    {pt.val}{pt.isPeak ? ' ★' : ''}
+                    {pt.val}
+                    {pt.isPeak ? ' ★' : ''}
                   </Text>
                 </View>
-                <View style={[styles.walletNativeNodeDot, pt.isPeak && styles.walletNativeNodeDotPeak]} />
-                <View style={[styles.walletNativeDropLine, { height: barHeight }]} />
-                <Text style={styles.walletNativeLabelText} numberOfLines={1}>{mainLabel}</Text>
+                <View
+                  style={[
+                    styles.walletNativeNodeDot,
+                    pt.isPeak && styles.walletNativeNodeDotPeak,
+                  ]}
+                />
+                <View
+                  style={[styles.walletNativeDropLine, { height: barHeight }]}
+                />
+                <Text
+                  style={styles.walletNativeLabelText}
+                  numberOfLines={1}
+                >
+                  {mainLabel}
+                </Text>
                 {subLabel ? (
-                  <Text style={styles.walletNativeSubLabelText} numberOfLines={1}>{subLabel}</Text>
+                  <Text
+                    style={styles.walletNativeSubLabelText}
+                    numberOfLines={1}
+                  >
+                    {subLabel}
+                  </Text>
                 ) : null}
               </View>
             );
@@ -458,16 +542,34 @@ export default function WalletIncomeLineGraph({
       <View style={styles.walletLineHeaderRow}>
         <View style={styles.walletLineTitleGroup}>
           <View style={styles.walletLineIconBox}>
-            <Ionicons name="trending-up" size={17} color="#059669" />
+            <Ionicons
+              name="trending-up"
+              size={17}
+              color={resolveColor('#059669', 'color')}
+            />
           </View>
           <View style={styles.walletLineTitleTextCol}>
-            <Text style={styles.walletLineTitle} numberOfLines={1}>{current.title}</Text>
-            <Text style={styles.walletLineSub} numberOfLines={1}>{current.subtitle}</Text>
+            <Text
+              style={styles.walletLineTitle}
+              numberOfLines={1}
+            >
+              {current.title}
+            </Text>
+            <Text
+              style={styles.walletLineSub}
+              numberOfLines={1}
+            >
+              {current.subtitle}
+            </Text>
           </View>
         </View>
 
         <View style={styles.walletGrowthBadge}>
-          <Ionicons name="arrow-up" size={12} color="#065F46" />
+          <Ionicons
+            name="arrow-up"
+            size={12}
+            color={resolveColor('#065F46', 'color')}
+          />
           <Text style={styles.walletGrowthBadgeText}>{current.growth}</Text>
         </View>
       </View>
@@ -475,10 +577,17 @@ export default function WalletIncomeLineGraph({
       {/* 2. Value and Timeframe Controls (Monthly / Yearly) */}
       <View style={styles.walletLineAmountRow}>
         <View style={styles.walletLineAmountCol}>
-          <Text style={styles.walletLineBigAmount} numberOfLines={1} adjustsFontSizeToFit>
+          <Text
+            style={styles.walletLineBigAmount}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
             {current.total}
           </Text>
-          <Text style={styles.walletLineTotalNote} numberOfLines={1}>
+          <Text
+            style={styles.walletLineTotalNote}
+            numberOfLines={1}
+          >
             {current.totalNote}
           </Text>
         </View>
@@ -524,10 +633,17 @@ export default function WalletIncomeLineGraph({
           <React.Fragment key={m.label || idx}>
             {idx > 0 && <View style={styles.walletFooterMetricDivider} />}
             <View style={styles.walletFooterMetricItem}>
-              <Text style={styles.walletFooterMetricValue} numberOfLines={1} adjustsFontSizeToFit>
+              <Text
+                style={styles.walletFooterMetricValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {m.value}
               </Text>
-              <Text style={styles.walletFooterMetricLabel} numberOfLines={1}>
+              <Text
+                style={styles.walletFooterMetricLabel}
+                numberOfLines={1}
+              >
                 {m.label}
               </Text>
             </View>
@@ -538,7 +654,7 @@ export default function WalletIncomeLineGraph({
   );
 }
 
-const styles = StyleSheet.create({
+const definitions = {
   walletLineGraphCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
@@ -776,4 +892,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textAlign: 'center',
   },
-});
+};

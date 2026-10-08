@@ -447,13 +447,51 @@ export function SuyoProvider({ children }) {
     return data;
   };
 
-  const markRead = async (id) => {
-    const { error: readError } = await supabase
+  const markNotificationsRead = async (ids) => {
+    const actorId = user?.id;
+    if (!actorId || !supabase) throw new Error('Please sign in.');
+    if (!ids.length) return;
+    const readAt = new Date().toISOString();
+    const { data, error: readError } = await supabase
       .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('recipient_id', user.id);
+      .update({ read_at: readAt })
+      .in('id', ids)
+      .eq('recipient_id', actorId)
+      .is('read_at', null)
+      .select('id');
     if (readError) throw new Error(readError.message);
+    if (currentUser.current !== actorId) return;
+    const changed = new Set((data || []).map((item) => item.id));
+    setWorkflow((previous) => ({
+      ...previous,
+      notifications: previous.notifications.map((item) =>
+        changed.has(item.id) ? { ...item, read_at: readAt } : item,
+      ),
+    }));
+    await reloadWorkflow();
+  };
+
+  const markRead = (id) => markNotificationsRead([id]);
+
+  const deleteNotifications = async (ids) => {
+    const actorId = user?.id;
+    if (!actorId || !supabase) throw new Error('Please sign in.');
+    if (!ids.length) return;
+    const { data, error: deleteError } = await supabase
+      .from('notifications')
+      .delete()
+      .in('id', ids)
+      .eq('recipient_id', actorId)
+      .select('id');
+    if (deleteError) throw new Error(deleteError.message);
+    if (currentUser.current !== actorId) return;
+    const deleted = new Set((data || []).map((item) => item.id));
+    setWorkflow((previous) => ({
+      ...previous,
+      notifications: previous.notifications.filter(
+        (item) => !deleted.has(item.id),
+      ),
+    }));
     await reloadWorkflow();
   };
 
@@ -532,6 +570,8 @@ export function SuyoProvider({ children }) {
         refresh,
         mutate,
         markRead,
+        markNotificationsRead,
+        deleteNotifications,
       }}
     >
       {children}
