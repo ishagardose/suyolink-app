@@ -972,6 +972,151 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
     'Anonymous deletion denied',
   );
 
+  await db.exec('reset role');
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610090001_dashboard_task_actions.sql',
+      ),
+      'utf8',
+    ),
+  );
+  await actor(A);
+  const editable = await row(
+    `select * from public.create_suyo_request_v2('Editable task','Original details','Delivery',15000,now()+interval '1 day','Public area','Private gate','Keep receipt','09123456789',7.12345,125.61234,'dashboard-edit-001')`,
+  );
+  const editCall = (title = 'Edited task', amount = 18000) =>
+    `select public.edit_suyo_request('${editable.id}', '${title}', 'Updated details', 'Updated notes', ${amount})`;
+  const boostCall = (amount) =>
+    `select public.set_suyo_reward_boost('${editable.id}', ${amount})`;
+  await actor(B);
+  await denied(editCall(), 'Non-owner cannot edit a task');
+  await denied(boostCall(2000), 'Non-owner cannot boost a task');
+  await actor(A);
+  await db.exec(boostCall(2000));
+  await db.exec(boostCall(2000));
+  ok(
+    (
+      await row(
+        `select offer_centavos from public.suyo_requests where id='${editable.id}'`,
+      )
+    ).offer_centavos === 17000,
+    'Repeated boost does not accumulate',
+  );
+  await db.exec(boostCall(5000));
+  ok(
+    (
+      await row(
+        `select offer_centavos from public.suyo_requests where id='${editable.id}'`,
+      )
+    ).offer_centavos === 20000,
+    'Switching boost uses original base reward',
+  );
+  ok(
+    (
+      await row(
+        `select reward_boost_centavos from public.list_suyo_requests(p_scope => 'posted') where id='${editable.id}'`,
+      )
+    ).reward_boost_centavos === 5000,
+    'Listing exposes persisted boost',
+  );
+  ok(
+    (await row(`select public.get_suyo_details('${editable.id}') as detail`))
+      .detail.reward_boost_centavos === 5000,
+    'Details expose persisted boost',
+  );
+  await db.exec(boostCall(0));
+  ok(
+    (
+      await row(
+        `select offer_centavos from public.suyo_requests where id='${editable.id}'`,
+      )
+    ).offer_centavos === 15000,
+    'Reset restores original reward',
+  );
+  await db.exec(boostCall(10000));
+  await db.exec(editCall());
+  const edited = await row(
+    `select * from public.suyo_requests where id='${editable.id}'`,
+  );
+  ok(
+    edited.title === 'Edited task' &&
+      edited.details === 'Updated details' &&
+      edited.notes === 'Updated notes',
+    'Edit persists task content',
+  );
+  ok(
+    edited.offer_centavos === 18000 && edited.reward_boost_centavos === 0,
+    'Editing reward establishes a new base and resets boost',
+  );
+  await denied(editCall('', 100), 'Blank edited title rejected');
+  await denied(editCall('Bad reward', 0), 'Zero edited reward rejected');
+  await denied(boostCall(-2000), 'Negative boost rejected');
+  await denied(boostCall(1234), 'Unsupported boost rejected');
+  await denied(
+    `update public.suyo_requests set reward_boost_centavos=10000 where id='${editable.id}'`,
+    'Direct boost writes remain denied',
+  );
+  await db.exec(editCall('Maximum reward', 100000000));
+  await denied(boostCall(2000), 'Boost cannot exceed total reward limit');
+  await db.exec(editCall());
+  await db.exec('reset role');
+  await db.exec(
+    `update public.suyo_requests set deadline=now()-interval '1 minute' where id='${editable.id}'`,
+  );
+  await actor(A);
+  await denied(editCall(), 'Expired task cannot be edited');
+  await denied(boostCall(2000), 'Expired task cannot be boosted');
+  await db.exec('reset role');
+  await db.exec(
+    `update public.suyo_requests set deadline=now()+interval '1 day' where id='${editable.id}'`,
+  );
+  await actor(B);
+  await db.exec(`select public.accept_suyo('${editable.id}')`);
+  await actor(A);
+  await denied(editCall(), 'Assigned task terms cannot be edited');
+  await denied(boostCall(2000), 'Assigned task reward cannot be boosted');
+  await db.exec(
+    `select public.change_suyo_status('${editable.id}', 'cancelled')`,
+  );
+  await denied(editCall(), 'Cancelled task cannot be edited');
+  await denied(boostCall(2000), 'Cancelled task cannot be boosted');
+  const repostCall = `select * from public.create_suyo_request_v2('Edited task','Updated details','Delivery',18000,now()+interval '2 days','Public area','Private gate','Updated notes','09123456789',7.12345,125.61234,'dashboard-repost-001')`;
+  const repost = await row(repostCall);
+  ok(
+    repost.id !== editable.id &&
+      repost.status === 'open' &&
+      repost.provider_id === null &&
+      repost.reward_boost_centavos === 0,
+    'Repost creates a distinct open task without assignment or old boost',
+  );
+  ok(
+    (await row(repostCall)).id === repost.id,
+    'Retrying repost creation is idempotent',
+  );
+  const repostDetail = (
+    await row(`select public.get_suyo_details('${repost.id}') as detail`)
+  ).detail;
+  ok(
+    repostDetail.exact_address === 'Private gate' &&
+      repostDetail.exact_latitude === 7.12345,
+    'Repost preserves exact details privately',
+  );
+  await actor(C);
+  const publicRepost = (
+    await row(`select public.get_suyo_details('${repost.id}') as detail`)
+  ).detail;
+  ok(
+    publicRepost.exact_address === null && publicRepost.contact_phone === null,
+    'Repost does not expose private details to unrelated users',
+  );
+  await db.exec(
+    `reset role; select set_config('request.jwt.claim.sub', '', false); set role anon;`,
+  );
+  await denied(editCall(), 'Anonymous edit denied');
+  await denied(boostCall(2000), 'Anonymous boost denied');
+
   await db.close();
   console.log(
     'PASS: migration + ' +

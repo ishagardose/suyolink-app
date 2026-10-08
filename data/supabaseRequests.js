@@ -14,9 +14,14 @@ export function fromPublicRow(row) {
     details: row.details,
     category: row.category,
     offerCentavos: row.offer_centavos,
+    rewardBoostCentavos: row.reward_boost_centavos ?? 0,
     currency: row.currency || 'PHP',
     deadline: row.deadline,
-    urgency: row.urgency || row.status_tag || (row.notes?.match(/\[Status:\s*([^\]\n]+)\]/i)?.[1]?.trim()) || null,
+    urgency:
+      row.urgency ||
+      row.status_tag ||
+      row.notes?.match(/\[Status:\s*([^\]\n]+)\]/i)?.[1]?.trim() ||
+      null,
     location: row.location,
     notes: row.notes || '',
     status: row.status,
@@ -39,9 +44,14 @@ export function fromDetailPayload(payload) {
     details: payload.details,
     category: payload.category,
     offerCentavos: payload.offer_centavos,
+    rewardBoostCentavos: payload.reward_boost_centavos ?? 0,
     currency: payload.currency || 'PHP',
     deadline: payload.deadline,
-    urgency: payload.urgency || payload.status_tag || (payload.notes?.match(/\[Status:\s*([^\]\n]+)\]/i)?.[1]?.trim()) || null,
+    urgency:
+      payload.urgency ||
+      payload.status_tag ||
+      payload.notes?.match(/\[Status:\s*([^\]\n]+)\]/i)?.[1]?.trim() ||
+      null,
     location: payload.location,
     notes: payload.notes || '',
     status: payload.status,

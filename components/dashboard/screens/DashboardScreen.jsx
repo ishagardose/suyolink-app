@@ -445,36 +445,6 @@ export default function DashboardScreen() {
     );
   };
 
-  const handleRepeatActivitySuyo = (record) => {
-    const newPostedSuyo = {
-      id: `POST-${Date.now().toString().slice(-4)}`,
-      title: record.title,
-      category: record.category,
-      location: record.location,
-      distanceText: '0.8 km away',
-      reward: `₱${record.amount}`,
-      rewardAmount: record.amount,
-      tag: 'Waiting for doer',
-      status: 'Open - waiting for a doer',
-      urgency: 'Due today',
-      due: 'Due today',
-      dueDate: getTodayFormatted(),
-      createdAt: Date.now(),
-      formattedDate: 'Just now',
-      waitTime: 'Just posted',
-      needsBoost: false,
-      details: record.notes || record.title,
-      requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
-    };
-    setPostedSuyos((prev) => [newPostedSuyo, ...prev]);
-    setActiveTab('mysuyo');
-    setMySuyoNavTab('posted');
-    triggerToast(
-      `Re-posted "${record.title}". Notifying couriers...`,
-      'bicycle',
-    );
-  };
-
   // Favorites Selection/Delete Mode state
 
   const {
@@ -493,60 +463,6 @@ export default function DashboardScreen() {
     setSelectedFavIdsToDelete,
     toggleFavoriteSuyo,
   } = useDashboardFavorites({ availableSuyosBase, triggerToast });
-
-  // Sync any newly posted backend requests into postedSuyos
-  useEffect(() => {
-    if (requests && requests.length > 0) {
-      const userBackendRequests = requests.filter(
-        (r) =>
-          r.scope === 'posted' ||
-          r.requesterEmail === user?.email ||
-          r.requesterName === userProfile?.name,
-      );
-      if (userBackendRequests.length > 0) {
-        setPostedSuyos((prev) => {
-          const prevIds = new Set(prev.map((p) => p.id));
-          const newItems = userBackendRequests
-            .filter((r) => !prevIds.has(r.id))
-            .map((r) => {
-              const isUrgent =
-                r.deadline &&
-                Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
-              return {
-                id: r.id,
-                title: r.title,
-                category: r.category || 'General',
-                location: r.location || 'Nearby',
-                distanceText: '0.8 km away',
-                reward: formatOffer(r.offerCentavos || 0),
-                rewardAmount: (r.offerCentavos || 0) / 100,
-                tag: 'Waiting for doer',
-                status: 'Open - waiting for a doer',
-                urgency: r.urgency || (isUrgent ? 'Urgent' : 'Due today'),
-                due: r.deadline
-                  ? 'Due ' +
-                    new Date(r.deadline).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'Due today',
-                dueDate: r.deadline
-                  ? new Date(r.deadline).toLocaleDateString()
-                  : getTodayFormatted(),
-                createdAt: Date.parse(r.createdAt || Date.now()),
-                formattedDate: 'Just now',
-                waitTime: 'Just posted',
-                needsBoost: false,
-                details: r.details || 'No details provided.',
-                requesterName: r.requesterName || userProfile?.name || 'You',
-              };
-            });
-          if (newItems.length === 0) return prev;
-          return [...newItems, ...prev];
-        });
-      }
-    }
-  }, [requests, user?.email, userProfile?.name]);
 
   const handleToggleMySuyoSelect = (id) => {
     setSelectedMySuyoIdsToDelete((prev) =>
@@ -603,6 +519,9 @@ export default function DashboardScreen() {
 
   // Feature: Repeat request from completed or archived
   const {
+    actionBusy,
+    actionError,
+    setActionError,
     archivedSuyos,
     editingSuyoData,
     handleBoostReward,
@@ -616,15 +535,13 @@ export default function DashboardScreen() {
     setEditingSuyoData,
     setIsEditingSuyoModalOpen,
   } = useDashboardSuyoActions({
-    postedSuyos,
-    selectedSuyo,
     selectedSuyoContext,
-    setCancelledSuyos,
-    setMySuyoNavTab,
-    setPostedSuyos,
     setSelectedSuyo,
     triggerToast,
   });
+  useEffect(() => {
+    if (doerCancelModalItem) setActionError('');
+  }, [doerCancelModalItem, setActionError]);
 
   const {
     clearAllNotifications,
@@ -911,6 +828,8 @@ export default function DashboardScreen() {
       {/* 6. SUYO DETAILS MODAL (CONTEXT-AWARE FOR REQUESTER & DOER) */}
       {/* ========================================================== */}
       <SuyoDetailModal
+        busy={actionBusy}
+        error={isEditingSuyoModalOpen ? '' : actionError}
         archivedSuyos={archivedSuyos}
         favoriteSuyoIds={favoriteSuyoIds}
         handleBoostReward={handleBoostReward}
@@ -922,7 +841,7 @@ export default function DashboardScreen() {
         handleSaveToArchive={handleSaveToArchive}
         resolveColor={resolveColor}
         router={router}
-        selectedSuyo={selectedSuyo}
+        selectedSuyo={isEditingSuyoModalOpen ? null : selectedSuyo}
         selectedSuyoContext={selectedSuyoContext}
         setCancelledSuyos={setCancelledSuyos}
         setDoerAcceptedSuyos={setDoerAcceptedSuyos}
@@ -941,9 +860,10 @@ export default function DashboardScreen() {
         doerCancelModalItem={doerCancelModalItem}
         resolveColor={resolveColor}
         selectedDoerSuyo={selectedDoerSuyo}
-        setDoerAcceptedSuyos={setDoerAcceptedSuyos}
+        busy={actionBusy}
+        error={actionError}
+        onCancel={handleCancelSuyo}
         setDoerCancelModalItem={setDoerCancelModalItem}
-        setDoerCancelledSuyos={setDoerCancelledSuyos}
         setSelectedDoerSuyo={setSelectedDoerSuyo}
         styles={styles}
         triggerToast={triggerToast}
@@ -976,6 +896,8 @@ export default function DashboardScreen() {
       {/* 6C. EDIT SUYO MODAL                                        */}
       {/* ========================================================== */}
       <EditSuyoModal
+        busy={actionBusy}
+        error={actionError}
         editingSuyoData={editingSuyoData}
         handleSaveEditedSuyo={handleSaveEditedSuyo}
         isEditingSuyoModalOpen={isEditingSuyoModalOpen}
