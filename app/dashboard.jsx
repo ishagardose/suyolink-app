@@ -567,6 +567,9 @@ export default function DashboardScreen() {
   // Selected Suyo Details Modal
   const [selectedSuyo, setSelectedSuyo] = useState(null);
 
+  // Payment Warning Modal before fulfilling
+  const [fulfillmentWarningTask, setFulfillmentWarningTask] = useState(null);
+
   // Activity Tab state (Financial ledger, digital receipts, verified proof logs)
   const [activityRecords, setActivityRecords] = useState([]);
   const [activityFilter, setActivityFilter] = useState('All'); // 'All' | 'InProgress' | 'Spending' | 'Earnings' | 'Completed'
@@ -4675,31 +4678,123 @@ export default function DashboardScreen() {
                       const taskToFulfill = selectedSuyo;
                       setSelectedSuyo(null);
                       setOpenedFromFavorites(false);
-                      if (taskToFulfill) {
-                        setDoerAcceptedSuyos((prev) => {
-                          if (prev.some((s) => s.id === taskToFulfill.id)) return prev;
-                          return [
-                            {
-                              id: taskToFulfill.id,
-                              title: taskToFulfill.title,
-                              category: taskToFulfill.category || 'General',
-                              icon: taskToFulfill.icon || 'bicycle',
-                              location: taskToFulfill.location || 'Tagum City',
-                              distanceText: taskToFulfill.distanceText || '0.8 km away',
-                              reward: taskToFulfill.reward || '₱150',
-                              requesterName: taskToFulfill.requesterName || 'Community Member',
-                              requesterPhone: taskToFulfill.requesterPhone || '09564781552',
-                              deadline: formatTargetDeadline(taskToFulfill),
-                              arrivalWindow: formatTargetDeadline(taskToFulfill),
-                              acceptedAt: 'Today · Just now',
-                              details: taskToFulfill.details || 'Fulfill this suyo request according to requester requirements.',
-                              notes: taskToFulfill.notes || 'Handle with care.',
-                              status: 'Accepted · In Progress',
-                            },
-                            ...prev,
-                          ];
-                        });
-                      }
+                      setFulfillmentWarningTask(taskToFulfill);
+                    }}
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
+                    <Text style={styles.detailFulfillBtnText}>Fulfill Suyo</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ========================================================== */}
+      {/* 6B-2. PAYMENT WARNING MODAL BEFORE FULFILLING               */}
+      {/* ========================================================== */}
+      {fulfillmentWarningTask && (
+        <Modal
+          visible={!!fulfillmentWarningTask}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setFulfillmentWarningTask(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.paymentWarningModalCard}>
+              {/* Warning Icon Badge */}
+              <View style={styles.paymentWarningIconCircle}>
+                <Ionicons name="warning" size={30} color="#D97706" />
+              </View>
+
+              <Text style={styles.paymentWarningModalTitle}>Payment Policy Warning</Text>
+
+              {/* Warning Notice Banner */}
+              <View style={styles.paymentWarningNoticeBox}>
+                <Ionicons name="alert-circle" size={22} color="#B45309" style={{ marginTop: 1 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.paymentWarningNoticeHeading}>
+                    Payment is only allowed outside the app
+                  </Text>
+                  <Text style={styles.paymentWarningNoticeBody}>
+                    There is no direct payment or in-app money transfer using SuyoLink directly.
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.paymentWarningExplanation}>
+                All task rewards must be settled directly between you and the requester via <Text style={{ fontWeight: '700', color: '#163523' }}>Cash-on-Hand</Text> or <Text style={{ fontWeight: '700', color: '#163523' }}>Direct P2P Transfer (GCash / Maya / Bank)</Text> upon task completion.
+              </Text>
+
+              {/* Task Preview Card */}
+              <View style={styles.paymentWarningTaskCard}>
+                <View style={styles.paymentWarningTaskRow}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.paymentWarningTaskTitle} numberOfLines={1}>
+                      {fulfillmentWarningTask.title}
+                    </Text>
+                    <Text style={styles.paymentWarningTaskRequester} numberOfLines={1}>
+                      Requester: {fulfillmentWarningTask.requesterName || 'Community Member'}
+                    </Text>
+                    <View style={styles.paymentWarningLocationRow}>
+                      <Ionicons name="location-outline" size={12} color="#658172" />
+                      <Text style={styles.paymentWarningLocationText} numberOfLines={1}>
+                        {fulfillmentWarningTask.location || fulfillmentWarningTask.exactAddress || 'Tagum City'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.paymentWarningRewardBadge}>
+                    <Text style={styles.paymentWarningRewardLabel}>Reward</Text>
+                    <Text style={styles.paymentWarningRewardText}>
+                      {fulfillmentWarningTask.reward || (fulfillmentWarningTask.price ? `₱${fulfillmentWarningTask.price}` : '₱150')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Action Buttons Row */}
+              <View style={styles.paymentWarningActionRow}>
+                <TouchableOpacity
+                  style={styles.paymentWarningCancelBtn}
+                  activeOpacity={0.7}
+                  onPress={() => setFulfillmentWarningTask(null)}
+                >
+                  <Text style={styles.paymentWarningCancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.paymentWarningStartBtn}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    const taskToFulfill = fulfillmentWarningTask;
+                    setFulfillmentWarningTask(null);
+                    if (taskToFulfill) {
+                      setDoerAcceptedSuyos((prev) => {
+                        if (prev.some((s) => s.id === taskToFulfill.id)) return prev;
+                        return [
+                          {
+                            id: taskToFulfill.id,
+                            title: taskToFulfill.title,
+                            category: taskToFulfill.category || 'General',
+                            icon: taskToFulfill.icon || 'bicycle',
+                            location: taskToFulfill.location || 'Tagum City',
+                            distanceText: taskToFulfill.distanceText || '0.8 km away',
+                            reward: taskToFulfill.reward || '₱150',
+                            requesterName: taskToFulfill.requesterName || 'Community Member',
+                            requesterPhone: taskToFulfill.requesterPhone || taskToFulfill?.contactPhone || '09564781552',
+                            contactPhone: taskToFulfill.contactPhone || taskToFulfill?.requesterPhone || '09564781552',
+                            deadline: formatTargetDeadline(taskToFulfill),
+                            arrivalWindow: formatTargetDeadline(taskToFulfill),
+                            acceptedAt: 'Today · Just now',
+                            details: taskToFulfill.details || 'Fulfill this suyo request according to requester requirements.',
+                            notes: taskToFulfill.notes || 'Handle with care.',
+                            status: 'Accepted · In Progress',
+                          },
+                          ...prev,
+                        ];
+                      });
+
                       router.push({
                         pathname: '/fulfill',
                         params: {
@@ -4720,12 +4815,12 @@ export default function DashboardScreen() {
                           longitude: taskToFulfill?.exactLongitude ?? taskToFulfill?.longitude ?? 125.8035,
                         },
                       });
-                    }}
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.detailFulfillBtnText}>Fulfill Suyo</Text>
-                  </TouchableOpacity>
-                )}
+                    }
+                  }}
+                >
+                  <Ionicons name="play" size={15} color="#FFFFFF" />
+                  <Text style={styles.paymentWarningStartBtnText}>Start Suyo</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -11582,6 +11677,164 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#92400E',
     flex: 1,
+  },
+
+  /* Direct Payment Warning Modal Styles */
+  paymentWarningModalCard: {
+    width: '90%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  paymentWarningIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+  },
+  paymentWarningModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#163523',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  paymentWarningNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#FCD34D',
+    padding: 12,
+    gap: 10,
+    width: '100%',
+    marginBottom: 12,
+  },
+  paymentWarningNoticeHeading: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
+    marginBottom: 3,
+  },
+  paymentWarningNoticeBody: {
+    fontSize: 12,
+    color: '#B45309',
+    lineHeight: 16.5,
+    fontWeight: '500',
+  },
+  paymentWarningExplanation: {
+    fontSize: 12.5,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  paymentWarningTaskCard: {
+    width: '100%',
+    backgroundColor: '#F8FAF9',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2ECE6',
+    marginBottom: 18,
+  },
+  paymentWarningTaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paymentWarningTaskTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#163523',
+    marginBottom: 2,
+  },
+  paymentWarningTaskRequester: {
+    fontSize: 11.5,
+    color: '#52695C',
+    fontWeight: '500',
+    marginBottom: 3,
+  },
+  paymentWarningLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  paymentWarningLocationText: {
+    fontSize: 11,
+    color: '#658172',
+    flex: 1,
+  },
+  paymentWarningRewardBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  paymentWarningRewardLabel: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#15803D',
+    textTransform: 'uppercase',
+  },
+  paymentWarningRewardText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  paymentWarningActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  paymentWarningCancelBtn: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentWarningCancelBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  paymentWarningStartBtn: {
+    flex: 1.4,
+    backgroundColor: '#1E4D2B',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    shadowColor: '#1E4D2B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  paymentWarningStartBtnText: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });
 
