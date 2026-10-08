@@ -1,5 +1,7 @@
 # SuyoLink
-
+<p align="center">
+  <img src="./assets/suyolink_logo.png" alt="SuyoLink logo" width="180" />
+</p>
 SuyoLink is a community task app for posting requests, finding nearby tasks, coordinating fulfillment, and reviewing completed work. It runs on Android, iOS, and web using Expo and Supabase.
 
 ## Technology
