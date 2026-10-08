@@ -22,7 +22,7 @@ async function selectArea(page) {
 }
 
 for (const confirmation of [false, true]) {
-  test(`signup requires area and acknowledgment and carries choice through confirmation=${confirmation}`, async ({
+  test(`signup requires acknowledged area before browsing with confirmation=${confirmation}`, async ({
     page,
   }) => {
     const calls = await mockSupabase(page, {
@@ -33,23 +33,6 @@ for (const confirmation of [false, true]) {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/signup');
     await accountFields(page);
-    await expect(
-      page.getByRole('button', { name: 'Sign Up', exact: true }),
-    ).toBeDisabled();
-    expect(calls.some((c) => c.path === '/auth/v1/signup')).toBe(false);
-    await page.getByTestId('task-map').click({ position: { x: 130, y: 120 } });
-    await expect(
-      page.getByRole('button', { name: 'Sign Up', exact: true }),
-    ).toBeDisabled();
-    await page
-      .getByRole('checkbox', { name: 'Location acknowledgment', exact: true })
-      .click();
-    if (!confirmation) {
-      await page
-        .getByText('Choose your area', { exact: true })
-        .scrollIntoViewIfNeeded();
-      await page.screenshot({ path: '.cache/signup-location.png' });
-    }
     await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
     if (confirmation) {
       await expect(page).toHaveURL(/verify-email/);
@@ -60,19 +43,29 @@ for (const confirmation of [false, true]) {
       await page
         .getByRole('button', { name: 'Verify email', exact: true })
         .click();
-      await expect
-        .poll(() =>
-          calls.some((c) => c.path === '/rest/v1/rpc/save_last_location'),
-        )
-        .toBe(true);
-      await page.goto('/dashboard');
-    } else {
-      await expect(page).toHaveURL(/welcome$/);
       await page
-        .getByRole('button', { name: 'Get Started', exact: true })
+        .getByRole('button', {
+          name: 'Continue to set up location',
+          exact: true,
+        })
         .click();
     }
-    await expect(page.getByText('Find a suyo', { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/set-location$/);
+    const continueButton = page.getByRole('button', {
+      name: 'Find nearby suyos',
+      exact: true,
+    });
+    await expect(continueButton).toBeDisabled();
+    await page.getByTestId('task-map').click({ position: { x: 130, y: 120 } });
+    await expect(continueButton).toBeDisabled();
+    await page
+      .getByRole('checkbox', { name: 'Location acknowledgment', exact: true })
+      .click();
+    await continueButton.click();
+    await expect(page).toHaveURL(/dashboard$/);
+    await expect(
+      page.getByText('Available Suyos', { exact: true }),
+    ).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate((key) => localStorage.getItem(key), locationKey),
@@ -114,14 +107,14 @@ test('missing location takes priority for signed-in users across protected route
   await expect(page).toHaveURL(/dashboard$/);
 });
 
-test('GPS can be used before signup and manual selection works after denial', async ({
+test('GPS setup resets acknowledgment on pin changes and allows manual selection after denial', async ({
   page,
   context,
 }) => {
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({ latitude: 7.07, longitude: 125.6 });
-  await mockSupabase(page, { locationSetup: false });
-  await page.goto('/signup');
+  await mockSupabase(page, { signedIn: true, locationSetup: false });
+  await page.goto('/set-location');
   await page
     .getByRole('button', { name: 'Use my current location', exact: true })
     .click();
@@ -150,9 +143,8 @@ test('GPS can be used before signup and manual selection works after denial', as
     /Location permission is off|Permission denied/,
   );
   await selectArea(page);
-  await accountFields(page);
   await expect(
-    page.getByRole('button', { name: 'Sign Up', exact: true }),
+    page.getByRole('button', { name: 'Find nearby suyos', exact: true }),
   ).toBeEnabled();
 });
 
@@ -169,11 +161,7 @@ test('failed location save cannot unlock the app and can be retried', async ({
   await page
     .getByRole('button', { name: 'Find nearby suyos', exact: true })
     .click();
-  await expect(
-    page.getByText('Could not save your location. Please try again.', {
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Save failed');
   expect(
     await page.evaluate((key) => localStorage.getItem(key), locationKey),
   ).toBeNull();
@@ -220,7 +208,7 @@ test('users can sign out of required setup without selecting a location', async 
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/set-location$/);
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(page).toHaveURL('http://127.0.0.1:4173/');
+  await expect(page).toHaveURL(/\/$/);
   expect(
     await page.evaluate((key) => localStorage.getItem(key), storageKey),
   ).toBeNull();

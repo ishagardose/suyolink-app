@@ -55,7 +55,13 @@ export default function useDashboardFilters({ availableSuyosBase }) {
     list.sort((a, b) => b.createdAt - a.createdAt);
 
     return list;
-  }, [searchQuery, selectedCategory, selectedDistance, selectedUrgency]);
+  }, [
+    availableSuyosBase,
+    searchQuery,
+    selectedCategory,
+    selectedDistance,
+    selectedUrgency,
+  ]);
 
   const availableHeaderTitle = useMemo(() => {
     if (!isFiltering) {

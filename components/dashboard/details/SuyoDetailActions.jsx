@@ -16,8 +16,6 @@ export default function SuyoDetailActions({
   selectedSuyo,
   selectedSuyoContext,
   setCancelledSuyos,
-  setDoerAcceptedSuyos,
-  setOpenedFromFavorites,
   setSelectedSuyo,
   styles,
   triggerToast,
@@ -241,53 +239,10 @@ export default function SuyoDetailActions({
           style={styles.detailFulfillBtn}
           activeOpacity={0.8}
           onPress={() => {
-            const taskToFulfill = selectedSuyo;
-            setSelectedSuyo(null);
-            setOpenedFromFavorites(false);
-            if (taskToFulfill) {
-              setDoerAcceptedSuyos((prev) => {
-                if (prev.some((s) => s.id === taskToFulfill.id)) return prev;
-                return [
-                  {
-                    id: taskToFulfill.id,
-                    title: taskToFulfill.title,
-                    category: taskToFulfill.category || 'General',
-                    icon: taskToFulfill.icon || 'bicycle',
-                    location: taskToFulfill.location || 'Tagum City',
-                    distanceText: taskToFulfill.distanceText || '0.8 km away',
-                    reward: taskToFulfill.reward || '₱150',
-                    requesterName:
-                      taskToFulfill.requesterName || 'Community Member',
-                    requesterPhone:
-                      taskToFulfill.requesterPhone || '09564781552',
-                    deadline: taskToFulfill.timeBadge || 'Within 2 hours',
-                    acceptedAt: 'Today · Just now',
-                    details:
-                      taskToFulfill.details ||
-                      'Fulfill this suyo request according to requester requirements.',
-                    notes: taskToFulfill.notes || 'Handle with care.',
-                    status: 'Accepted · In Progress',
-                  },
-                  ...prev,
-                ];
-              });
-            }
-            router.push({
-              pathname: '/fulfill',
-              params: {
-                id: taskToFulfill?.id || 'SYL-102',
-                title:
-                  taskToFulfill?.title || 'Quick Grocery Delivery (5 items)',
-                category: taskToFulfill?.category || 'Groceries',
-                location: taskToFulfill?.location || 'SM Tagum',
-                distanceText: taskToFulfill?.distanceText || '0.8 km away',
-                reward: taskToFulfill?.reward || '₱150',
-                requesterName: taskToFulfill?.requesterName || 'Maria Santos',
-                requesterLocation: taskToFulfill?.location || 'Quezon City',
-                requesterPhone: taskToFulfill?.requesterPhone || '09564781552',
-                details: taskToFulfill?.details || 'Grocery delivery items',
-              },
-            });
+            const id = selectedSuyo?.id;
+            if (!id) return;
+            handleCloseDetailModal();
+            router.push({ pathname: '/suyo', params: { id } });
           }}
         >
           <Ionicons

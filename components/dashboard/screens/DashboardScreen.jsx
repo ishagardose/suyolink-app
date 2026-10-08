@@ -64,7 +64,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 16);
   const [activeTab, setActiveTab] = useState('home');
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const { colors, isDark } = useTheme();
   const styles = useMemo(
     () => createDashboardStyles(colors, isDark),
@@ -96,8 +96,8 @@ export default function DashboardScreen() {
   const [userProfile, setUserProfile] = useState({
     name: user?.name || user?.user_metadata?.full_name || 'Juan Dela Cruz',
     email: user?.email || 'juan.delacruz@suyolink.ph',
-    phone: user?.phone || '+63 917 123 4567',
-    address: 'Makati City, Metro Manila',
+    phone: user?.phone || '',
+    address: user?.address || '',
   });
   useEffect(() => {
     if (user) {
@@ -105,12 +105,19 @@ export default function DashboardScreen() {
         ...prev,
         name: user.name || user.user_metadata?.full_name || prev.name,
         email: user.email || prev.email,
+        phone: user.phone || '',
+        address: user.address || '',
       }));
     }
   }, [user]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...userProfile });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState('');
+  useEffect(() => {
+    if (isEditModalOpen) setProfileSaveError('');
+  }, [isEditModalOpen]);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [expandedSection, setExpandedSection] = useState(null);
 
@@ -714,10 +721,21 @@ export default function DashboardScreen() {
     setExpandedSection((prev) => (prev === sectionKey ? null : sectionKey));
   };
 
-  const handleSaveProfile = () => {
-    setUserProfile({ ...tempProfile });
-    setIsEditModalOpen(false);
-    triggerToast('Profile updated successfully', 'person');
+  const handleSaveProfile = async () => {
+    if (profileSaving) return;
+    setProfileSaving(true);
+    setProfileSaveError('');
+    try {
+      await updateProfile(tempProfile);
+      setIsEditModalOpen(false);
+      triggerToast('Profile updated successfully', 'person');
+    } catch (error) {
+      setProfileSaveError(
+        error.message || 'Could not save your profile. Please retry.',
+      );
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const {
@@ -1072,6 +1090,8 @@ export default function DashboardScreen() {
       {/* 9. EDIT PROFILE MODAL                                      */}
       {/* ========================================================== */}
       <EditProfileModal
+        busy={profileSaving}
+        error={profileSaveError}
         handleSaveProfile={handleSaveProfile}
         isEditModalOpen={isEditModalOpen}
         resolveColor={resolveColor}
