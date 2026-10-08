@@ -834,6 +834,83 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
     'Unregistering device also removes queued pushes',
   );
 
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610080001_backend_profiles.sql',
+      ),
+      'utf8',
+    ),
+  );
+  const expectedCount = (
+    await row(`select count(*)::int as n from public.suyo_requests
+    where status='completed' and (provider_id='${B}' or requester_id='${B}')`)
+  ).n;
+  const expectedRating = (
+    await row(
+      `select round(avg(score),1) as n from public.ratings where provider_id='${B}'`,
+    )
+  ).n;
+  await actor(B);
+  await db.exec(
+    `update public.profiles set handle='@provider', bio='Backend bio' where id='${B}'`,
+  );
+  await actor(C);
+  const backendProfile = (
+    await row(`select public.get_suyo_profile('${B}') as p`)
+  ).p;
+  ok(
+    backendProfile.handle === '@provider' &&
+      backendProfile.bio === 'Backend bio',
+    'Profile metadata is visible across accounts',
+  );
+  ok(
+    backendProfile.completed_count === expectedCount && expectedCount > 0,
+    'Profile counts include completed work hidden by task RLS',
+  );
+  ok(
+    Number(backendProfile.rating) === Number(expectedRating),
+    'Profile rating comes from received reviews',
+  );
+  ok(
+    !('phone' in backendProfile) && !('address' in backendProfile),
+    'Public profile does not expose private contacts',
+  );
+  ok(
+    backendProfile.reviews.every(
+      (r) => r.reviewerName && r.score >= 1 && r.score <= 5,
+    ),
+    'Reviews include actual reviewer identities and scores',
+  );
+  await db.exec(`update public.profiles set bio='Tampered' where id='${B}'`);
+  ok(
+    (await row(`select public.get_suyo_profile('${B}') as p`)).p.bio ===
+      'Backend bio',
+    'Cannot edit another profile',
+  );
+  await actor(D);
+  const emptyProfile = (
+    await row(`select public.get_suyo_profile('${D}') as p`)
+  ).p;
+  ok(
+    emptyProfile.rating === null &&
+      emptyProfile.reviews.length === 0 &&
+      emptyProfile.completed_count === 0,
+    'New profile has no fabricated statistics',
+  );
+  await denied(
+    `update public.profiles set bio=repeat('x',1001) where id='${D}'`,
+    'Bio length enforced by backend',
+  );
+  await db.exec(
+    "reset role; select set_config('request.jwt.claim.sub', '', false); set role anon;",
+  );
+  await denied(
+    `select public.get_suyo_profile('${B}')`,
+    'Anonymous profile reads denied',
+  );
+
   await db.close();
   console.log(
     'PASS: migration + ' +

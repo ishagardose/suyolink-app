@@ -1,11 +1,25 @@
-// Brand color stays fixed across both themes
-export const PRIMARY = '#1E4D2B'; // Signature Hunter Green
-export const BRAND = '#163523'; // Original deep Hunter Green brand background
+// Fixed visual identities stay the same in every theme. Use these for brand
+// artwork, rating stars, and map identities, not ordinary text or surfaces.
+export const FIXED_COLORS = Object.freeze({
+  brandGreen: '#1E4D2B',
+  brandDeep: '#163523',
+  brandHover: '#163E22',
+  white: '#FFFFFF',
+  black: '#000000',
+  ratingGold: '#F59E0B',
+  verifiedGreen: '#10B981',
+  mapDoerBlue: '#2563EB',
+});
+
+// Keep existing brand imports compatible.
+export const PRIMARY = FIXED_COLORS.brandGreen;
+export const BRAND = FIXED_COLORS.brandDeep;
 
 export const light = {
   primary: PRIMARY,
+  primaryHover: FIXED_COLORS.brandHover,
   heroBackground: BRAND,
-  heroText: '#FFFFFF',
+  heroText: FIXED_COLORS.white,
   heroTextMuted: '#D4E8DC',
   onBrand: '#D4E8DC',
   background: '#F5F7F4',
@@ -15,20 +29,25 @@ export const light = {
   textMuted: '#658071',
   border: '#D8E5DF',
   danger: '#D32F2F',
+  dangerHover: '#B91C1C',
   dangerSurface: '#FDEDEC',
   dangerBorder: '#F5CBC6',
   warning: '#D97706',
   warningSurface: '#FDF3E7',
-  success: '#1E4D2B',
+  success: PRIMARY,
+  successSurface: '#DCFCE7',
+  successBorder: '#86EFAC',
   backdrop: 'rgba(0, 0, 0, 0.5)',
-  white: '#FFFFFF',
+  white: FIXED_COLORS.white,
   brand: PRIMARY,
   hero: PRIMARY,
-  onPrimary: '#FFFFFF',
+  onPrimary: FIXED_COLORS.white,
   link: PRIMARY,
   muted: '#658071',
   textSecondary: '#658071',
   surfaceAlt: '#EAF2ED',
+  surfaceHover: '#DFECE4',
+  hoverBorder: '#C5DCD0',
   input: '#FFFFFF',
   shadow: '#163523',
   accent: '#6BA17B',
@@ -36,8 +55,9 @@ export const light = {
 
 export const dark = {
   primary: PRIMARY,
+  primaryHover: FIXED_COLORS.brandHover,
   heroBackground: BRAND,
-  heroText: '#FFFFFF',
+  heroText: FIXED_COLORS.white,
   heroTextMuted: '#D4E8DC',
   onBrand: '#D4E8DC',
   background: '#111B16',
@@ -47,21 +67,26 @@ export const dark = {
   textMuted: '#A1B2A7',
   border: '#374151',
   danger: '#EF4444',
+  dangerHover: '#DC2626',
   dangerSurface: '#7F1D1D',
   dangerBorder: '#991B1B',
   warning: '#F59E0B',
   warningSurface: '#78350F',
-  success: '#10B981',
+  success: FIXED_COLORS.verifiedGreen,
+  successSurface: '#153829',
+  successBorder: '#245B3A',
   backdrop: 'rgba(0, 0, 0, 0.7)',
-  white: '#FFFFFF',
+  white: FIXED_COLORS.white,
   brand: PRIMARY,
   hero: PRIMARY,
-  onPrimary: '#FFFFFF',
+  onPrimary: FIXED_COLORS.white,
   link: '#B5D8BF',
   muted: '#8FA497',
   textSecondary: '#8FA497',
   surfaceAlt: '#263B2E',
+  surfaceHover: '#304A3A',
+  hoverBorder: '#476853',
   input: '#16241C',
-  shadow: '#000000',
+  shadow: FIXED_COLORS.black,
   accent: '#8DBE9A',
 };

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { DEFAULT_MAP_CENTER } from '../../lib/geo';
+import { FIXED_COLORS } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function TaskMap({
   center,
@@ -9,6 +11,7 @@ export default function TaskMap({
   onSelect,
   height = 300,
 }) {
+  const { colors } = useTheme();
   const element = useRef(null);
   const instance = useRef(null);
   const layer = useRef(null);
@@ -60,9 +63,11 @@ export default function TaskMap({
       label.textContent = marker.title;
       L.circleMarker([marker.latitude, marker.longitude], {
         radius: marker.isMe ? 8 : 11,
-        color: '#FFFFFF',
+        color: FIXED_COLORS.white,
         weight: 2,
-        fillColor: marker.isMe ? '#2563EB' : '#1E4D2B',
+        fillColor: marker.isMe
+          ? FIXED_COLORS.mapDoerBlue
+          : FIXED_COLORS.brandGreen,
         fillOpacity: 1,
       })
         .bindTooltip(label)
@@ -84,7 +89,7 @@ export default function TaskMap({
       {tileError ? (
         <p
           role="status"
-          style={{ color: '#B45309', fontSize: 12 }}
+          style={{ color: colors.warning, fontSize: 12 }}
         >
           Map tiles could not load. Check your connection; saved pins and
           distances are still available.

@@ -1,9 +1,9 @@
+import { styles } from './RequestForm.styles';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   View,
   Text,
   TouchableOpacity,
@@ -62,7 +62,8 @@ const QUICK_PRESETS = [
     title: 'Buy groceries at supermarket',
     category: 'Groceries',
     offerAmount: '150.00',
-    details: 'Pick up eggs, fresh bread, and 2 cartons of milk from local supermarket.',
+    details:
+      'Pick up eggs, fresh bread, and 2 cartons of milk from local supermarket.',
   },
   {
     key: 'documents',
@@ -70,7 +71,8 @@ const QUICK_PRESETS = [
     title: 'Drop off documents - Unit 402',
     category: 'Documents',
     offerAmount: '300.00',
-    details: 'Deliver notarized agreements and legal documents to Unit 402 reception desk.',
+    details:
+      'Deliver notarized agreements and legal documents to Unit 402 reception desk.',
   },
   {
     key: 'bills',
@@ -78,7 +80,8 @@ const QUICK_PRESETS = [
     title: 'Queue for bills payment',
     category: 'Queuing & Bills',
     offerAmount: '120.00',
-    details: 'Line up at Bayad Center to pay monthly utility bill. Cash and bill slip are prepared.',
+    details:
+      'Line up at Bayad Center to pay monthly utility bill. Cash and bill slip are prepared.',
   },
   {
     key: 'pickup_deliver',
@@ -86,7 +89,8 @@ const QUICK_PRESETS = [
     title: 'Pickup & Deliver items',
     category: 'Delivery',
     offerAmount: '180.00',
-    details: 'Collect pre-ordered package from branch and safely deliver to destination address.',
+    details:
+      'Collect pre-ordered package from branch and safely deliver to destination address.',
   },
 ];
 
@@ -119,7 +123,10 @@ export default function RequestForm({ onPosted }) {
     deadlineDate: '',
     deadlineTime: '',
     clientReference:
-      'post-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2),
+      'post-' +
+      Date.now().toString(36) +
+      '-' +
+      Math.random().toString(36).slice(2),
   }));
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -155,7 +162,7 @@ export default function RequestForm({ onPosted }) {
       if (!perm.granted) {
         Alert.alert(
           'Camera Permission Required',
-          'Please allow camera access in your device settings to take photos for your suyo request.'
+          'Please allow camera access in your device settings to take photos for your suyo request.',
         );
         return;
       }
@@ -169,7 +176,8 @@ export default function RequestForm({ onPosted }) {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         const newAttachment = {
-          id: 'cam-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+          id:
+            'cam-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
           uri: asset.uri,
           name: asset.fileName || `camera_photo_${Date.now()}.jpg`,
           type: 'image',
@@ -183,7 +191,10 @@ export default function RequestForm({ onPosted }) {
       }
     } catch (err) {
       console.warn('Camera pick error:', err);
-      Alert.alert('Camera Error', 'Could not open camera. Please try selecting from the photo gallery.');
+      Alert.alert(
+        'Camera Error',
+        'Could not open camera. Please try selecting from the photo gallery.',
+      );
     } finally {
       setAttachmentLoading(false);
     }
@@ -200,7 +211,7 @@ export default function RequestForm({ onPosted }) {
       if (!perm.granted) {
         Alert.alert(
           'Gallery Permission Required',
-          'Please allow photo library access to choose photos for your suyo request.'
+          'Please allow photo library access to choose photos for your suyo request.',
         );
         return;
       }
@@ -215,9 +226,16 @@ export default function RequestForm({ onPosted }) {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const newItems = result.assets.map((asset, index) => ({
-          id: 'gal-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2, 6),
+          id:
+            'gal-' +
+            Date.now() +
+            '-' +
+            index +
+            '-' +
+            Math.random().toString(36).slice(2, 6),
           uri: asset.uri,
-          name: asset.fileName || `gallery_image_${Date.now()}_${index + 1}.jpg`,
+          name:
+            asset.fileName || `gallery_image_${Date.now()}_${index + 1}.jpg`,
           type: 'image',
           mimeType: asset.mimeType || 'image/jpeg',
           size: asset.fileSize,
@@ -230,7 +248,10 @@ export default function RequestForm({ onPosted }) {
       }
     } catch (err) {
       console.warn('Gallery pick error:', err);
-      Alert.alert('Gallery Error', 'Could not open photo gallery. Please try again.');
+      Alert.alert(
+        'Gallery Error',
+        'Could not open photo gallery. Please try again.',
+      );
     } finally {
       setAttachmentLoading(false);
     }
@@ -255,7 +276,13 @@ export default function RequestForm({ onPosted }) {
             asset.mimeType?.startsWith('image/') ||
             /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(asset.name || '');
           return {
-            id: 'doc-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2, 6),
+            id:
+              'doc-' +
+              Date.now() +
+              '-' +
+              index +
+              '-' +
+              Math.random().toString(36).slice(2, 6),
             uri: asset.uri,
             name: asset.name || `attached_file_${Date.now()}_${index + 1}`,
             type: isImg ? 'image' : 'file',
@@ -271,7 +298,10 @@ export default function RequestForm({ onPosted }) {
       }
     } catch (err) {
       console.warn('Document picker error:', err);
-      Alert.alert('File Picker Error', 'Could not attach selected file. Please try again.');
+      Alert.alert(
+        'File Picker Error',
+        'Could not attach selected file. Please try again.',
+      );
     } finally {
       setAttachmentLoading(false);
     }
@@ -280,7 +310,9 @@ export default function RequestForm({ onPosted }) {
   const handleRemoveAttachment = (idToRemove) => {
     setDraft((prev) => ({
       ...prev,
-      attachments: (prev.attachments || []).filter((item) => item.id !== idToRemove),
+      attachments: (prev.attachments || []).filter(
+        (item) => item.id !== idToRemove,
+      ),
     }));
   };
 
@@ -292,7 +324,10 @@ export default function RequestForm({ onPosted }) {
         deadlineDate: '',
         deadlineTime: '',
         clientReference:
-          'post-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2),
+          'post-' +
+          Date.now().toString(36) +
+          '-' +
+          Math.random().toString(36).slice(2),
       });
       setFieldErrors({});
       setGeneralError('');
@@ -356,7 +391,9 @@ export default function RequestForm({ onPosted }) {
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
-      setGeneralError('Please complete all required fields highlighted in red below.');
+      setGeneralError(
+        'Please complete all required fields highlighted in red below.',
+      );
 
       // If contact info is missing, lead the user directly back to the contact info input box
       if (errors.contactPhone) {
@@ -378,12 +415,17 @@ export default function RequestForm({ onPosted }) {
 
     // Validate deadline is in the future
     try {
-      const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(combinedDeadline);
+      const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(
+        combinedDeadline,
+      );
       if (!match) throw new Error('Invalid deadline date/time format.');
       const [, y, m, d, h, min] = match.map(Number);
       const parsedDate = new Date(y, m - 1, d, h, min);
       if (parsedDate.getTime() <= Date.now()) {
-        setFieldErrors((p) => ({ ...p, deadlineTime: 'Deadline must be set in the future' }));
+        setFieldErrors((p) => ({
+          ...p,
+          deadlineTime: 'Deadline must be set in the future',
+        }));
         setGeneralError('Please set a deadline time in the future.');
         return;
       }
@@ -406,7 +448,10 @@ export default function RequestForm({ onPosted }) {
         publicLocation: draft.location.trim(),
         exactAddress: draft.location.trim(),
         phone: draft.contactPhone.trim() || draft.phone || 'N/A',
-        coordinates: draft.coordinates || { latitude: 7.4475, longitude: 125.8078 },
+        coordinates: draft.coordinates || {
+          latitude: 7.4475,
+          longitude: 125.8078,
+        },
         deadline: combinedDeadline,
         attachments: draft.attachments || [],
         notes: draft.contactPhone
@@ -415,7 +460,9 @@ export default function RequestForm({ onPosted }) {
       });
       setIsSuccessModalOpen(true);
     } catch (err) {
-      setGeneralError(err.message || 'Failed to post request. Please check all details.');
+      setGeneralError(
+        err.message || 'Failed to post request. Please check all details.',
+      );
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -437,12 +484,17 @@ export default function RequestForm({ onPosted }) {
           {/* TOP BANNER */}
           <View style={styles.heroBanner}>
             <View style={styles.heroIconBadge}>
-              <Ionicons name="sparkles" size={20} color="#1E4D2B" />
+              <Ionicons
+                name="sparkles"
+                size={20}
+                color="#1E4D2B"
+              />
             </View>
             <View style={styles.heroTextCol}>
               <Text style={styles.heroTitle}>Post a Suyo Request</Text>
               <Text style={styles.heroSub}>
-                Fill out your task details, reward offer, and meeting location. Verified community doers will be alerted immediately.
+                Fill out your task details, reward offer, and meeting location.
+                Verified community doers will be alerted immediately.
               </Text>
             </View>
           </View>
@@ -481,7 +533,11 @@ export default function RequestForm({ onPosted }) {
           {/* GENERAL ERROR BANNER */}
           {generalError ? (
             <View style={styles.generalErrorBanner}>
-              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Ionicons
+                name="alert-circle"
+                size={18}
+                color="#DC2626"
+              />
               <Text style={styles.generalErrorText}>{generalError}</Text>
             </View>
           ) : null}
@@ -489,14 +545,23 @@ export default function RequestForm({ onPosted }) {
           {/* CARD 1: TASK OVERVIEW */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Ionicons name="create-outline" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="create-outline"
+                size={18}
+                color="#1E4D2B"
+              />
               <Text style={styles.cardTitle}>Task Overview</Text>
             </View>
 
             {/* Title */}
             <View style={styles.fieldBlock}>
               <View style={styles.fieldLabelRow}>
-                <Text style={[styles.fieldLabel, fieldErrors.title && styles.fieldLabelError]}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    fieldErrors.title && styles.fieldLabelError,
+                  ]}
+                >
                   Task Title *
                 </Text>
                 <Text style={styles.counterText}>{draft.title.length}/100</Text>
@@ -520,7 +585,8 @@ export default function RequestForm({ onPosted }) {
                   value={draft.title}
                   onChangeText={(val) => {
                     setDraft((p) => ({ ...p, title: val }));
-                    if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: undefined }));
+                    if (fieldErrors.title)
+                      setFieldErrors((p) => ({ ...p, title: undefined }));
                   }}
                   maxLength={100}
                   editable={!busy}
@@ -543,7 +609,9 @@ export default function RequestForm({ onPosted }) {
                       key={cat}
                       style={[
                         styles.categoryBtn,
-                        isSelected ? styles.categoryBtnActive : styles.categoryBtnInactive,
+                        isSelected
+                          ? styles.categoryBtnActive
+                          : styles.categoryBtnInactive,
                       ]}
                       onPress={() => {
                         setDraft((p) => ({ ...p, category: cat }));
@@ -575,8 +643,12 @@ export default function RequestForm({ onPosted }) {
             {/* Task Details */}
             <View style={styles.fieldBlock}>
               <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Detailed Instructions (Optional)</Text>
-                <Text style={styles.counterText}>{draft.details.length}/2000</Text>
+                <Text style={styles.fieldLabel}>
+                  Detailed Instructions (Optional)
+                </Text>
+                <Text style={styles.counterText}>
+                  {draft.details.length}/2000
+                </Text>
               </View>
               <View style={styles.textareaWrapper}>
                 <TextInput
@@ -600,7 +672,11 @@ export default function RequestForm({ onPosted }) {
           {/* CARD 2: PHOTOS & FILE ATTACHMENTS (CAMERA, GALLERY, DOCUMENTS) */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Ionicons name="images-outline" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="images-outline"
+                size={18}
+                color="#1E4D2B"
+              />
               <View style={styles.attachCardHeaderTitleRow}>
                 <Text style={styles.cardTitle}>Photos & File Attachments</Text>
                 <View style={styles.attachCountBadge}>
@@ -612,7 +688,8 @@ export default function RequestForm({ onPosted }) {
             </View>
 
             <Text style={styles.cardSubText}>
-              Attach photos from your camera or gallery (e.g. items to buy, receipts, parcel, location) or attach files/documents.
+              Attach photos from your camera or gallery (e.g. items to buy,
+              receipts, parcel, location) or attach files/documents.
             </Text>
 
             {/* Three Action Pickers: Camera, Gallery, Files */}
@@ -622,16 +699,34 @@ export default function RequestForm({ onPosted }) {
                 style={[
                   styles.attachActionBtn,
                   styles.attachActionBtnCamera,
-                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
+                  (draft.attachments || []).length >= 5 &&
+                    styles.attachActionBtnDisabled,
                 ]}
                 activeOpacity={0.75}
                 onPress={handlePickFromCamera}
-                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
+                disabled={
+                  busy ||
+                  attachmentLoading ||
+                  (draft.attachments || []).length >= 5
+                }
               >
-                <View style={[styles.attachActionIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                  <Ionicons name="camera" size={19} color="#15803D" />
+                <View
+                  style={[
+                    styles.attachActionIconCircle,
+                    { backgroundColor: '#DCFCE7' },
+                  ]}
+                >
+                  <Ionicons
+                    name="camera"
+                    size={19}
+                    color="#15803D"
+                  />
                 </View>
-                <Text style={[styles.attachActionBtnText, { color: '#15803D' }]}>Take Photo</Text>
+                <Text
+                  style={[styles.attachActionBtnText, { color: '#15803D' }]}
+                >
+                  Take Photo
+                </Text>
                 <Text style={styles.attachActionBtnSub}>Camera</Text>
               </TouchableOpacity>
 
@@ -640,16 +735,34 @@ export default function RequestForm({ onPosted }) {
                 style={[
                   styles.attachActionBtn,
                   styles.attachActionBtnGallery,
-                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
+                  (draft.attachments || []).length >= 5 &&
+                    styles.attachActionBtnDisabled,
                 ]}
                 activeOpacity={0.75}
                 onPress={handlePickFromGallery}
-                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
+                disabled={
+                  busy ||
+                  attachmentLoading ||
+                  (draft.attachments || []).length >= 5
+                }
               >
-                <View style={[styles.attachActionIconCircle, { backgroundColor: '#E0F2FE' }]}>
-                  <Ionicons name="images" size={19} color="#0369A1" />
+                <View
+                  style={[
+                    styles.attachActionIconCircle,
+                    { backgroundColor: '#E0F2FE' },
+                  ]}
+                >
+                  <Ionicons
+                    name="images"
+                    size={19}
+                    color="#0369A1"
+                  />
                 </View>
-                <Text style={[styles.attachActionBtnText, { color: '#0369A1' }]}>Gallery</Text>
+                <Text
+                  style={[styles.attachActionBtnText, { color: '#0369A1' }]}
+                >
+                  Gallery
+                </Text>
                 <Text style={styles.attachActionBtnSub}>Photos</Text>
               </TouchableOpacity>
 
@@ -658,24 +771,47 @@ export default function RequestForm({ onPosted }) {
                 style={[
                   styles.attachActionBtn,
                   styles.attachActionBtnFiles,
-                  (draft.attachments || []).length >= 5 && styles.attachActionBtnDisabled,
+                  (draft.attachments || []).length >= 5 &&
+                    styles.attachActionBtnDisabled,
                 ]}
                 activeOpacity={0.75}
                 onPress={handleAttachFiles}
-                disabled={busy || attachmentLoading || (draft.attachments || []).length >= 5}
+                disabled={
+                  busy ||
+                  attachmentLoading ||
+                  (draft.attachments || []).length >= 5
+                }
               >
-                <View style={[styles.attachActionIconCircle, { backgroundColor: '#FEF3C7' }]}>
-                  <Ionicons name="document-attach" size={19} color="#B45309" />
+                <View
+                  style={[
+                    styles.attachActionIconCircle,
+                    { backgroundColor: '#FEF3C7' },
+                  ]}
+                >
+                  <Ionicons
+                    name="document-attach"
+                    size={19}
+                    color="#B45309"
+                  />
                 </View>
-                <Text style={[styles.attachActionBtnText, { color: '#B45309' }]}>Attach File</Text>
+                <Text
+                  style={[styles.attachActionBtnText, { color: '#B45309' }]}
+                >
+                  Attach File
+                </Text>
                 <Text style={styles.attachActionBtnSub}>PDF/Docs</Text>
               </TouchableOpacity>
             </View>
 
             {attachmentLoading && (
               <View style={styles.attachmentLoadingRow}>
-                <ActivityIndicator size="small" color="#1E4D2B" />
-                <Text style={styles.attachmentLoadingText}>Processing attachment...</Text>
+                <ActivityIndicator
+                  size="small"
+                  color="#1E4D2B"
+                />
+                <Text style={styles.attachmentLoadingText}>
+                  Processing attachment...
+                </Text>
               </View>
             )}
 
@@ -693,7 +829,14 @@ export default function RequestForm({ onPosted }) {
                   {draft.attachments.map((item) => {
                     const isImg = item.type === 'image';
                     return (
-                      <View key={item.id} style={isImg ? styles.attachImageItemCard : styles.attachDocItemCard}>
+                      <View
+                        key={item.id}
+                        style={
+                          isImg
+                            ? styles.attachImageItemCard
+                            : styles.attachDocItemCard
+                        }
+                      >
                         {isImg ? (
                           <View style={styles.attachImageItemInner}>
                             <TouchableOpacity
@@ -701,10 +844,20 @@ export default function RequestForm({ onPosted }) {
                               onPress={() => setPreviewImage(item.uri)}
                               style={styles.attachImageThumbWrapper}
                             >
-                              <Image source={{ uri: item.uri }} style={styles.attachImageThumb} resizeMode="cover" />
+                              <Image
+                                source={{ uri: item.uri }}
+                                style={styles.attachImageThumb}
+                                resizeMode="cover"
+                              />
                               <View style={styles.attachImageBadge}>
-                                <Ionicons name="eye" size={10} color="#FFFFFF" />
-                                <Text style={styles.attachImageBadgeText}>View</Text>
+                                <Ionicons
+                                  name="eye"
+                                  size={10}
+                                  color="#FFFFFF"
+                                />
+                                <Text style={styles.attachImageBadgeText}>
+                                  View
+                                </Text>
                               </View>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -713,20 +866,32 @@ export default function RequestForm({ onPosted }) {
                               onPress={() => handleRemoveAttachment(item.id)}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                              <Ionicons name="close" size={11} color="#FFFFFF" />
+                              <Ionicons
+                                name="close"
+                                size={11}
+                                color="#FFFFFF"
+                              />
                             </TouchableOpacity>
                           </View>
                         ) : (
                           <View style={styles.attachDocCardContent}>
                             <View style={styles.attachDocIconCircle}>
-                              <Ionicons name="document-text" size={18} color="#B45309" />
+                              <Ionicons
+                                name="document-text"
+                                size={18}
+                                color="#B45309"
+                              />
                             </View>
                             <View style={styles.attachDocMeta}>
-                              <Text style={styles.attachDocName} numberOfLines={1}>
+                              <Text
+                                style={styles.attachDocName}
+                                numberOfLines={1}
+                              >
                                 {item.name}
                               </Text>
                               <Text style={styles.attachDocSize}>
-                                {formatFileSize(item.size) || 'Attached document'}
+                                {formatFileSize(item.size) ||
+                                  'Attached document'}
                               </Text>
                             </View>
                             <TouchableOpacity
@@ -735,7 +900,11 @@ export default function RequestForm({ onPosted }) {
                               onPress={() => handleRemoveAttachment(item.id)}
                               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                             >
-                              <Ionicons name="trash-outline" size={15} color="#DC2626" />
+                              <Ionicons
+                                name="trash-outline"
+                                size={15}
+                                color="#DC2626"
+                              />
                             </TouchableOpacity>
                           </View>
                         )}
@@ -750,12 +919,21 @@ export default function RequestForm({ onPosted }) {
           {/* CARD 3: REWARD OFFER */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Ionicons name="cash-outline" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="cash-outline"
+                size={18}
+                color="#1E4D2B"
+              />
               <Text style={styles.cardTitle}>Reward Offer (PHP)</Text>
             </View>
 
             <View style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, fieldErrors.offerAmount && styles.fieldLabelError]}>
+              <Text
+                style={[
+                  styles.fieldLabel,
+                  fieldErrors.offerAmount && styles.fieldLabelError,
+                ]}
+              >
                 Offer Amount *
               </Text>
               <View
@@ -789,7 +967,8 @@ export default function RequestForm({ onPosted }) {
                       ...p,
                       offerAmount: val.replace(/[^0-9.]/g, ''),
                     }));
-                    if (fieldErrors.offerAmount) setFieldErrors((p) => ({ ...p, offerAmount: undefined }));
+                    if (fieldErrors.offerAmount)
+                      setFieldErrors((p) => ({ ...p, offerAmount: undefined }));
                   }}
                   keyboardType="decimal-pad"
                   maxLength={10}
@@ -797,7 +976,9 @@ export default function RequestForm({ onPosted }) {
                 />
               </View>
               {fieldErrors.offerAmount && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.offerAmount}</Text>
+                <Text style={styles.fieldErrorText}>
+                  {fieldErrors.offerAmount}
+                </Text>
               )}
             </View>
 
@@ -813,7 +994,8 @@ export default function RequestForm({ onPosted }) {
                   ]}
                   onPress={() => {
                     setDraft((p) => ({ ...p, offerAmount: amt }));
-                    if (fieldErrors.offerAmount) setFieldErrors((p) => ({ ...p, offerAmount: undefined }));
+                    if (fieldErrors.offerAmount)
+                      setFieldErrors((p) => ({ ...p, offerAmount: undefined }));
                   }}
                   activeOpacity={0.7}
                 >
@@ -833,12 +1015,17 @@ export default function RequestForm({ onPosted }) {
           {/* CARD 3: COMPLETION DEADLINE (DATE & TIME) */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Ionicons name="time-outline" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="time-outline"
+                size={18}
+                color="#1E4D2B"
+              />
               <Text style={styles.cardTitle}>Completion Deadline</Text>
             </View>
 
             <Text style={styles.cardSubText}>
-              Set the required target date and time when the suyo must be completed.
+              Set the required target date and time when the suyo must be
+              completed.
             </Text>
 
             {/* Separate Date and Time Inputs */}
@@ -867,7 +1054,11 @@ export default function RequestForm({ onPosted }) {
                     value={draft.deadlineDate}
                     onChangeText={(val) => {
                       setDraft((p) => ({ ...p, deadlineDate: val }));
-                      if (fieldErrors.deadlineDate) setFieldErrors((p) => ({ ...p, deadlineDate: undefined }));
+                      if (fieldErrors.deadlineDate)
+                        setFieldErrors((p) => ({
+                          ...p,
+                          deadlineDate: undefined,
+                        }));
                     }}
                     maxLength={10}
                     editable={!busy}
@@ -888,7 +1079,9 @@ export default function RequestForm({ onPosted }) {
                   </TouchableOpacity>
                 </View>
                 {fieldErrors.deadlineDate && (
-                  <Text style={styles.fieldErrorText}>{fieldErrors.deadlineDate}</Text>
+                  <Text style={styles.fieldErrorText}>
+                    {fieldErrors.deadlineDate}
+                  </Text>
                 )}
               </View>
 
@@ -916,7 +1109,11 @@ export default function RequestForm({ onPosted }) {
                     value={draft.deadlineTime}
                     onChangeText={(val) => {
                       setDraft((p) => ({ ...p, deadlineTime: val }));
-                      if (fieldErrors.deadlineTime) setFieldErrors((p) => ({ ...p, deadlineTime: undefined }));
+                      if (fieldErrors.deadlineTime)
+                        setFieldErrors((p) => ({
+                          ...p,
+                          deadlineTime: undefined,
+                        }));
                     }}
                     maxLength={5}
                     editable={!busy}
@@ -937,16 +1134,23 @@ export default function RequestForm({ onPosted }) {
                   </TouchableOpacity>
                 </View>
                 {fieldErrors.deadlineTime && (
-                  <Text style={styles.fieldErrorText}>{fieldErrors.deadlineTime}</Text>
+                  <Text style={styles.fieldErrorText}>
+                    {fieldErrors.deadlineTime}
+                  </Text>
                 )}
               </View>
             </View>
 
             {draft.deadlineDate && draft.deadlineTime ? (
               <View style={styles.deadlineContainerPill}>
-                <Ionicons name="checkmark-circle" size={14} color="#1E4D2B" />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={14}
+                  color="#1E4D2B"
+                />
                 <Text style={styles.deadlinePillText}>
-                  Scheduled Deadline: {draft.deadlineDate} at {draft.deadlineTime}
+                  Scheduled Deadline: {draft.deadlineDate} at{' '}
+                  {draft.deadlineTime}
                 </Text>
               </View>
             ) : null}
@@ -955,7 +1159,11 @@ export default function RequestForm({ onPosted }) {
           {/* CARD 4: LOCATION & PIN */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Ionicons name="location-outline" size={18} color="#1E4D2B" />
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color="#1E4D2B"
+              />
               <Text style={styles.cardTitle}>Location & Map Pin</Text>
             </View>
 
@@ -970,7 +1178,9 @@ export default function RequestForm({ onPosted }) {
                 >
                   Address/meeting landmark/Drop off *
                 </Text>
-                <Text style={styles.counterText}>{draft.location.length}/250</Text>
+                <Text style={styles.counterText}>
+                  {draft.location.length}/250
+                </Text>
               </View>
               <View
                 style={[
@@ -991,14 +1201,17 @@ export default function RequestForm({ onPosted }) {
                   value={draft.location}
                   onChangeText={(val) => {
                     setDraft((p) => ({ ...p, location: val }));
-                    if (fieldErrors.location) setFieldErrors((p) => ({ ...p, location: undefined }));
+                    if (fieldErrors.location)
+                      setFieldErrors((p) => ({ ...p, location: undefined }));
                   }}
                   maxLength={250}
                   editable={!busy}
                 />
               </View>
               {fieldErrors.location && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.location}</Text>
+                <Text style={styles.fieldErrorText}>
+                  {fieldErrors.location}
+                </Text>
               )}
             </View>
 
@@ -1015,8 +1228,14 @@ export default function RequestForm({ onPosted }) {
           {/* CARD 6: CONTACT INFO & SPECIAL INSTRUCTIONS */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Ionicons name="call-outline" size={18} color="#1E4D2B" />
-              <Text style={styles.cardTitle}>Contact Info & Extra Instructions</Text>
+              <Ionicons
+                name="call-outline"
+                size={18}
+                color="#1E4D2B"
+              />
+              <Text style={styles.cardTitle}>
+                Contact Info & Extra Instructions
+              </Text>
             </View>
 
             {/* Contact Phone (Mandatory) */}
@@ -1052,7 +1271,11 @@ export default function RequestForm({ onPosted }) {
                   value={draft.contactPhone}
                   onChangeText={(val) => {
                     setDraft((p) => ({ ...p, contactPhone: val }));
-                    if (fieldErrors.contactPhone) setFieldErrors((p) => ({ ...p, contactPhone: undefined }));
+                    if (fieldErrors.contactPhone)
+                      setFieldErrors((p) => ({
+                        ...p,
+                        contactPhone: undefined,
+                      }));
                   }}
                   keyboardType="phone-pad"
                   maxLength={20}
@@ -1060,15 +1283,21 @@ export default function RequestForm({ onPosted }) {
                 />
               </View>
               {fieldErrors.contactPhone && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.contactPhone}</Text>
+                <Text style={styles.fieldErrorText}>
+                  {fieldErrors.contactPhone}
+                </Text>
               )}
             </View>
 
             {/* Extra Notes */}
             <View style={styles.fieldBlock}>
               <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Additional Notes (Optional)</Text>
-                <Text style={styles.counterText}>{draft.notes.length}/1000</Text>
+                <Text style={styles.fieldLabel}>
+                  Additional Notes (Optional)
+                </Text>
+                <Text style={styles.counterText}>
+                  {draft.notes.length}/1000
+                </Text>
               </View>
               <View style={styles.textareaWrapper}>
                 <TextInput
@@ -1076,7 +1305,9 @@ export default function RequestForm({ onPosted }) {
                   placeholder="Call upon arrival at lobby guard, receipt required..."
                   placeholderTextColor={PLACEHOLDER_COLOR}
                   value={draft.notes}
-                  onChangeText={(val) => setDraft((p) => ({ ...p, notes: val }))}
+                  onChangeText={(val) =>
+                    setDraft((p) => ({ ...p, notes: val }))
+                  }
                   multiline
                   numberOfLines={3}
                   maxLength={1000}
@@ -1090,10 +1321,17 @@ export default function RequestForm({ onPosted }) {
           {/* LOAD ERROR BANNER */}
           {loadError ? (
             <View style={styles.errorCard}>
-              <Ionicons name="cloud-offline-outline" size={20} color="#DC2626" />
+              <Ionicons
+                name="cloud-offline-outline"
+                size={20}
+                color="#DC2626"
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.errorCardText}>{loadError}</Text>
-                <TouchableOpacity onPress={reload} style={styles.retryBtn}>
+                <TouchableOpacity
+                  onPress={reload}
+                  style={styles.retryBtn}
+                >
                   <Text style={styles.retryBtnText}>Retry Connection</Text>
                 </TouchableOpacity>
               </View>
@@ -1102,16 +1340,26 @@ export default function RequestForm({ onPosted }) {
 
           {/* SUBMIT BUTTON */}
           <TouchableOpacity
-            style={[styles.submitButton, (busy || isLoading) && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              (busy || isLoading) && styles.submitButtonDisabled,
+            ]}
             onPress={submit}
             disabled={busy || isLoading}
             activeOpacity={0.85}
           >
             {busy ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
             ) : (
               <>
-                <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
+                <Ionicons
+                  name="paper-plane"
+                  size={20}
+                  color="#FFFFFF"
+                />
                 <Text style={styles.submitButtonText}>
                   Post Suyo Request • ₱{draft.offerAmount || '0.00'}
                 </Text>
@@ -1136,12 +1384,19 @@ export default function RequestForm({ onPosted }) {
         <View style={styles.modalBackdrop}>
           <View style={styles.successModalCard}>
             <View style={styles.successIconCircle}>
-              <Ionicons name="checkmark-sharp" size={38} color="#FFFFFF" />
+              <Ionicons
+                name="checkmark-sharp"
+                size={38}
+                color="#FFFFFF"
+              />
             </View>
 
-            <Text style={styles.successModalTitle}>Suyo Posted Successfully!</Text>
+            <Text style={styles.successModalTitle}>
+              Suyo Posted Successfully!
+            </Text>
             <Text style={styles.successModalSub}>
-              Your suyo request "{draft.title}" is now live. Nearby verified doers have been alerted.
+              Your suyo request "{draft.title}" is now live. Nearby verified
+              doers have been alerted.
             </Text>
 
             <View style={styles.successSummaryBox}>
@@ -1151,7 +1406,12 @@ export default function RequestForm({ onPosted }) {
               </View>
               <View style={styles.summaryRowItem}>
                 <Text style={styles.summaryLabel}>Reward:</Text>
-                <Text style={[styles.summaryValue, { color: '#1E4D2B', fontWeight: '800' }]}>
+                <Text
+                  style={[
+                    styles.summaryValue,
+                    { color: '#1E4D2B', fontWeight: '800' },
+                  ]}
+                >
                   ₱{draft.offerAmount}
                 </Text>
               </View>
@@ -1161,13 +1421,35 @@ export default function RequestForm({ onPosted }) {
               </View>
               <View style={styles.summaryRowItem}>
                 <Text style={styles.summaryLabel}>Deadline:</Text>
-                <Text style={styles.summaryValue}>{draft.deadlineDate} {draft.deadlineTime}</Text>
+                <Text style={styles.summaryValue}>
+                  {draft.deadlineDate} {draft.deadlineTime}
+                </Text>
               </View>
               {draft.attachments && draft.attachments.length > 0 && (
                 <View style={styles.summaryRowItem}>
                   <Text style={styles.summaryLabel}>Attachments:</Text>
-                  <Text style={[styles.summaryValue, { color: '#059669', fontWeight: '700' }]}>
-                    {draft.attachments.length} item{draft.attachments.length > 1 ? 's' : ''} ({draft.attachments.filter((a) => a.type === 'image').length} photo{draft.attachments.filter((a) => a.type === 'image').length === 1 ? '' : 's'}, {draft.attachments.filter((a) => a.type === 'file').length} doc{draft.attachments.filter((a) => a.type === 'file').length === 1 ? '' : 's'})
+                  <Text
+                    style={[
+                      styles.summaryValue,
+                      { color: '#059669', fontWeight: '700' },
+                    ]}
+                  >
+                    {draft.attachments.length} item
+                    {draft.attachments.length > 1 ? 's' : ''} (
+                    {draft.attachments.filter((a) => a.type === 'image').length}{' '}
+                    photo
+                    {draft.attachments.filter((a) => a.type === 'image')
+                      .length === 1
+                      ? ''
+                      : 's'}
+                    ,{' '}
+                    {draft.attachments.filter((a) => a.type === 'file').length}{' '}
+                    doc
+                    {draft.attachments.filter((a) => a.type === 'file')
+                      .length === 1
+                      ? ''
+                      : 's'}
+                    )
                   </Text>
                 </View>
               )}
@@ -1181,7 +1463,9 @@ export default function RequestForm({ onPosted }) {
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.successDoneButtonText}>Return to Dashboard</Text>
+              <Text style={styles.successDoneButtonText}>
+                Return to Dashboard
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1234,7 +1518,11 @@ export default function RequestForm({ onPosted }) {
               activeOpacity={0.7}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Ionicons name="close" size={26} color="#FFFFFF" />
+              <Ionicons
+                name="close"
+                size={26}
+                color="#FFFFFF"
+              />
             </TouchableOpacity>
             <Image
               source={{ uri: previewImage }}
@@ -1247,762 +1535,3 @@ export default function RequestForm({ onPosted }) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    paddingBottom: 50,
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    gap: 16,
-  },
-
-  /* HERO BANNER */
-  heroBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EBF5EF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#D4E8DC',
-    gap: 14,
-  },
-  heroIconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#CDE3D5',
-  },
-  heroTextCol: {
-    flex: 1,
-  },
-  heroTitle: {
-    fontSize: 16.5,
-    fontWeight: '800',
-    color: '#163523',
-    letterSpacing: -0.2,
-    marginBottom: 2,
-  },
-  heroSub: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: '#466151',
-  },
-
-  /* QUICK PRESETS */
-  templatesBlock: {
-    gap: 8,
-  },
-  templatesHeader: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#556E60',
-    letterSpacing: 0.2,
-    paddingHorizontal: 2,
-  },
-  templatesScroll: {
-    gap: 8,
-  },
-  templateChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
-    borderColor: '#D6E6DC',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  templateChipText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#1E4D2B',
-  },
-  templateChipCreate: {
-    backgroundColor: '#EBF5EF',
-    borderColor: '#A4D1B8',
-  },
-  templateChipCreateText: {
-    color: '#163523',
-    fontWeight: '800',
-  },
-
-  /* GENERAL ERROR BANNER */
-  generalErrorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 12,
-    padding: 12,
-  },
-  generalErrorText: {
-    fontSize: 12.5,
-    color: '#DC2626',
-    fontWeight: '600',
-    flex: 1,
-  },
-
-  /* CARDS */
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1.2,
-    borderColor: '#E1ECE5',
-    padding: 16,
-    gap: 14,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  cardWithErrors: {
-    borderColor: '#FECACA',
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F5F2',
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#163523',
-    letterSpacing: -0.2,
-  },
-  cardSubText: {
-    fontSize: 12,
-    color: '#556E60',
-    lineHeight: 16,
-    marginTop: -6,
-  },
-
-  /* FIELDS */
-  fieldBlock: {
-    gap: 6,
-  },
-  fieldLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#243D2F',
-  },
-  fieldLabelError: {
-    color: '#DC2626',
-    fontWeight: '800',
-  },
-  counterText: {
-    fontSize: 11,
-    color: '#8EA296',
-    fontWeight: '600',
-  },
-  requiredBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#DC2626',
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    minHeight: 48,
-  },
-  inputErrorBorder: {
-    borderColor: '#DC2626',
-    borderWidth: 1.6,
-    backgroundColor: '#FEF2F2',
-  },
-  currencySymbolBadgeError: {
-    backgroundColor: '#FEE2E2',
-    borderRightColor: '#DC2626',
-  },
-  fieldErrorText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#DC2626',
-    marginTop: 2,
-  },
-  leadingIcon: {
-    marginRight: 6,
-  },
-  textInputInner: {
-    flex: 1,
-    fontSize: 12.5,
-    color: '#163523',
-    fontWeight: '500',
-    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
-    paddingHorizontal: 0,
-    minWidth: 0,
-  },
-  textareaWrapper: {
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    padding: 12,
-    minHeight: 84,
-  },
-  textareaInput: {
-    fontSize: 12.5,
-    color: '#163523',
-    lineHeight: 18,
-  },
-  pickerTrailingButton: {
-    paddingLeft: 6,
-    paddingRight: 2,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* CATEGORY GRID */
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1.2,
-  },
-  categoryBtnActive: {
-    backgroundColor: '#1E4D2B',
-    borderColor: '#1E4D2B',
-    shadowColor: '#1E4D2B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  categoryBtnInactive: {
-    backgroundColor: '#F5FAF7',
-    borderColor: '#D4E4DC',
-  },
-  categoryBtnError: {
-    borderColor: '#DC2626',
-    backgroundColor: '#FEF2F2',
-  },
-  categoryBtnText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-  },
-  categoryBtnTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  categoryBtnTextInactive: {
-    color: '#264A35',
-  },
-
-  /* CURRENCY / REWARD */
-  currencyInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    overflow: 'hidden',
-    height: 50,
-  },
-  currencySymbolBadge: {
-    width: 48,
-    height: '100%',
-    backgroundColor: '#EBF5EF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#D4E2DA',
-  },
-  currencySymbolText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1E4D2B',
-  },
-  currencyInput: {
-    flex: 1,
-    paddingHorizontal: 14,
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  presetsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#637A6D',
-    marginRight: 2,
-  },
-  presetPill: {
-    backgroundColor: '#F3F8F5',
-    borderWidth: 1,
-    borderColor: '#D8E8DF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  presetPillActive: {
-    backgroundColor: '#1E4D2B',
-    borderColor: '#1E4D2B',
-  },
-  presetPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#2D4E3A',
-  },
-  presetPillTextActive: {
-    color: '#FFFFFF',
-  },
-
-  /* DATE & TIME ROW */
-  dateTimeRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dateTimeCol: {
-    flex: 1,
-    gap: 6,
-  },
-  dateTimeInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 48,
-  },
-  deadlineContainerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EBF5EF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  deadlinePillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#1E4D2B',
-  },
-
-  /* LOAD ERROR */
-  errorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 14,
-    padding: 12,
-  },
-  errorCardText: {
-    fontSize: 13,
-    color: '#DC2626',
-    fontWeight: '600',
-    flex: 1,
-  },
-  retryBtn: {
-    marginTop: 4,
-  },
-  retryBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#DC2626',
-    textDecorationLine: 'underline',
-  },
-
-  /* SUBMIT BUTTON */
-  submitButton: {
-    backgroundColor: '#1E4D2B',
-    borderRadius: 16,
-    height: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#1E4D2B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    marginTop: 4,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.2,
-  },
-
-  /* SUCCESS MODAL */
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  successModalCard: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  successIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#1E4D2B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  successModalTitle: {
-    fontSize: 21,
-    fontWeight: '800',
-    color: '#163523',
-    marginBottom: 8,
-  },
-  successModalSub: {
-    fontSize: 13,
-    color: '#556E60',
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 16,
-  },
-  successSummaryBox: {
-    width: '100%',
-    backgroundColor: '#F5FAF7',
-    borderWidth: 1,
-    borderColor: '#E1ECE5',
-    borderRadius: 14,
-    padding: 12,
-    gap: 6,
-    marginBottom: 20,
-  },
-  summaryRowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#637A6D',
-    fontWeight: '600',
-  },
-  summaryValue: {
-    fontSize: 12.5,
-    color: '#163523',
-    fontWeight: '700',
-    maxWidth: '60%',
-  },
-  successDoneButton: {
-    backgroundColor: '#1E4D2B',
-    width: '100%',
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successDoneButtonText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-
-  /* PHOTOS & FILE ATTACHMENTS STYLES */
-  attachCardHeaderTitleRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  attachCountBadge: {
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  attachCountText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#15803D',
-  },
-  attachActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  attachActionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderRadius: 14,
-    borderWidth: 1.2,
-    backgroundColor: '#FFFFFF',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  attachActionBtnDisabled: {
-    opacity: 0.45,
-  },
-  attachActionBtnCamera: {
-    borderColor: '#C6EAD3',
-    backgroundColor: '#F6FCF8',
-  },
-  attachActionBtnGallery: {
-    borderColor: '#BAE6FD',
-    backgroundColor: '#F0F9FF',
-  },
-  attachActionBtnFiles: {
-    borderColor: '#FDE68A',
-    backgroundColor: '#FFFDF5',
-  },
-  attachActionIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  attachActionBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 1,
-  },
-  attachActionBtnSub: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  attachmentLoadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    marginTop: 4,
-  },
-  attachmentLoadingText: {
-    fontSize: 12,
-    color: '#1E4D2B',
-    fontWeight: '600',
-  },
-  attachmentListWrapper: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#ECF4EF',
-  },
-  attachListHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  attachmentListTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  attachTapHint: {
-    fontSize: 10.5,
-    color: '#658172',
-    fontStyle: 'italic',
-  },
-  attachmentListGrid: {
-    gap: 8,
-  },
-  attachImageItemCard: {
-    position: 'relative',
-    marginRight: 8,
-  },
-  attachImageItemInner: {
-    position: 'relative',
-    width: 90,
-    height: 90,
-  },
-  attachImageThumbWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1.2,
-    borderColor: '#CBD5E1',
-    position: 'relative',
-  },
-  attachImageThumb: {
-    width: '100%',
-    height: '100%',
-  },
-  attachImageBadge: {
-    position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  attachImageBadgeText: {
-    fontSize: 9,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  attachRemoveBtn: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#DC2626',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
-    zIndex: 10,
-  },
-  attachDocItemCard: {
-    backgroundColor: '#FAFDFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D4E2DA',
-    padding: 10,
-  },
-  attachDocCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  attachDocIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attachDocMeta: {
-    flex: 1,
-  },
-  attachDocName: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#163523',
-    marginBottom: 2,
-  },
-  attachDocSize: {
-    fontSize: 10.5,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  attachDocRemoveBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* FULLSCREEN IMAGE PREVIEW */
-  imagePreviewModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.94)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  imagePreviewCloseBtn: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 20,
-  },
-  imagePreviewFull: {
-    width: '100%',
-    height: '80%',
-  },
-});

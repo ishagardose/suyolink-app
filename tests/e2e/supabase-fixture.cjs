@@ -283,6 +283,34 @@ async function mockSupabase(
       if (!workflow.proofs) workflow.proofs = [];
       workflow.proofs.push(proof);
       json = proof;
+    } else if (path === '/rest/v1/rpc/get_suyo_profile') {
+      const targetId = body.p_user_id;
+      const identity =
+        targetId === user.id
+          ? profile
+          : workflow.profiles?.[targetId] || {
+              full_name: 'Other Neighbor',
+              handle: '',
+              bio: '',
+            };
+      const reviews = (workflow.ratings || []).filter(
+        (r) => !r.provider_id || r.provider_id === targetId,
+      );
+      json = {
+        id: targetId,
+        handle: '',
+        bio: '',
+        ...identity,
+        completed_count: requests.filter(
+          (r) =>
+            r.status === 'completed' &&
+            (r.provider_id === targetId || r.requester_id === targetId),
+        ).length,
+        rating: reviews.length
+          ? reviews.reduce((sum, r) => sum + r.score, 0) / reviews.length
+          : null,
+        reviews,
+      };
     } else if (path === '/rest/v1/rpc/get_my_transactions') {
       json = (workflow.transactions || []).map((t) => ({
         request_id: t.request_id,

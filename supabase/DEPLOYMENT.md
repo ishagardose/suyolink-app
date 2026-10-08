@@ -9,6 +9,7 @@ For the project shown in the supplied export, run each complete file in SQL Edit
 1. `migrations/202609300001_core_mvp_privacy_transactions.sql` (if it has not already been applied).
 2. `migrations/202610040001_dynamic_workflows.sql`.
 3. `migrations/202610040002_push_notifications.sql`.
+4. `migrations/202610080001_backend_profiles.sql` (required by the updated My Profile page).
 
 These are transactional, one-time migrations. Do not rerun successful files: policies and tables intentionally detect duplicate application. If using the Supabase CLI, reconcile migration history before `db push` when earlier SQL was run manually.
 
@@ -33,3 +34,9 @@ GPS sharing requires explicit consent and foreground permission. Only the accept
 Distance and ETA use straight-line distance and actual device speed, not road routing. No background tracking or road-routing provider is configured. Native permission, Realtime delivery, push delivery, and the full hosted workflow need device/project testing after deployment.
 
 Optional chat and identity-document verification are not part of this implementation. Auth sessions continue to use SecureStore on native. Request attachments that were only local previews were removed from the posting form; proof-photo storage remains supported.
+
+## Backend profiles
+
+Deploy `202610080001_backend_profiles.sql` before the updated app. It adds public handle/bio fields with owner-only writes and an authenticated `get_suyo_profile` RPC. Completed counts include tasks participated in as requester or doer, preserving the existing profile meaning; ratings average reviews received. Empty profiles have zero completed tasks and no rating. Contact phone/address remain private under existing RLS. There is no identity-verification field, so the app no longer displays a verification badge.
+
+Handles and bios previously stored only on a device are not uploaded automatically. Users can save them through Edit Profile to persist them in Supabase. No hosted project is linked in this checkout; local tests do not apply migrations to your hosted database.
