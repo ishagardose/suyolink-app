@@ -93,7 +93,7 @@ export default function SuyoDetailActions({
             onPress={() => {
               handleCloseDetailModal();
               router.push({
-                pathname: '/requester-fulfill',
+                pathname: '/map',
                 params: {
                   id: selectedSuyo.id,
                   title: selectedSuyo.title,

@@ -1,19 +1,15 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import useLocationPickerStyles from './LocationPicker.styles';
+import React from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TaskMap from '../maps/TaskMap';
 import { useDeviceLocation } from '../../context/LocationContext';
 import { useTheme } from '../../theme/ThemeContext';
 
 export default function LocationPicker({ value, onChange, disabled }) {
+  const styles = useLocationPickerStyles();
   const { position, locate, loading, error } = useDeviceLocation();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const handleUseCurrentLocation = async () => {
     const next = await locate();
@@ -29,13 +25,15 @@ export default function LocationPicker({ value, onChange, disabled }) {
           <Ionicons
             name="map-outline"
             size={16}
-            color="#1E4D2B"
+            color={colors.link}
           />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Task Location Pin
           </Text>
         </View>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Use my location for task pin"
           style={[styles.locateButton, disabled && styles.disabledButton]}
           onPress={handleUseCurrentLocation}
           disabled={disabled || loading}
@@ -44,14 +42,14 @@ export default function LocationPicker({ value, onChange, disabled }) {
           {loading ? (
             <ActivityIndicator
               size="small"
-              color="#1E4D2B"
+              color={colors.link}
             />
           ) : (
             <>
               <Ionicons
                 name="locate"
                 size={14}
-                color="#1E4D2B"
+                color={colors.link}
               />
               <Text style={styles.locateButtonText}>My Location</Text>
             </>
@@ -81,15 +79,20 @@ export default function LocationPicker({ value, onChange, disabled }) {
         </View>
 
         {/* Pin Status Badge */}
-        <View style={styles.pinStatusFooter}>
+        <View
+          style={[
+            styles.pinStatusFooter,
+            { backgroundColor: colors.surface, borderTopColor: colors.border },
+          ]}
+        >
           <View style={styles.pinIndicator}>
             <View
               style={[
                 styles.pinDot,
-                { backgroundColor: value ? '#1E4D2B' : '#C4D6CC' },
+                { backgroundColor: value ? colors.success : colors.border },
               ]}
             />
-            <Text style={styles.pinStatusText}>
+            <Text style={[styles.pinStatusText, { color: colors.textMuted }]}>
               {value
                 ? `Pin: ${value.latitude.toFixed(4)}, ${value.longitude.toFixed(4)}`
                 : 'No pin chosen (tap map to place)'}
@@ -100,7 +103,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
               <Ionicons
                 name="checkmark-circle"
                 size={12}
-                color="#1E4D2B"
+                color={colors.link}
               />
               <Text style={styles.verifiedPinText}>Pin Set</Text>
             </View>
@@ -113,7 +116,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
           <Ionicons
             name="alert-circle"
             size={14}
-            color="#DC2626"
+            color={colors.danger}
           />
           <Text style={styles.errorText}>{error}</Text>
         </View>
@@ -121,117 +124,3 @@ export default function LocationPicker({ value, onChange, disabled }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-    marginTop: 4,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitleBlock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  locateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#EBF5EF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#D4E8DC',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  locateButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1E4D2B',
-  },
-  helperText: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  mapCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1.2,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  mapInner: {
-    height: 220,
-    width: '100%',
-  },
-  pinStatusFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#FAFDFB',
-    borderTopWidth: 1,
-    borderTopColor: '#EDF5F0',
-  },
-  pinIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  pinDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  pinStatusText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#4B6355',
-  },
-  verifiedPinPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#EBF5EF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  verifiedPinText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1E4D2B',
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FEF2F2',
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#DC2626',
-    fontWeight: '500',
-  },
-});

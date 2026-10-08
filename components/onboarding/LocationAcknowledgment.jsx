@@ -8,6 +8,7 @@ export default function LocationAcknowledgment({
   checked,
   onChange,
   disabled = false,
+  textColor,
 }) {
   const { colors } = useTheme();
   return (
@@ -47,7 +48,14 @@ export default function LocationAcknowledgment({
           />
         ) : null}
       </View>
-      <ThemedText style={{ flex: 1, fontSize: 12, lineHeight: 19 }}>
+      <ThemedText
+        style={{
+          flex: 1,
+          fontSize: 12,
+          lineHeight: 19,
+          color: textColor || colors.text,
+        }}
+      >
         I acknowledge that SuyoLink saves my selected area to my account to help
         me find nearby tasks. I can change this area later.
       </ThemedText>

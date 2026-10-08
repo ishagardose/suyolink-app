@@ -269,6 +269,7 @@ export default function SetLocationScreen() {
         {/* Acknowledgment & Consent Box */}
         <View style={styles.acknowledgmentWrapper}>
           <LocationAcknowledgment
+            textColor="#163523"
             checked={acknowledged}
             onChange={(val) => {
               setAcknowledged(val);

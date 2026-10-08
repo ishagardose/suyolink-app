@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestFormAppearance from '../hooks/useRequestFormAppearance';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORIES } from '../../../data/suyoRequests';
@@ -13,13 +13,14 @@ export default function RequestCategorySection({
   setDraft,
   setFieldErrors,
 }) {
+  const { styles, colors, resolveColor } = useRequestFormAppearance();
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
         <Ionicons
           name="create-outline"
           size={18}
-          color="#1E4D2B"
+          color={resolveColor('#1E4D2B')}
         />
         <Text style={styles.cardTitle}>Task Overview</Text>
       </View>
@@ -52,7 +53,8 @@ export default function RequestCategorySection({
           <TextInput
             style={styles.textInputInner}
             placeholder="e.g. Drop off documents - Unit 402"
-            placeholderTextColor={PLACEHOLDER_COLOR}
+            placeholderTextColor={colors.muted}
+            accessibilityLabel="Title"
             value={draft.title}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, title: val }));
@@ -78,6 +80,10 @@ export default function RequestCategorySection({
             return (
               <TouchableOpacity
                 key={cat}
+                accessibilityRole="button"
+                accessibilityLabel={`${cat} category`}
+                accessibilityRole="button"
+                accessibilityLabel={`${cat} category`}
                 style={[
                   styles.categoryBtn,
                   isSelected
@@ -123,7 +129,8 @@ export default function RequestCategorySection({
           <TextInput
             style={styles.textareaInput}
             placeholder="Step-by-step instructions, specific items, or handling details..."
-            placeholderTextColor={PLACEHOLDER_COLOR}
+            placeholderTextColor={colors.muted}
+            accessibilityLabel="Task details"
             value={draft.details}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, details: val }));
