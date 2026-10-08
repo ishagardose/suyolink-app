@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSuyos } from '../../context/SuyoContext';
-import { useTheme } from '../../theme/ThemeContext';
-import ThemedText from '../themed/ThemedText';
-import ThemedButton from '../themed/ThemedButton';
+import { useSuyos } from '../../../context/SuyoContext';
+import { useTheme } from '../../../theme/ThemeContext';
+import ThemedText from '../../themed/ThemedText';
+import ThemedButton from '../../themed/ThemedButton';
 export default function Notifications({ showHeading = true, onOpenRequest }) {
   const { notifications, markRead, workflowError, workflowLoading, refresh } =
     useSuyos();

@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
-import Notifications from '../dashboard/Notifications';
+import Notifications from '../dashboard/notifications/Notifications';
 
 export default function NotificationsModal({ onClose }) {
   const insets = useSafeAreaInsets();

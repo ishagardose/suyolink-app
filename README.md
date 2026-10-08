@@ -7,7 +7,10 @@ Expo SDK 54, Expo Router, React Native, and Supabase.
 - `app/`: small route entries organized into `(auth)`, `(main)`, `(requests)`, `(account)`, `(wallet)`, and `(onboarding)` groups. Parenthesized groups preserve existing URLs.
 - `components/`: feature screens and reusable form, map, proof, rating, transaction, and themed components.
 - `components/account/`: profile card, reviews, edit modal, data/summary hooks, formatting helpers, and theme styles. `AccountScreen` composes these sections.
-- `components/dashboard/DashboardScreen.jsx`: the single dashboard design, served by `app/(main)/dashboard.jsx` at `/dashboard`, with styles, data, layout constants, helpers, and swipeable notifications in separate files.
+- `components/dashboard/`: the single dashboard design at `/dashboard`, composed from tabs, task cards/lists, navigation, dialogs, hooks, and feature styles. See its README for the folder guide.
+- `components/fulfillment/`: fulfillment screens, tracking timelines, proof dialog, location hook, and styles. Route entries remain in `app/(requests)/`.
+- `components/requests/`: request form composition, field sections, attachment hook, configuration, pickers, and success dialog.
+- `components/wallet/chart/`: income calculations, web/native chart rendering, and chart styles. `WalletIncomeLineGraph` composes these pieces.
 - `components/requests/RequestForm.styles.js` and `components/wallet/activity.styles.js`: styles extracted from the posting form and wallet activity screen.
 - `context/`: authentication, saved browsing location, and persisted task workflows.
 - `data/`: Supabase RPC adapters and domain validation. No production preview dataset.

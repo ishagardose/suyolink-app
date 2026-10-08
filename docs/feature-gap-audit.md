@@ -76,7 +76,7 @@ Source: [components/suyo/SuyoScreen.jsx](C:/Users/markj/Desktop/cce106/suyolink-
 
 Status tabs exist and server list RPC supports posted scope/status. Dashboard lists start with preview records and maintain several mutations in local state; this is not a single authoritative backend list.
 
-Source: [components/dashboard/DashboardScreen.jsx](C:/Users/markj/Desktop/cce106/suyolink-app/components/dashboard/DashboardScreen.jsx).
+Source: [components/dashboard/screens/DashboardScreen.jsx](C:/Users/markj/Desktop/cce106/suyolink-app/components/dashboard/screens/DashboardScreen.jsx).
 
 ### F6. Notifications: list / read state / related screen ? PARTIAL INTEGRATION
 

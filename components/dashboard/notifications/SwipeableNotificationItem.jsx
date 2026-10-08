@@ -7,10 +7,10 @@ import {
   Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { createDashboardStyles } from './dashboard.styles';
-import { useTheme } from '../../theme/ThemeContext';
-import { resolvePaletteColor } from '../../theme/paletteAdapter';
-import { SCREEN_WIDTH, USE_NATIVE_DRIVER } from './dashboardLayout';
+import { createDashboardStyles } from '../styles/dashboard.styles.js';
+import { useTheme } from '../../../theme/ThemeContext';
+import { resolvePaletteColor } from '../../../theme/paletteAdapter';
+import { SCREEN_WIDTH, USE_NATIVE_DRIVER } from '../utils/dashboardLayout';
 
 export default function SwipeableNotificationItem({
   item,

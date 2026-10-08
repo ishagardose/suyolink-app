@@ -1,0 +1,63 @@
+export const doerCancelStyles = {
+  doerCancelModalCard: {
+    width: '100%',
+    maxWidth: 350,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 8,
+  },
+  doerCancelIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  doerCancelModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#991B1B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  doerCancelModalSub: {
+    fontSize: 12.5,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 18,
+  },
+  doerCancelActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  doerCancelKeepBtn: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  doerCancelKeepBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  doerCancelConfirmBtn: {
+    flex: 1.3,
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  doerCancelConfirmBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+};

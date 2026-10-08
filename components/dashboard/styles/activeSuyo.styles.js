@@ -1,0 +1,91 @@
+export const activeSuyoStyles = {
+  floatingActiveModalWrapper: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    zIndex: 90,
+  },
+  floatingActiveModalTouchable: {
+    borderRadius: 14,
+    elevation: 5,
+  },
+  floatingActiveModalGradient: {
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1.2,
+    borderColor: '#CBE4D5',
+  },
+  floatingModalTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  floatingActiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 77, 43, 0.09)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    gap: 4,
+  },
+  pulsingGreenDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#1E4D2B',
+  },
+  floatingActiveBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#1E4D2B',
+    letterSpacing: 0.4,
+  },
+  floatingTrackingTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  floatingTrackingText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#1E4D2B',
+  },
+  floatingModalBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  floatingModalTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#163523',
+    letterSpacing: -0.2,
+  },
+  floatingModalSub: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#4F735F',
+  },
+  floatingModalChevronCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(30, 77, 43, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingProgressTrack: {
+    height: 3,
+    backgroundColor: '#D7E8DC',
+    borderRadius: 1.5,
+    overflow: 'hidden',
+  },
+  floatingProgressFill: {
+    height: '100%',
+    backgroundColor: '#1E4D2B',
+    borderRadius: 1.5,
+  },
+};

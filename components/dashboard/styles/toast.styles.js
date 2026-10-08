@@ -1,0 +1,50 @@
+import { SCREEN_WIDTH } from '../utils/dashboardLayout';
+
+export const toastStyles = {
+  globalPoppingToastWrapper: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 999999,
+    elevation: 999999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  poppingToastContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#142E1F',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 20,
+    borderWidth: 1.5,
+    borderColor: '#22C55E',
+    gap: 10,
+    maxWidth: SCREEN_WIDTH * 0.92,
+  },
+  poppingToastIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  poppingToastText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+};
