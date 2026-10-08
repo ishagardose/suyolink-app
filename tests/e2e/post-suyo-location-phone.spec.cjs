@@ -26,7 +26,7 @@ test('posting requires a chosen pin and keeps the normalized phone and direction
   );
   await page.getByLabel('Remarks', { exact: true }).fill('Keep receipt');
   const submit = page.getByRole('button', {
-    name: 'Post Suyo Request',
+    name: 'Post request',
     exact: true,
   });
   await submit.click();

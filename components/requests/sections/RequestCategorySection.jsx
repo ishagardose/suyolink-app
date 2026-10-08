@@ -58,6 +58,7 @@ export default function RequestCategorySection({
             style={styles.textInputInner}
             placeholder="e.g. Drop off documents - Unit 402"
             placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
+            accessibilityLabel="Title"
             value={draft.title}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, title: val }));
@@ -133,6 +134,7 @@ export default function RequestCategorySection({
             style={styles.textareaInput}
             placeholder="Step-by-step instructions, specific items, or handling details..."
             placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
+            accessibilityLabel="Task details"
             value={draft.details}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, details: val }));

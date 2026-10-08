@@ -43,13 +43,16 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
         distanceText: 'Nearby',
         reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
         rewardAmount: (r.offerCentavos || 0) / 100,
+        currentBoost: (r.rewardBoostCentavos || 0) / 100,
+        baseRewardAmount:
+          ((r.offerCentavos || 0) - (r.rewardBoostCentavos || 0)) / 100,
         tag: 'Waiting for doer',
         status: getRequestTiming(r, now).overdue
           ? 'Overdue - waiting for a doer'
           : 'Open - waiting for a doer',
         urgency: resolveUrgencyTag(r),
         details: r.details || '',
-        notes: r.specialInstructions || '',
+        notes: r.notes || '',
         requesterName: r.requesterName || 'You',
         rawRequest: r,
         ...getRequestTiming(r, now),
@@ -85,7 +88,7 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
           ? new Date(r.createdAt).toLocaleDateString()
           : 'Today',
         details: r.details || '',
-        notes: r.specialInstructions || '',
+        notes: r.notes || '',
         requesterName: r.requesterName || 'You',
         rawRequest: r,
       }));
@@ -111,7 +114,7 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
           ? new Date(r.createdAt).toLocaleDateString()
           : 'Recently',
         details: r.details || '',
-        notes: r.specialInstructions || '',
+        notes: r.notes || '',
         requesterName: r.requesterName || 'You',
         rawRequest: r,
       }));
@@ -135,7 +138,7 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
           ? new Date(r.createdAt).toLocaleDateString()
           : 'Recently',
         details: r.details || '',
-        notes: r.specialInstructions || '',
+        notes: r.notes || '',
         requesterName: r.requesterName || 'You',
         rawRequest: r,
       }));
@@ -159,7 +162,7 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
           r.status === 'in_progress' ? 'In Progress - On the way' : 'Accepted',
         createdAt: Date.parse(r.createdAt || Date.now()),
         details: r.details || '',
-        notes: r.specialInstructions || '',
+        notes: r.notes || '',
         requesterName: r.requesterName || 'Community Member',
         rawRequest: r,
       }));

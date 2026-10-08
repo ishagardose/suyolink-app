@@ -180,132 +180,138 @@ export default function VerifyEmailScreen() {
           automaticallyAdjustKeyboardInsets={true}
           showsVerticalScrollIndicator={false}
         >
-        <ThemedText style={styles.brand}>SUYOLINK</ThemedText>
-        <ThemedView
-          tone="surface"
-          style={[styles.card, { borderColor: colors.border }]}
-        >
+          <ThemedText style={styles.brand}>SUYOLINK</ThemedText>
           <ThemedView
-            style={[styles.icon, { backgroundColor: colors.primary }]}
+            tone="surface"
+            style={[styles.card, { borderColor: colors.border }]}
           >
-            <Ionicons
-              name={verified ? 'checkmark-circle-outline' : 'mail-outline'}
-              size={52}
-              color={colors.white}
-            />
-          </ThemedView>
-          <ThemedText
-            accessibilityRole="header"
-            style={styles.title}
-          >
-            {checking
-              ? 'Verifying your email...'
-              : verified
-                ? "You're all set!"
-                : error
-                  ? "Let's try that again"
-                  : 'Check your email'}
-          </ThemedText>
-          <ThemedText
-            tone="textMuted"
-            style={styles.body}
-          >
-            {checking
-              ? 'Finishing verification and signing you in.'
-              : verified
-                ? 'Your email is verified and you are now signed in. Welcome to SuyoLink!'
-                : 'Enter the verification code from your email below to confirm your account and sign in.'}
-          </ThemedText>
-          {checking ? (
-            <ActivityIndicator
-              accessibilityLabel="Verifying email"
-              color={colors.primary}
-            />
-          ) : null}
-          {verified ? (
-            <ThemedButton
-              title="Continue to set up location"
-              textStyle={{ color: colors.white }}
-              onPress={() =>
-                router.replace(hasSavedLocation ? '/dashboard' : '/set-location')
-              }
-            />
-          ) : !checking ? (
-            <>
-              <ThemedText style={styles.label}>Email address</ThemedText>
-              <ThemedTextInput
-                accessibilityLabel="Verification email address"
-                value={email}
-                onChangeText={setEmail}
-                placeholder="your.email@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!sending}
-                returnKeyType="next"
-                onSubmitEditing={() => {
-                  codeInputRef.current?.focus();
-                  scrollToBottom();
-                }}
-                style={[styles.input, { borderColor: colors.border }]}
+            <ThemedView
+              style={[styles.icon, { backgroundColor: colors.primary }]}
+            >
+              <Ionicons
+                name={verified ? 'checkmark-circle-outline' : 'mail-outline'}
+                size={52}
+                color={colors.white}
               />
-              <ThemedText style={styles.label}>Verification code</ThemedText>
-              <ThemedTextInput
-                ref={codeInputRef}
-                accessibilityLabel="Verification code"
-                value={code}
-                onChangeText={(value) => setCode(value.replace(/\s/g, ''))}
-                placeholder="Enter your code"
-                keyboardType="number-pad"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="oneTimeCode"
-                autoComplete="one-time-code"
-                maxLength={10}
-                editable={!sending}
-                returnKeyType="done"
-                onFocus={scrollToBottom}
-                onSubmitEditing={verify}
-                style={[styles.input, { borderColor: colors.border }]}
+            </ThemedView>
+            <ThemedText
+              accessibilityRole="header"
+              style={styles.title}
+            >
+              {checking
+                ? 'Verifying your email...'
+                : verified
+                  ? "You're all set!"
+                  : error
+                    ? "Let's try that again"
+                    : 'Check your email'}
+            </ThemedText>
+            <ThemedText
+              tone="textMuted"
+              style={styles.body}
+            >
+              {checking
+                ? 'Finishing verification and signing you in.'
+                : verified
+                  ? 'Your email is verified and you are now signed in. Welcome to SuyoLink!'
+                  : 'Enter the verification code from your email below to confirm your account and sign in.'}
+            </ThemedText>
+            {checking ? (
+              <ActivityIndicator
+                accessibilityLabel="Verifying email"
+                color={colors.primary}
               />
-              {error ? (
-                <ThemedText
-                  tone="danger"
-                  accessibilityRole="alert"
-                >
-                  {error}
-                </ThemedText>
-              ) : null}
-              {notice ? (
-                <ThemedText accessibilityRole="alert">{notice}</ThemedText>
-              ) : null}
-              <ThemedButton
-                title="Verify email"
-                textStyle={{ color: colors.white }}
-                onPress={verify}
-                disabled={sending}
-              />
+            ) : null}
+            {verified ? (
               <ThemedButton
                 title={
-                  cooldown
-                    ? `Resend in ${cooldown}s`
-                    : 'Resend verification email'
+                  hasSavedLocation
+                    ? 'Continue to dashboard'
+                    : 'Continue to set up location'
                 }
                 textStyle={{ color: colors.white }}
-                onPress={resend}
-                loading={sending}
-                disabled={!!cooldown}
+                onPress={() =>
+                  router.replace(
+                    hasSavedLocation ? '/dashboard' : '/set-location',
+                  )
+                }
               />
-              <ThemedButton
-                title="Back to login"
-                variant="secondary"
-                textStyle={{ color: colors.text }}
-                disabled={sending}
-                onPress={() => router.replace('/login')}
-              />
-            </>
-          ) : null}
-        </ThemedView>
+            ) : !checking ? (
+              <>
+                <ThemedText style={styles.label}>Email address</ThemedText>
+                <ThemedTextInput
+                  accessibilityLabel="Verification email address"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="your.email@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!sending}
+                  returnKeyType="next"
+                  onSubmitEditing={() => {
+                    codeInputRef.current?.focus();
+                    scrollToBottom();
+                  }}
+                  style={[styles.input, { borderColor: colors.border }]}
+                />
+                <ThemedText style={styles.label}>Verification code</ThemedText>
+                <ThemedTextInput
+                  ref={codeInputRef}
+                  accessibilityLabel="Verification code"
+                  value={code}
+                  onChangeText={(value) => setCode(value.replace(/\s/g, ''))}
+                  placeholder="Enter your code"
+                  keyboardType="number-pad"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="oneTimeCode"
+                  autoComplete="one-time-code"
+                  maxLength={10}
+                  editable={!sending}
+                  returnKeyType="done"
+                  onFocus={scrollToBottom}
+                  onSubmitEditing={verify}
+                  style={[styles.input, { borderColor: colors.border }]}
+                />
+                {error ? (
+                  <ThemedText
+                    tone="danger"
+                    accessibilityRole="alert"
+                  >
+                    {error}
+                  </ThemedText>
+                ) : null}
+                {notice ? (
+                  <ThemedText accessibilityRole="alert">{notice}</ThemedText>
+                ) : null}
+                <ThemedButton
+                  title="Verify email"
+                  textStyle={{ color: colors.white }}
+                  onPress={verify}
+                  disabled={sending}
+                />
+                <ThemedButton
+                  title={
+                    cooldown
+                      ? `Resend in ${cooldown}s`
+                      : 'Resend verification email'
+                  }
+                  textStyle={{ color: colors.white }}
+                  onPress={resend}
+                  loading={sending}
+                  disabled={!!cooldown}
+                />
+                <ThemedButton
+                  title="Back to login"
+                  variant="secondary"
+                  textStyle={{ color: colors.text }}
+                  disabled={sending}
+                  onPress={() => router.replace('/login')}
+                />
+              </>
+            ) : null}
+          </ThemedView>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

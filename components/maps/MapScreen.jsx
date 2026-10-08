@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -35,6 +35,11 @@ export default function MapScreen() {
     refresh,
   } = useTaskTracking(id, user?.id);
   const [actionError, setActionError] = useState('');
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [acting, setActing] = useState(false);
   const own = task?.providerId === user?.id;
   const active = ['assigned', 'in_progress'].includes(task?.status);
@@ -44,7 +49,12 @@ export default function MapScreen() {
   };
   const hasDestination = hasCoordinates(destination);
   const fresh =
-    position && Date.now() - Date.parse(position.updated_at) < 30000;
+    active &&
+    !!consent &&
+    !consent.revoked_at &&
+    (own || task?.requesterId === user?.id) &&
+    position &&
+    now - Date.parse(position.updated_at) < 30000;
   const routing = useRoadRoute(fresh ? position : null, destination);
   const action = async (name, args) => {
     setActing(true);

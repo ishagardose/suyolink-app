@@ -134,6 +134,8 @@ test('notification opens its real request and saves read status', async ({
     .click();
   await expect(page).toHaveURL(/\/suyo\?id=task-1$/);
   await expect(
-    page.getByText('Actual notification task', { exact: true }).first(),
+    page
+      .getByText('Actual notification task', { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
 });

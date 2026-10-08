@@ -1,3 +1,4 @@
+import useRequestStatusLabel from '../../../hooks/useRequestStatusLabel';
 import React from 'react';
 import { Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +14,7 @@ export default function MySuyoCard({
   styles,
   suyo,
 }) {
+  const statusLabel = useRequestStatusLabel(suyo.rawRequest || {});
   return (
     <TouchableOpacity
       key={suyo.id}
@@ -85,7 +87,7 @@ export default function MySuyoCard({
                       },
           ]}
         >
-          {suyo.status}
+          {statusLabel === 'Expired' ? statusLabel : suyo.status}
         </Text>
         <Text style={styles.mySuyoCardDateDot}>·</Text>
         <Text style={styles.mySuyoCardDateText}>

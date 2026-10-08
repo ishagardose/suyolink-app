@@ -1,189 +1,192 @@
-import { getTodayFormatted } from '../utils/dashboardHelpers';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useSuyos } from '../../../context/SuyoContext';
+import { fromPublicRow } from '../../../data/supabaseRequests';
 
 export default function useDashboardSuyoActions({
-  postedSuyos,
-  selectedSuyo,
   selectedSuyoContext,
-  setCancelledSuyos,
-  setMySuyoNavTab,
-  setPostedSuyos,
   setSelectedSuyo,
   triggerToast,
 }) {
+  const { mutate } = useSuyos();
+  const router = useRouter();
+  const lock = useRef(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [archivedSuyos, setArchivedSuyos] = useState([]);
-
   const [isEditingSuyoModalOpen, setIsEditingSuyoModalOpen] = useState(false);
-
   const [editingSuyoData, setEditingSuyoData] = useState({
     id: '',
     title: '',
     details: '',
     notes: '',
-    rewardAmount: 150,
+    rewardAmount: '',
     context: 'posted',
   });
 
-  const handleBoostReward = (suyoId, addAmount) => {
-    setPostedSuyos((prev) =>
-      prev.map((s) => {
-        if (s.id === suyoId) {
-          const baseAmt = Number(s.baseRewardAmount ?? s.rewardAmount ?? 150);
-          const newAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
-          return {
-            ...s,
-            baseRewardAmount: baseAmt,
-            currentBoost: addAmount,
-            rewardAmount: newAmt,
-            reward: `₱${newAmt}`,
-            needsBoost: false,
-          };
-        }
-        return s;
-      }),
-    );
-    if (selectedSuyo && selectedSuyo.id === suyoId) {
-      const baseAmt = Number(
-        selectedSuyo.baseRewardAmount ?? selectedSuyo.rewardAmount ?? 150,
-      );
-      const newAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
-      setSelectedSuyo((prev) => ({
-        ...prev,
-        baseRewardAmount: baseAmt,
-        currentBoost: addAmount,
-        rewardAmount: newAmt,
-        reward: `₱${newAmt}`,
-        needsBoost: false,
-      }));
+  const runAction = async (operation) => {
+    if (lock.current) return;
+    lock.current = true;
+    setActionBusy(true);
+    setActionError('');
+    try {
+      await operation();
+      return true;
+    } catch (error) {
+      const message =
+        error.message || 'Could not save this change. Please retry.';
+      setActionError(message);
+      triggerToast(message, 'alert-circle');
+      return false;
+    } finally {
+      lock.current = false;
+      setActionBusy(false);
     }
-    if (addAmount === 0) {
-      triggerToast('Reward boost reset to original amount', 'refresh');
-    } else {
+  };
+
+  const syncSelected = (row) => {
+    const request = fromPublicRow(row);
+    setSelectedSuyo((previous) =>
+      previous?.id === request.id
+        ? {
+            ...previous,
+            title: request.title,
+            details: request.details,
+            notes: request.notes,
+            rewardAmount: request.offerCentavos / 100,
+            reward: '\u20b1' + request.offerCentavos / 100,
+            currentBoost: request.rewardBoostCentavos / 100,
+            baseRewardAmount:
+              (request.offerCentavos - request.rewardBoostCentavos) / 100,
+            rawRequest: { ...previous.rawRequest, ...request },
+          }
+        : previous,
+    );
+  };
+
+  const handleBoostReward = (id, amount) =>
+    runAction(async () => {
+      const row = await mutate('set_suyo_reward_boost', {
+        p_request_id: id,
+        p_boost_centavos: amount * 100,
+      });
+      syncSelected(row);
       triggerToast(
-        `Reward increased by +₱${addAmount}! Couriers notified.`,
+        amount === 0 ? 'Reward boost reset' : 'Reward boost saved',
         'sparkles',
       );
-    }
-  };
+    });
 
-  const handleCancelSuyo = (suyoId) => {
-    const target = postedSuyos.find((s) => s.id === suyoId) || selectedSuyo;
-    if (target) {
-      const cancelledItem = {
-        ...target,
-        status: 'Cancelled',
-        tag: 'Cancelled',
-        needsBoost: false,
-        cancelledAt: 'Today',
-      };
-      setCancelledSuyos((prev) => [
-        cancelledItem,
-        ...prev.filter((s) => s.id !== suyoId),
-      ]);
-      setPostedSuyos((prev) => prev.filter((s) => s.id !== suyoId));
-    }
-    if (selectedSuyo && selectedSuyo.id === suyoId) {
-      setSelectedSuyo(null);
-    }
-    triggerToast('suyo is successfully cancelled', 'close-circle');
-  };
+  const handleCancelSuyo = (id) =>
+    runAction(async () => {
+      await mutate('change_suyo_status', {
+        p_request_id: id,
+        p_status: 'cancelled',
+      });
+      setSelectedSuyo((previous) => (previous?.id === id ? null : previous));
+      triggerToast('Suyo cancelled', 'close-circle');
+    });
 
   const handleOpenEditSuyo = (suyo) => {
+    if (lock.current) return;
+    setActionError('');
     setEditingSuyoData({
       id: suyo.id,
       title: suyo.title || '',
       details: suyo.details || '',
       notes: suyo.notes || '',
-      rewardAmount: suyo.rewardAmount || 150,
+      rewardAmount: suyo.baseRewardAmount ?? suyo.rewardAmount ?? '',
       context: selectedSuyoContext,
     });
     setIsEditingSuyoModalOpen(true);
   };
 
-  const handleSaveEditedSuyo = () => {
-    if (!editingSuyoData.title.trim()) {
-      triggerToast('Title cannot be empty', 'alert-circle');
-      return;
-    }
-    const updatedReward = `₱${Number(editingSuyoData.rewardAmount) || 150}`;
-    const updateInList = (list) =>
-      list.map((item) =>
-        item.id === editingSuyoData.id
-          ? {
-              ...item,
-              title: editingSuyoData.title.trim(),
-              details: editingSuyoData.details.trim(),
-              notes: editingSuyoData.notes.trim(),
-              rewardAmount: Number(editingSuyoData.rewardAmount) || 150,
-              reward: updatedReward,
-            }
-          : item,
-      );
+  const handleSaveEditedSuyo = () =>
+    runAction(async () => {
+      const title = editingSuyoData.title.trim();
+      const details = editingSuyoData.details.trim();
+      const notes = editingSuyoData.notes.trim();
+      const amount = Number(editingSuyoData.rewardAmount);
+      const offerCentavos = Math.round(amount * 100);
+      if (!title || title.length > 100)
+        throw new Error('Title must contain 1 to 100 characters.');
+      if (!details || details.length > 2000)
+        throw new Error('Description must contain 1 to 2000 characters.');
+      if (notes.length > 1000)
+        throw new Error('Notes must contain at most 1000 characters.');
+      if (
+        !Number.isFinite(amount) ||
+        offerCentavos < 1 ||
+        offerCentavos > 100000000
+      )
+        throw new Error('Enter a reward between 0.01 and 1,000,000 pesos.');
 
-    if (editingSuyoData.context === 'posted') {
-      setPostedSuyos(updateInList);
-    } else if (editingSuyoData.context === 'archived') {
-      setArchivedSuyos(updateInList);
-    }
-
-    if (selectedSuyo && selectedSuyo.id === editingSuyoData.id) {
-      setSelectedSuyo((prev) => ({
-        ...prev,
-        title: editingSuyoData.title.trim(),
-        details: editingSuyoData.details.trim(),
-        notes: editingSuyoData.notes.trim(),
-        rewardAmount: Number(editingSuyoData.rewardAmount) || 150,
-        reward: updatedReward,
-      }));
-    }
-
-    setIsEditingSuyoModalOpen(false);
-    triggerToast('Suyo details updated successfully', 'checkmark-circle');
-  };
+      if (editingSuyoData.context === 'archived') {
+        // Saved templates are local drafts, not published task records.
+        const changes = {
+          title,
+          details,
+          notes,
+          rewardAmount: amount,
+          reward: '\u20b1' + amount,
+        };
+        setArchivedSuyos((previous) =>
+          previous.map((item) =>
+            item.id === editingSuyoData.id ? { ...item, ...changes } : item,
+          ),
+        );
+        setSelectedSuyo((previous) =>
+          previous?.id === editingSuyoData.id
+            ? { ...previous, ...changes }
+            : previous,
+        );
+        triggerToast('Local template updated', 'checkmark-circle');
+      } else {
+        const row = await mutate('edit_suyo_request', {
+          p_request_id: editingSuyoData.id,
+          p_title: title,
+          p_details: details,
+          p_notes: notes,
+          p_offer_centavos: offerCentavos,
+        });
+        syncSelected(row);
+        triggerToast('Suyo details saved', 'checkmark-circle');
+      }
+      setIsEditingSuyoModalOpen(false);
+    });
 
   const handleSaveToArchive = (suyo) => {
     if (!suyo) return;
-    const isAlreadyArchived = archivedSuyos.some(
-      (a) => a.id === suyo.id || a.title === suyo.title,
+    setArchivedSuyos((previous) =>
+      previous.some((item) => item.sourceRequestId === suyo.id)
+        ? previous
+        : [
+            {
+              ...suyo,
+              sourceRequestId: suyo.rawRequest?.id || suyo.id,
+              id: 'ARCH-' + suyo.id,
+              status: 'Archived Template',
+              tag: 'Archived Template',
+              formattedDate: 'Saved template',
+            },
+            ...previous,
+          ],
     );
-    if (!isAlreadyArchived) {
-      const template = {
-        ...suyo,
-        id: `ARCH-${Date.now().toString().slice(-4)}`,
-        status: 'Archived Template',
-        tag: 'Archived Template',
-        formattedDate: 'Saved template',
-      };
-      setArchivedSuyos((prev) => [template, ...prev]);
-    }
-    triggerToast('suyo is successfully archive', 'bookmark');
+    triggerToast('Template saved on this session', 'bookmark');
   };
 
   const handleRepeatRequest = (suyo) => {
-    const newPostedSuyo = {
-      ...suyo,
-      id: `POST-${Date.now().toString().slice(-4)}`,
-      status: 'Open - waiting for a doer',
-      tag: 'Waiting for doer',
-      urgency:
-        suyo.urgency ||
-        (suyo.due?.toLowerCase().includes('tomorrow')
-          ? 'Due tomorrow'
-          : 'Due today'),
-      due: suyo.due || 'Due today',
-      dueDate: suyo.dueDate || getTodayFormatted(),
-      formattedDate: 'Just now',
-      waitTime: 'Just posted',
-      needsBoost: false,
-      createdAt: Date.now(),
-      doer: undefined,
-    };
-    setPostedSuyos((prev) => [newPostedSuyo, ...prev]);
+    if (lock.current) return;
+    const id = suyo.sourceRequestId || suyo.rawRequest?.id || suyo.id;
+    if (!id) return;
     setSelectedSuyo(null);
-    setMySuyoNavTab('posted');
-    triggerToast('suyo is successfully posted', 'paper-plane');
+    router.push({ pathname: '/post-suyo', params: { repost: id } });
   };
+
   return {
+    actionBusy,
+    actionError,
+    setActionError,
     archivedSuyos,
     editingSuyoData,
     handleBoostReward,

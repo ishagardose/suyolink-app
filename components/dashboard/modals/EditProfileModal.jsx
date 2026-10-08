@@ -3,6 +3,8 @@ import { Text, View, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function EditProfileModal({
+  busy,
+  error,
   handleSaveProfile,
   isEditModalOpen,
   resolveColor,
@@ -16,13 +18,16 @@ export default function EditProfileModal({
       visible={isEditModalOpen}
       animationType="slide"
       transparent={true}
-      onRequestClose={() => setIsEditModalOpen(false)}
+      onRequestClose={() => {
+        if (!busy) setIsEditModalOpen(false);
+      }}
     >
       <View style={styles.modalBackdrop}>
         <View style={styles.modalContentCard}>
           <View style={styles.modalHeaderRow}>
             <Text style={styles.modalTitle}>Edit Account Profile</Text>
             <TouchableOpacity
+              disabled={busy}
               onPress={() => setIsEditModalOpen(false)}
               style={styles.modalCloseButton}
               activeOpacity={0.7}
@@ -39,6 +44,8 @@ export default function EditProfileModal({
           <TextInput
             style={styles.modalInput}
             value={tempProfile.name}
+            accessibilityLabel="Full Name"
+            editable={!busy}
             onChangeText={(text) =>
               setTempProfile({ ...tempProfile, name: text })
             }
@@ -53,10 +60,8 @@ export default function EditProfileModal({
           <TextInput
             style={styles.modalInput}
             value={tempProfile.email}
+            accessibilityLabel="Email Address"
             editable={false}
-            onChangeText={(text) =>
-              setTempProfile({ ...tempProfile, email: text })
-            }
             placeholder="Email"
             keyboardType="email-address"
             placeholderTextColor={resolveColor(
@@ -69,6 +74,8 @@ export default function EditProfileModal({
           <TextInput
             style={styles.modalInput}
             value={tempProfile.phone}
+            accessibilityLabel="Phone Number"
+            editable={!busy}
             onChangeText={(text) =>
               setTempProfile({ ...tempProfile, phone: text })
             }
@@ -80,9 +87,21 @@ export default function EditProfileModal({
             )}
           />
 
+          {error ? (
+            <Text
+              accessibilityRole="alert"
+              style={{
+                color: resolveColor('#DC2626', 'color'),
+                marginBottom: 12,
+              }}
+            >
+              {error}
+            </Text>
+          ) : null}
           <View style={styles.modalButtonsRow}>
             <TouchableOpacity
               style={styles.modalCancelButton}
+              disabled={busy}
               onPress={() => setIsEditModalOpen(false)}
               activeOpacity={0.7}
             >
@@ -91,6 +110,9 @@ export default function EditProfileModal({
 
             <TouchableOpacity
               style={styles.modalSaveButton}
+              accessibilityRole="button"
+              accessibilityLabel="Save Changes"
+              disabled={busy}
               onPress={handleSaveProfile}
               activeOpacity={0.8}
             >
@@ -99,7 +121,9 @@ export default function EditProfileModal({
                 size={16}
                 color={resolveColor('#FFFFFF', 'color')}
               />
-              <Text style={styles.modalSaveButtonText}>Save Changes</Text>
+              <Text style={styles.modalSaveButtonText}>
+                {busy ? 'Saving...' : 'Save Changes'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -127,6 +127,11 @@ export default function DashboardScreen() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...userProfile });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState('');
+  useEffect(() => {
+    if (isEditModalOpen) setProfileSaveError('');
+  }, [isEditModalOpen]);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [expandedSection, setExpandedSection] = useState(null);
 
@@ -397,36 +402,6 @@ export default function DashboardScreen() {
     );
   };
 
-  const handleRepeatActivitySuyo = (record) => {
-    const newPostedSuyo = {
-      id: `POST-${Date.now().toString().slice(-4)}`,
-      title: record.title,
-      category: record.category,
-      location: record.location,
-      distanceText: '0.8 km away',
-      reward: `₱${record.amount}`,
-      rewardAmount: record.amount,
-      tag: 'Waiting for doer',
-      status: 'Open - waiting for a doer',
-      urgency: 'Due today',
-      due: 'Due today',
-      dueDate: getTodayFormatted(),
-      createdAt: Date.now(),
-      formattedDate: 'Just now',
-      waitTime: 'Just posted',
-      needsBoost: false,
-      details: record.notes || record.title,
-      requesterName: `${userProfile?.name || 'Community member'} (You)`,
-    };
-    setPostedSuyos((prev) => [newPostedSuyo, ...prev]);
-    setActiveTab('mysuyo');
-    setMySuyoNavTab('posted');
-    triggerToast(
-      `Re-posted "${record.title}". Notifying couriers...`,
-      'bicycle',
-    );
-  };
-
   // Favorites Selection/Delete Mode state
 
   const {
@@ -501,6 +476,9 @@ export default function DashboardScreen() {
 
   // Feature: Repeat request from completed or archived
   const {
+    actionBusy,
+    actionError,
+    setActionError,
     archivedSuyos,
     editingSuyoData,
     handleBoostReward,
@@ -514,15 +492,13 @@ export default function DashboardScreen() {
     setEditingSuyoData,
     setIsEditingSuyoModalOpen,
   } = useDashboardSuyoActions({
-    postedSuyos,
-    selectedSuyo,
     selectedSuyoContext,
-    setCancelledSuyos,
-    setMySuyoNavTab,
-    setPostedSuyos,
     setSelectedSuyo,
     triggerToast,
   });
+  useEffect(() => {
+    if (doerCancelModalItem) setActionError('');
+  }, [doerCancelModalItem, setActionError]);
 
   const {
     clearAllNotifications,
@@ -620,17 +596,23 @@ export default function DashboardScreen() {
   };
 
   const handleSaveProfile = async () => {
+    if (profileSaving) return;
+    setProfileSaving(true);
+    setProfileSaveError('');
     try {
       await updateProfile({
         name: tempProfile.name.trim(),
         phone: tempProfile.phone.trim(),
         address: user?.address || '',
       });
-      setUserProfile({ ...tempProfile, email: user?.email || '' });
       setIsEditModalOpen(false);
-      triggerToast('Profile saved', 'person');
+      triggerToast('Profile updated successfully', 'person');
     } catch (error) {
-      triggerToast(error.message || 'Could not save profile.', 'alert-circle');
+      setProfileSaveError(
+        error.message || 'Could not save your profile. Please retry.',
+      );
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -797,6 +779,8 @@ export default function DashboardScreen() {
       {/* 6. SUYO DETAILS MODAL (CONTEXT-AWARE FOR REQUESTER & DOER) */}
       {/* ========================================================== */}
       <SuyoDetailModal
+        busy={actionBusy}
+        error={isEditingSuyoModalOpen ? '' : actionError}
         archivedSuyos={archivedSuyos}
         favoriteSuyoIds={favoriteSuyoIds}
         handleBoostReward={handleBoostReward}
@@ -808,7 +792,7 @@ export default function DashboardScreen() {
         handleSaveToArchive={handleSaveToArchive}
         resolveColor={resolveColor}
         router={router}
-        selectedSuyo={selectedSuyo}
+        selectedSuyo={isEditingSuyoModalOpen ? null : selectedSuyo}
         selectedSuyoContext={selectedSuyoContext}
         setCancelledSuyos={setCancelledSuyos}
         setDoerAcceptedSuyos={setDoerAcceptedSuyos}
@@ -827,9 +811,10 @@ export default function DashboardScreen() {
         doerCancelModalItem={doerCancelModalItem}
         resolveColor={resolveColor}
         selectedDoerSuyo={selectedDoerSuyo}
-        setDoerAcceptedSuyos={setDoerAcceptedSuyos}
+        busy={actionBusy}
+        error={actionError}
+        onCancel={handleCancelSuyo}
         setDoerCancelModalItem={setDoerCancelModalItem}
-        setDoerCancelledSuyos={setDoerCancelledSuyos}
         setSelectedDoerSuyo={setSelectedDoerSuyo}
         styles={styles}
         triggerToast={triggerToast}
@@ -862,6 +847,8 @@ export default function DashboardScreen() {
       {/* 6C. EDIT SUYO MODAL                                        */}
       {/* ========================================================== */}
       <EditSuyoModal
+        busy={actionBusy}
+        error={actionError}
         editingSuyoData={editingSuyoData}
         handleSaveEditedSuyo={handleSaveEditedSuyo}
         isEditingSuyoModalOpen={isEditingSuyoModalOpen}
@@ -977,6 +964,8 @@ export default function DashboardScreen() {
       {/* 9. EDIT PROFILE MODAL                                      */}
       {/* ========================================================== */}
       <EditProfileModal
+        busy={profileSaving}
+        error={profileSaveError}
         handleSaveProfile={handleSaveProfile}
         isEditModalOpen={isEditModalOpen}
         resolveColor={resolveColor}

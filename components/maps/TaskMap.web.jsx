@@ -127,7 +127,7 @@ export default function TaskMap({
           role="status"
           style={{ color: colors.warning, fontSize: 12 }}
         >
-          Map tiles could not load. Check your routeCoordinates; saved pins and
+          Map tiles could not load. Check your connection; saved pins and
           distances are still available.
         </p>
       ) : null}

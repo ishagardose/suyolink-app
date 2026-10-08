@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
 import { getRequestDetails } from '../data/suyoApi';
-import { watchDevicePosition } from '../lib/watchDevicePosition';
+import watchTaskLocation from '../lib/watchTaskLocation';
 
 export default function useTaskTracking(requestId, userId) {
   const [task, setTask] = useState(null);
@@ -13,21 +14,27 @@ export default function useTaskTracking(requestId, userId) {
   const [error, setError] = useState('');
   const [readError, setReadError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const watcher = useRef(null);
   const generation = useRef(0);
   const sharingRef = useRef(false);
   const mounted = useRef(false);
   const operation = useRef(false);
+  const refreshSequence = useRef(0);
   const identity = useRef(null);
   identity.current = `${requestId}:${userId}`;
   const refresh = useCallback(async () => {
-    if (!requestId || !supabase) return;
+    if (!requestId || !supabase) {
+      setLoading(false);
+      if (!supabase)
+        setReadError('Live tracking is unavailable. Please try again later.');
+      return;
+    }
     const current = generation.current;
+    const run = ++refreshSequence.current;
     try {
       const next = await getRequestDetails(requestId);
       if (!next) throw new Error('Task unavailable.');
-      if (!mounted.current || current !== generation.current) return;
-      setTask(next);
       // Public viewers can see the approximate task map, never tracking data.
       let point = null,
         permission = null;
@@ -48,108 +55,161 @@ export default function useTaskTracking(requestId, userId) {
         point = loc.data;
         permission = con.data;
       }
-      if (!mounted.current || current !== generation.current) return;
+      if (
+        !mounted.current ||
+        current !== generation.current ||
+        run !== refreshSequence.current
+      )
+        return;
       setTask(next);
       setPosition(point);
       setConsent(permission);
       setReadError('');
       if (
         !['assigned', 'in_progress'].includes(next.status) ||
-        permission?.revoked_at
+        (permission?.revoked_at && !operation.current)
       ) {
+        if (sharingRef.current) ++generation.current;
         watcher.current?.remove();
         watcher.current = null;
         sharingRef.current = false;
         setSharing(false);
       }
     } catch (e) {
-      if (mounted.current && current === generation.current)
+      if (
+        mounted.current &&
+        current === generation.current &&
+        run === refreshSequence.current
+      )
         setReadError(e.message);
+    } finally {
+      if (mounted.current && run === refreshSequence.current) setLoading(false);
     }
   }, [requestId, userId]);
   const stop = useCallback(async () => {
-    ++generation.current;
+    const current = ++generation.current;
     watcher.current?.remove();
     watcher.current = null;
     sharingRef.current = false;
     if (mounted.current) {
       setSharing(false);
       setPosition(null);
+      setBusy(true);
     }
-    const result = await supabase.rpc('set_tracking_consent', {
-      p_request_id: requestId,
-      p_share: false,
-    });
-    if (result.error && mounted.current) setError(result.error.message);
-    await refresh();
+    if (!requestId || !supabase) return;
+    try {
+      const result = await supabase.rpc('set_tracking_consent', {
+        p_request_id: requestId,
+        p_share: false,
+      });
+      if (result.error) throw result.error;
+      if (mounted.current && current === generation.current) await refresh();
+    } catch (e) {
+      if (mounted.current && current === generation.current)
+        setError(
+          `Sharing stopped on this device. Could not confirm with the server: ${e.message}`,
+        );
+    } finally {
+      if (mounted.current && current === generation.current) setBusy(false);
+    }
   }, [requestId, refresh]);
-  useEffect(() => {
-    mounted.current = true;
-    setTask(null);
-    setPosition(null);
-    setConsent(null);
-    setError('');
-    setReadError('');
-    if (!requestId || !userId || !supabase) {
+  useFocusEffect(
+    useCallback(() => {
+      mounted.current = true;
+      setTask(null);
+      setPosition(null);
+      setConsent(null);
+      setSharing(false);
+      setError('');
+      setReadError('');
+      setLoading(true);
+      setBusy(false);
+      refresh();
+      const timer = setInterval(refresh, 6000);
+      const channel = supabase
+        ?.channel(`tracking-${requestId}-${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'suyo_requests',
+            filter: `id=eq.${requestId}`,
+          },
+          refresh,
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'live_locations',
+            filter: `request_id=eq.${requestId}`,
+          },
+          refresh,
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tracking_consents',
+            filter: `request_id=eq.${requestId}`,
+          },
+          refresh,
+        )
+        .subscribe();
+      const appState = AppState.addEventListener('change', (state) => {
+        if (
+          state === 'background' ||
+          (state === 'inactive' && sharingRef.current)
+        ) {
+          ++generation.current;
+          if (sharingRef.current) stop();
+        }
+      });
+      const onVisibility = () => {
+        if (document.hidden) {
+          ++generation.current;
+          if (sharingRef.current) stop();
+        } else refresh();
+      };
+      if (typeof document !== 'undefined')
+        document.addEventListener('visibilitychange', onVisibility);
       return () => {
         mounted.current = false;
         ++generation.current;
+        clearInterval(timer);
+        appState.remove();
+        if (typeof document !== 'undefined')
+          document.removeEventListener('visibilitychange', onVisibility);
+        watcher.current?.remove();
+        watcher.current = null;
+        if (sharingRef.current)
+          supabase
+            .rpc('set_tracking_consent', {
+              p_request_id: requestId,
+              p_share: false,
+            })
+            .then(() => {})
+            .catch(() => {});
+        sharingRef.current = false;
+        if (channel) supabase.removeChannel(channel);
       };
-    }
-    refresh();
-    const timer = setInterval(refresh, 6000);
-    const channel = supabase
-      ?.channel(`tracking-${requestId}-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'live_locations',
-          filter: `request_id=eq.${requestId}`,
-        },
-        refresh,
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tracking_consents',
-          filter: `request_id=eq.${requestId}`,
-        },
-        refresh,
-      )
-      .subscribe();
-    const appState = AppState.addEventListener('change', (state) => {
-      if (
-        state === 'background' ||
-        (state === 'inactive' && sharingRef.current)
-      ) {
-        ++generation.current;
-        if (sharingRef.current) stop();
-      }
-    });
-    return () => {
-      mounted.current = false;
-      ++generation.current;
-      clearInterval(timer);
-      appState.remove();
-      watcher.current?.remove();
-      watcher.current = null;
-      if (sharingRef.current)
-        supabase
-          .rpc('set_tracking_consent', {
-            p_request_id: requestId,
-            p_share: false,
-          })
-          .then(() => {});
-      sharingRef.current = false;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [requestId, userId, refresh, stop]);
+    }, [requestId, userId, refresh, stop]),
+  );
   const start = async () => {
     if (operation.current || sharingRef.current) return;
+    if (
+      !supabase ||
+      task?.providerId !== userId ||
+      !['assigned', 'in_progress'].includes(task?.status)
+    ) {
+      setError(
+        'Only the accepted doer can share location during an active task.',
+      );
+      return;
+    }
     operation.current = true;
     setBusy(true);
     setError('');
@@ -237,7 +297,7 @@ export default function useTaskTracking(requestId, userId) {
         }
       };
       await uploadLocation(initialLocation, true);
-      const subscription = await watchDevicePosition(
+      const subscription = await watchTaskLocation(
         uploadLocation,
         (message) => {
           if (mounted.current) setError(message);
@@ -266,6 +326,7 @@ export default function useTaskTracking(requestId, userId) {
     sharing,
     error: error || readError,
     busy,
+    loading,
     start,
     stop,
     refresh,

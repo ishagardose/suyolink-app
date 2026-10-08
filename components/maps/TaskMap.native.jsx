@@ -129,7 +129,7 @@ export default function TaskMap({
             tone="warning"
             accessibilityRole="alert"
           >
-            Map tiles have not loaded. Check your routeCoordinates and try
+            Map tiles have not loaded. Check your connection and try
             again.
           </ThemedText>
           <ThemedButton

@@ -172,6 +172,7 @@ export default function RequestDeadlineSection({
               style={styles.textInputInner}
               placeholder="YYYY-MM-DD"
               placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
+              accessibilityLabel="Target date"
               value={draft.deadlineDate}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineDate: val }));
@@ -231,6 +232,7 @@ export default function RequestDeadlineSection({
               style={styles.textInputInner}
               placeholder="HH:mm"
               placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
+              accessibilityLabel="Target time"
               value={draft.deadlineTime}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineTime: val }));

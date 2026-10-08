@@ -56,9 +56,7 @@ test('available board excludes own and expired requests and uses real posting ag
   await expect(
     page.getByText('My overdue request', { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByText('Overdue - waiting for a doer', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('Expired', { exact: true })).toBeVisible();
   await expect(page.getByText(/^Overdue:/)).toBeVisible();
   await expect(page.getByText('Just now', { exact: true })).toHaveCount(0);
   await expect(

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -44,6 +44,11 @@ export default function FulfillmentScreen({ role }) {
   const tracking = useTaskTracking(id, user?.id);
   const task = tracking.task;
   const [actionError, setActionError] = useState('');
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [acting, setActing] = useState(false);
   const lock = useRef(false);
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -56,8 +61,12 @@ export default function FulfillmentScreen({ role }) {
     longitude: task.exactLongitude ?? task.longitude,
   };
   const fresh =
+    active &&
+    participant &&
+    !!tracking.consent &&
+    !tracking.consent.revoked_at &&
     tracking.position &&
-    Date.now() - Date.parse(tracking.position.updated_at) < 30000;
+    now - Date.parse(tracking.position.updated_at) < 30000;
   const routing = useRoadRoute(fresh ? tracking.position : null, destination);
   const taskEvents = events.filter((event) => event.request_id === id);
   const latestProof = proofs

@@ -10,6 +10,8 @@ For the project shown in the supplied export, run each complete file in SQL Edit
 2. `migrations/202610040001_dynamic_workflows.sql`.
 3. `migrations/202610040002_push_notifications.sql`.
 4. `migrations/202610080001_backend_profiles.sql` (required by the updated My Profile page).
+5. `migrations/202610080002_notification_deletion.sql` (dashboard notification removal).
+6. `migrations/202610090001_dashboard_task_actions.sql` (dashboard editing and reward boosts).
 
 These are transactional, one-time migrations. Do not rerun successful files: policies and tables intentionally detect duplicate application. If using the Supabase CLI, reconcile migration history before `db push` when earlier SQL was run manually.
 
@@ -44,3 +46,16 @@ Handles and bios previously stored only on a device are not uploaded automatical
 ## Dashboard notification actions
 
 Apply `migrations/202610080002_notification_deletion.sql` to enable Remove and Clear All in the dashboard inbox. It grants authenticated recipients permission to delete only their own notifications. Existing read-status updates need no migration. Task history is retained; queued pushes tied to deleted notifications are removed by the existing foreign-key cascade. The dashboard keeps its existing notification layout and reads actual notification bodies, timestamps, and request IDs from Supabase.
+
+## Dashboard task actions
+
+Apply `migrations/202610090001_dashboard_task_actions.sql` before using the updated dashboard. It extends the existing schema with `reward_boost_centavos`, adds `edit_suyo_request` and `set_suyo_reward_boost`, and extends the existing safe listing/detail RPCs with boost information. It does not create a separate backend.
+
+- Edit saves title, description, notes, and the base reward. Saving an edit resets any selected boost. Only the requester can edit an open, unexpired task.
+- Boost selects an absolute addition of 0, 20, 50, or 100 pesos above the saved base. Selecting the same boost again leaves the total unchanged; choosing 0 restores the base. The same owner/status/deadline rules apply, and total rewards remain bounded by the existing offer limit.
+- Cancel uses the existing `change_suyo_status` RPC, including its participant authorization, history, application withdrawal, and tracking cleanup rules.
+- Repost opens `/post-suyo?repost=<request-id>` and fetches the original owner's task details, including private contact/address/pin data. It leaves the deadline blank for review. Submitting uses the existing idempotent `create_suyo_request_v2` RPC and creates a new open request; the original task and its history remain unchanged. Missing historical pin/contact data must be supplied before posting.
+
+Published edits, boosts, and cancellation update the dashboard after the RPC succeeds. Failed requests retain the editor or task and display an error for retry. Boosting does not claim to notify every nearby doer. Archived templates remain session-local drafts, not persisted task records.
+
+Run `npm test` for database authorization and workflow checks, and `npm run test:e2e -- dashboard-actions.spec.cjs` for browser persistence, failure/retry, boost/reset, cancellation, and repost checks. Hosted migration application and real-project smoke tests are separate from these local checks.

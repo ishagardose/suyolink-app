@@ -168,6 +168,53 @@ async function mockSupabase(
         };
         requests.unshift(json);
       }
+    } else if (
+      path === '/rest/v1/rpc/edit_suyo_request' ||
+      path === '/rest/v1/rpc/set_suyo_reward_boost'
+    ) {
+      const r = requests.find((item) => item.id === body.p_request_id);
+      if (!r)
+        return route.fulfill({
+          status: 404,
+          json: { message: 'Task unavailable.' },
+        });
+      if (path.endsWith('/edit_suyo_request')) {
+        Object.assign(r, {
+          title: body.p_title,
+          details: body.p_details,
+          notes: body.p_notes,
+          offer_centavos: body.p_offer_centavos,
+          reward_boost_centavos: 0,
+        });
+      } else {
+        r.offer_centavos =
+          r.offer_centavos -
+          (r.reward_boost_centavos || 0) +
+          body.p_boost_centavos;
+        r.reward_boost_centavos = body.p_boost_centavos;
+      }
+      json = r;
+    } else if (
+      path === '/rest/v1/live_locations' ||
+      path === '/rest/v1/tracking_consents'
+    ) {
+      json = null;
+    } else if (path === '/rest/v1/rpc/accept_suyo') {
+      const request = requests.find((item) => item.id === body.p_request_id);
+      if (
+        !request ||
+        request.status !== 'open' ||
+        request.requester_id === user.id ||
+        Date.parse(request.deadline) <= Date.now()
+      ) {
+        return route.fulfill({
+          status: 409,
+          json: { message: 'Task cannot be accepted.' },
+        });
+      }
+      request.provider_id = user.id;
+      request.status = 'assigned';
+      json = request;
     } else if (path === '/rest/v1/rpc/list_suyo_requests') {
       const now = Date.now();
       let filtered = [...requests];
@@ -199,6 +246,7 @@ async function mockSupabase(
         details: r.details,
         category: r.category,
         offer_centavos: r.offer_centavos,
+        reward_boost_centavos: r.reward_boost_centavos || 0,
         deadline: r.deadline,
         location: r.location,
         notes: r.notes,
@@ -225,6 +273,7 @@ async function mockSupabase(
           details: r.details,
           category: r.category,
           offer_centavos: r.offer_centavos,
+          reward_boost_centavos: r.reward_boost_centavos || 0,
           currency: 'PHP',
           deadline: r.deadline,
           location: r.location,

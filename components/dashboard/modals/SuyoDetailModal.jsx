@@ -15,6 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 export default function SuyoDetailModal({
+  busy,
+  error,
   archivedSuyos,
   favoriteSuyoIds,
   handleBoostReward,
@@ -43,10 +45,34 @@ export default function SuyoDetailModal({
         visible={!!selectedSuyo}
         animationType="slide"
         transparent={true}
-        onRequestClose={handleCloseDetailModal}
+        onRequestClose={() => {
+          if (!busy) handleCloseDetailModal();
+        }}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.suyoDetailModalCard}>
+          <View
+            style={styles.suyoDetailModalCard}
+            pointerEvents={busy ? 'none' : 'auto'}
+          >
+            {busy ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={styles.detailBoostSubtitle}
+              >
+                Saving changes...
+              </Text>
+            ) : null}
+            {error ? (
+              <Text
+                accessibilityRole="alert"
+                style={{
+                  color: resolveColor('#DC2626', 'color'),
+                  marginBottom: 8,
+                }}
+              >
+                {error}
+              </Text>
+            ) : null}
             {/* Top Meta Bar: Time & Date on Left, Action/Close on Right */}
             <View style={styles.detailTopMetaRow}>
               <View style={styles.detailTopMetaLeft}>
