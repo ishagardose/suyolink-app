@@ -106,8 +106,7 @@ export default function DashboardScreen() {
         if (tab === 'doer') return r.providerId === user?.id;
         return (
           r.status === 'open' &&
-          r.requesterId !== user?.id &&
-          Date.parse(r.deadline) > Date.now()
+          (!r.deadline || Date.parse(r.deadline) > Date.now())
         );
       }),
     [requests, tab, user?.id],

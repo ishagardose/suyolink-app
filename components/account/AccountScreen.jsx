@@ -177,11 +177,8 @@ export default function AccountScreen() {
     params.phone ||
     '+63 917 123 4567';
 
-  // Dynamic Suyos Done calculation
+  // Dynamic Suyos Done calculation from actual database records
   const completedSuyosCount = useMemo(() => {
-    if (params.suyosDone || params.errandsDone || params.done) {
-      return String(params.suyosDone || params.errandsDone || params.done);
-    }
     const myDone = (requests || []).filter(
       (r) =>
         (r.providerId === targetId || r.requesterId === targetId) &&
@@ -191,8 +188,42 @@ export default function AccountScreen() {
     if (own && Array.isArray(transactions) && transactions.length > 0) {
       return String(transactions.length);
     }
+    const explicitParam = params.suyosDone || params.errandsDone || params.done;
+    if (explicitParam && !['48', '42'].includes(String(explicitParam))) {
+      return String(explicitParam);
+    }
     return '0';
-  }, [requests, targetId, params, own, transactions]);
+  }, [requests, targetId, own, transactions, params]);
+
+  // Real-time listener for newly added ratings for this user
+  useEffect(() => {
+    if (!supabase || !targetId) return;
+    const channelName = `profile-ratings-realtime-${targetId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ratings',
+          filter: `provider_id=eq.${targetId}`,
+        },
+        async () => {
+          const { data } = await supabase
+            .from('ratings')
+            .select('id,score,comment,created_at,reviewer_id,request_id,provider_id')
+            .eq('provider_id', targetId)
+            .order('created_at', { ascending: false });
+          if (data) setReviews(data);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [targetId]);
 
   // Combine and format all actual feedback items
   const dynamicFeedbacks = useMemo(() => {
@@ -268,19 +299,17 @@ export default function AccountScreen() {
     });
   }, [reviews, own, transactions, contextRatings, targetId, requests]);
 
-  // Dynamic Rating calculation from actual reviews
-  const displayRating = useMemo(() => {
-    if (dynamicFeedbacks.length > 0) {
-      const avg =
-        dynamicFeedbacks.reduce((sum, item) => sum + item.score, 0) /
-        dynamicFeedbacks.length;
-      return avg.toFixed(1);
-    }
-    if (params.rating) {
-      return String(params.rating).replace(/[★*]/g, '').trim();
-    }
-    return '5.0';
-  }, [dynamicFeedbacks, params.rating]);
+  // Dynamic Rating calculation strictly from real community feedback
+  const hasReviews = dynamicFeedbacks.length > 0;
+  const ratingAverage = useMemo(() => {
+    if (!hasReviews) return null;
+    const avg =
+      dynamicFeedbacks.reduce((sum, item) => sum + item.score, 0) /
+      dynamicFeedbacks.length;
+    return avg.toFixed(1);
+  }, [dynamicFeedbacks, hasReviews]);
+
+  const displayRating = hasReviews ? ratingAverage : 'New';
 
   const displayBio =
     profileBio ||
@@ -431,14 +460,18 @@ export default function AccountScreen() {
             <View style={styles.statCol}>
               <View style={styles.ratingNumberRow}>
                 <Text style={styles.statNumber}>{displayRating}</Text>
-                <Ionicons
-                  name="star"
-                  size={15}
-                  color="#F59E0B"
-                  style={{ marginLeft: 3 }}
-                />
+                {hasReviews && (
+                  <Ionicons
+                    name="star"
+                    size={15}
+                    color="#F59E0B"
+                    style={{ marginLeft: 3 }}
+                  />
+                )}
               </View>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={styles.statLabel}>
+                {hasReviews ? `Rating (${dynamicFeedbacks.length})` : 'Rating (0)'}
+              </Text>
             </View>
           </View>
 
@@ -491,17 +524,35 @@ export default function AccountScreen() {
         {/* REQUESTERS' FEEDBACK & COMMENTS SECTION WITH RATE MARKS */}
         <View style={styles.feedbackSection}>
           <View style={styles.feedbackSectionHeader}>
-            <View>
+            <View style={styles.feedbackHeaderTextWrap}>
               <Text style={styles.sectionHeading}>
                 {own ? "Requesters' Feedback" : 'Community Feedback'}
               </Text>
               <Text style={styles.feedbackSubheading}>
-                Ratings & reviews from verified task coordinators
+                {hasReviews
+                  ? `Community ratings (${dynamicFeedbacks.length} ${dynamicFeedbacks.length === 1 ? 'review' : 'reviews'})`
+                  : 'Ratings & reviews from verified task coordinators'}
               </Text>
             </View>
-            <View style={styles.feedbackRatingBadge}>
-              <Ionicons name="star" size={13} color="#D97706" />
-              <Text style={styles.feedbackRatingBadgeText}>{displayRating}★</Text>
+            <View
+              style={[
+                styles.feedbackRatingBadge,
+                !hasReviews && { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
+              ]}
+            >
+              <Ionicons
+                name={hasReviews ? 'star' : 'sparkles'}
+                size={13}
+                color={hasReviews ? '#D97706' : '#15803D'}
+              />
+              <Text
+                style={[
+                  styles.feedbackRatingBadgeText,
+                  !hasReviews && { color: '#15803D' },
+                ]}
+              >
+                {hasReviews ? `${displayRating}★` : 'No reviews'}
+              </Text>
             </View>
           </View>
 
@@ -953,7 +1004,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
     marginBottom: 14,
+    width: '100%',
+  },
+  feedbackHeaderTextWrap: {
+    flex: 1,
+    paddingRight: 6,
   },
   sectionHeading: {
     fontSize: 16,
@@ -964,18 +1021,24 @@ const styles = StyleSheet.create({
   feedbackSubheading: {
     fontSize: 12,
     color: '#658172',
+    lineHeight: 16,
   },
   feedbackRatingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 4.5,
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    flexShrink: 0,
+    alignSelf: 'center',
   },
   feedbackRatingBadgeText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#D97706',
   },

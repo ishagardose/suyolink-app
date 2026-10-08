@@ -38,6 +38,8 @@ export default function SuyoScreen() {
     detailsById,
     loadDetails,
     detailsLoading,
+    recordTransaction,
+    reloadTransactions,
   } = useSuyos();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -319,12 +321,31 @@ export default function SuyoScreen() {
                         })
                       }
                     />
-                    {button('Approve completion', () =>
-                      mutate('review_suyo_proof', {
+                    {button('Approve completion', async () => {
+                      await mutate('review_suyo_proof', {
                         p_proof_id: proof.id,
                         p_accept: true,
-                      }),
-                    )}
+                      });
+                      if (typeof recordTransaction === 'function' && request) {
+                        try {
+                          await recordTransaction({
+                            requestId: request.id,
+                            title: request.title,
+                            role: 'requester',
+                            otherUserName: request.providerName || 'Doer',
+                            rewardCentavos: request.rewardCentavos || 0,
+                            currency: request.currency || 'PHP',
+                            category: request.category || '',
+                            location: request.location || '',
+                          });
+                        } catch (e) {
+                          console.warn('[SuyoScreen] recordTransaction warning:', e);
+                        }
+                      }
+                      if (typeof reloadTransactions === 'function') {
+                        reloadTransactions();
+                      }
+                    })}
                     {input('Reason for requesting changes', reason, setReason)}
                     {button(
                       'Request changes',

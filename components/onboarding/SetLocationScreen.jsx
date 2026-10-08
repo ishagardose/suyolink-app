@@ -38,8 +38,6 @@ export default function SetLocationScreen() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
-  const [selectedActionButton, setSelectedActionButton] = useState(null);
-  const [hoveredBtn, setHoveredBtn] = useState(null);
   const lock = useRef(false);
   const choice = useRef(0);
   const pin = selected || (hasSavedLocation ? position : null);
@@ -53,7 +51,8 @@ export default function SetLocationScreen() {
       return;
     }
     if (!acknowledged) {
-      setAcknowledged(true);
+      setSaveError('Please acknowledge the location notice to continue.');
+      return;
     }
     if (lock.current) return;
     lock.current = true;
@@ -72,62 +71,77 @@ export default function SetLocationScreen() {
     }
   };
 
+  const handleLocatePress = async () => {
+    const request = ++choice.current;
+    const next = await locate();
+    if (next && request === choice.current) {
+      setSelected(next);
+      setSource('device');
+      setSaveError('');
+    }
+  };
+
+  const isGpsActive = source === 'device' && !!selected;
+  const isSubmitDisabled = saving || !pin || !acknowledged;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
+        {/* Header Section */}
+        <View style={styles.headerBlock}>
           <View
             style={[
               styles.headerIconCircle,
-              { backgroundColor: colors.surfaceAlt },
+              { backgroundColor: '#EAF4EF' },
             ]}
           >
             <Ionicons
-              name="location-outline"
+              name="location-sharp"
               size={24}
-              color={colors.link}
+              color="#1E4D2B"
             />
           </View>
-          <ThemedText
-            accessibilityRole="header"
-            style={styles.title}
-          >
-            Set your location
-          </ThemedText>
+          <View style={styles.headerTextBlock}>
+            <ThemedText
+              accessibilityRole="header"
+              style={styles.title}
+            >
+              Share your location
+            </ThemedText>
+            <ThemedText
+              tone="textMuted"
+              style={styles.subtitle}
+            >
+              Set your area to connect with nearby community suyos and couriers.
+            </ThemedText>
+          </View>
         </View>
 
-        <ThemedText
-          tone="textMuted"
-          style={styles.body}
-        >
-          Choose your area to continue to SuyoLink. Your saved location helps
-          you find nearby suyos. You can use GPS or choose a map pin.
-        </ThemedText>
-
-        {/* Permission warning & settings link if denied */}
+        {/* Permission Denied Banner */}
         {permissionState === 'denied' ||
         (error && error.includes('Location permission is off')) ? (
           <View
             style={[
               styles.deniedBanner,
-              { borderColor: colors.border, backgroundColor: colors.card },
+              { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' },
             ]}
           >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="warning-outline" size={18} color="#DC2626" />
+              <ThemedText
+                style={{ fontWeight: '700', color: '#991B1B', fontSize: 14 }}
+              >
+                Location access is disabled
+              </ThemedText>
+            </View>
             <ThemedText
-              tone="danger"
-              style={{ fontWeight: '600' }}
+              style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 18 }}
             >
-              Location access is disabled.
-            </ThemedText>
-            <ThemedText
-              tone="textMuted"
-              style={{ fontSize: 13 }}
-            >
-              You can still manually drop a pin on the map below, or open
-              settings to enable permission.
+              You can still manually pick an area on the map below, or open settings to enable GPS.
             </ThemedText>
             <ThemedButton
               title="Open settings"
@@ -138,15 +152,69 @@ export default function SetLocationScreen() {
           </View>
         ) : null}
 
-        <ThemedText style={{ fontWeight: '600' }}>
-          Or tap the map to choose your area
-        </ThemedText>
+        {/* GPS Quick Action Card */}
+        <TouchableOpacity
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel="Use my current location"
+          disabled={saving || !isReady || loading}
+          onPress={handleLocatePress}
+          style={[
+            styles.gpsCard,
+            isGpsActive && styles.gpsCardActive,
+          ]}
+        >
+          <View
+            style={[
+              styles.gpsIconCircle,
+              isGpsActive && styles.gpsIconCircleActive,
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#1E4D2B" />
+            ) : (
+              <Ionicons
+                name="navigate"
+                size={20}
+                color={isGpsActive ? '#FFFFFF' : '#1E4D2B'}
+              />
+            )}
+          </View>
+          <View style={styles.gpsTextContainer}>
+            <ThemedText style={[styles.gpsTitle, isGpsActive && styles.gpsTitleActive]}>
+              Use my current location
+            </ThemedText>
+            <ThemedText tone="textMuted" style={styles.gpsSubtitle}>
+              {loading
+                ? 'Detecting GPS coordinates...'
+                : isGpsActive
+                ? 'GPS location active'
+                : 'Automatically detect device location'}
+            </ThemedText>
+          </View>
+          {isGpsActive && !loading ? (
+            <Ionicons name="checkmark-circle" size={22} color="#1E4D2B" />
+          ) : (
+            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+          )}
+        </TouchableOpacity>
+
+        {/* Map Section */}
+        <View style={styles.sectionHeaderRow}>
+          <ThemedText style={styles.sectionHeaderTitle}>
+            Or pick an area on the map
+          </ThemedText>
+          <ThemedText tone="textMuted" style={styles.sectionHeaderHint}>
+            Tap map to move pin
+          </ThemedText>
+        </View>
+
         <View
-          style={{ borderRadius: 20, overflow: 'hidden' }}
+          style={styles.mapCard}
           pointerEvents={saving ? 'none' : 'auto'}
         >
           <TaskMap
-            height={280}
+            height={240}
             center={pin}
             markers={
               pin ? [{ ...pin, id: 'area', title: 'Your selected area' }] : []
@@ -156,104 +224,109 @@ export default function SetLocationScreen() {
               setSelected(point);
               setSource('manual');
               setSaveError('');
-              setAcknowledged(false);
             }}
           />
         </View>
 
+        {/* Selected Coordinates Chip */}
         {pin ? (
-          <ThemedText
-            accessibilityLabel="Selected area coordinates"
-            tone="textMuted"
-          >
-            Selected area: {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
-          </ThemedText>
+          <View style={styles.coordsBadgeContainer}>
+            <Ionicons name="location" size={16} color="#1E4D2B" />
+            <ThemedText
+              accessibilityLabel="Selected area coordinates"
+              style={styles.coordsText}
+            >
+              Selected area: {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
+            </ThemedText>
+          </View>
         ) : null}
 
+        {/* Error Banners */}
         {error ? (
-          <ThemedText
-            accessibilityRole="alert"
-            tone="danger"
-          >
-            {error}
-          </ThemedText>
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+            <ThemedText
+              accessibilityRole="alert"
+              style={styles.errorText}
+            >
+              {error}
+            </ThemedText>
+          </View>
         ) : null}
+
         {saveError ? (
-          <ThemedText
-            accessibilityRole="alert"
-            tone="danger"
-          >
-            {saveError}
-          </ThemedText>
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+            <ThemedText
+              accessibilityRole="alert"
+              style={styles.errorText}
+            >
+              {saveError}
+            </ThemedText>
+          </View>
         ) : null}
 
-        <ThemedText
-          tone="textMuted"
-          style={{ fontSize: 12, lineHeight: 18 }}
+        {/* Acknowledgment & Consent Box */}
+        <View style={styles.acknowledgmentWrapper}>
+          <LocationAcknowledgment
+            checked={acknowledged}
+            onChange={(val) => {
+              setAcknowledged(val);
+              if (saveError) setSaveError('');
+            }}
+            disabled={saving}
+          />
+        </View>
+
+        {/* Main CTA: Find nearby suyos */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Find nearby suyos"
+          disabled={isSubmitDisabled}
+          onPress={save}
+          style={[
+            styles.primarySubmitBtn,
+            isSubmitDisabled && styles.primaryBtnDisabled,
+          ]}
         >
-          Your browsing area is saved to your account and on this device. You
-          can change it anytime from the dashboard.
-        </ThemedText>
+          {saving ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <View style={styles.primaryBtnInner}>
+              <ThemedText style={styles.primaryBtnText}>
+                Find nearby suyos
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            </View>
+          )}
+        </TouchableOpacity>
 
-        <LocationAcknowledgment
-          checked={acknowledged}
-          onChange={setAcknowledged}
-          disabled={saving}
-        />
-
-        {/* Action Buttons Row: Sign out / Cancel (Left) & Use my current location (Right) */}
-        <View style={styles.buttonRow}>
+        {/* Cancel / Sign Out Escape Link */}
+        <View style={styles.footerRow}>
           {hasSavedLocation ? (
             <TouchableOpacity
-              activeOpacity={0.75}
+              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Cancel"
               disabled={saving}
-              onMouseEnter={() => setHoveredBtn('cancel')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onPress={() => {
-                setSelectedActionButton('cancel');
-                router.replace('/dashboard');
-              }}
-              style={[
-                styles.modernSecondaryBtn,
-                (hoveredBtn === 'cancel' || selectedActionButton === 'cancel') &&
-                  styles.modernSecondaryBtnHovered,
-              ]}
+              onPress={() => router.replace('/dashboard')}
+              style={styles.escapeBtn}
             >
-              <Ionicons
-                name="close-circle-outline"
-                size={17}
-                color={
-                  hoveredBtn === 'cancel' || selectedActionButton === 'cancel'
-                    ? colors.link
-                    : '#64748B'
-                }
-              />
-              <ThemedText
-                style={[
-                  styles.modernBtnText,
-                  (hoveredBtn === 'cancel' || selectedActionButton === 'cancel') &&
-                    styles.modernBtnTextActive,
-                ]}
-              >
-                Cancel
+              <ThemedText style={styles.escapeBtnText}>
+                Cancel and return to dashboard
               </ThemedText>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              activeOpacity={0.75}
+              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Sign out"
               disabled={saving || loading}
-              onMouseEnter={() => setHoveredBtn('signout')}
-              onMouseLeave={() => setHoveredBtn(null)}
               onPress={async () => {
-                setSelectedActionButton('signout');
                 if (lock.current) return;
                 lock.current = true;
                 setSaving(true);
-                setSaveError('');
                 try {
                   await logout();
                   router.replace('/');
@@ -264,110 +337,15 @@ export default function SetLocationScreen() {
                   setSaving(false);
                 }
               }}
-              style={[
-                styles.modernSecondaryBtn,
-                (hoveredBtn === 'signout' || selectedActionButton === 'signout') &&
-                  styles.modernSignoutBtnHovered,
-              ]}
+              style={styles.escapeBtn}
             >
-              <Ionicons
-                name="log-out-outline"
-                size={17}
-                color={
-                  hoveredBtn === 'signout' || selectedActionButton === 'signout'
-                    ? '#DC2626'
-                    : '#64748B'
-                }
-              />
-              <ThemedText
-                style={[
-                  styles.modernBtnText,
-                  (hoveredBtn === 'signout' || selectedActionButton === 'signout') &&
-                    styles.modernSignoutTextActive,
-                ]}
-              >
+              <Ionicons name="log-out-outline" size={16} color="#64748B" />
+              <ThemedText style={styles.escapeBtnText}>
                 Sign out
               </ThemedText>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Use my current location"
-            disabled={saving || !isReady}
-            onMouseEnter={() => setHoveredBtn('location')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onPress={async () => {
-              setSelectedActionButton('location');
-              const request = ++choice.current;
-              const next = await locate();
-              if (next && request === choice.current) {
-                setSelected(next);
-                setSource('device');
-                setAcknowledged(false);
-              }
-            }}
-            style={[
-              styles.modernSecondaryBtn,
-              (hoveredBtn === 'location' || selectedActionButton === 'location') &&
-                styles.modernLocationBtnHovered,
-            ]}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#1E4D2B" />
-            ) : (
-              <>
-                <Ionicons
-                  name="navigate-circle-outline"
-                  size={18}
-                  color={
-                    hoveredBtn === 'location' || selectedActionButton === 'location'
-                      ? '#1E4D2B'
-                      : '#335C44'
-                  }
-                />
-                <ThemedText
-                  style={[
-                    styles.modernBtnText,
-                    (hoveredBtn === 'location' || selectedActionButton === 'location') &&
-                      styles.modernLocationTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  Use my current location
-                </ThemedText>
-              </>
-            )}
-          </TouchableOpacity>
         </View>
-
-        {/* Main Action Button for both Doers and Requesters */}
-        <TouchableOpacity
-          activeOpacity={0.82}
-          accessibilityRole="button"
-          accessibilityLabel="Explore & Request Suyos"
-          disabled={saving}
-          onMouseEnter={() => setHoveredBtn('primary')}
-          onMouseLeave={() => setHoveredBtn(null)}
-          onPress={save}
-          style={[
-            styles.modernPrimaryBtn,
-            hoveredBtn === 'primary' && styles.modernPrimaryBtnHovered,
-            saving && { opacity: 0.7 },
-          ]}
-        >
-          {saving ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <View style={styles.primaryBtnInner}>
-              <ThemedText style={styles.modernPrimaryBtnText}>
-                Explore & Request Suyos
-              </ThemedText>
-              <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
-            </View>
-          )}
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -375,111 +353,157 @@ export default function SetLocationScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 24,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 40,
+    gap: 14,
     width: '100%',
-    maxWidth: 600,
+    maxWidth: 520,
     alignSelf: 'center',
   },
-  headerRow: {
+  headerBlock: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
+    marginBottom: 4,
   },
   headerIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#D4E8DC',
+  },
+  headerTextBlock: {
+    flex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '800',
-    letterSpacing: -0.6,
-    flexShrink: 1,
+    color: '#163523',
+    letterSpacing: -0.4,
   },
-  body: {
-    fontSize: 15,
-    lineHeight: 23,
+  subtitle: {
+    fontSize: 13.5,
+    lineHeight: 19,
+    marginTop: 2,
   },
   deniedBanner: {
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     gap: 6,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'stretch',
-    marginTop: 4,
-  },
-  modernSecondaryBtn: {
-    flex: 1,
-    minHeight: 50,
+  gpsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
     paddingVertical: 12,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     backgroundColor: '#F8FAF9',
     borderWidth: 1.5,
     borderColor: '#E2ECE6',
-    cursor: 'pointer',
-  },
-  modernSecondaryBtnHovered: {
-    backgroundColor: '#F1F6F3',
-    borderColor: '#CBDED4',
-    transform: [{ translateY: -1 }],
+    gap: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  modernLocationBtnHovered: {
+  gpsCardActive: {
     backgroundColor: '#EAF4EF',
     borderColor: '#1E4D2B',
-    transform: [{ translateY: -1 }],
-    shadowColor: '#1E4D2B',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
   },
-  modernLocationTextActive: {
+  gpsIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#E2EFE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gpsIconCircleActive: {
+    backgroundColor: '#1E4D2B',
+  },
+  gpsTextContainer: {
+    flex: 1,
+  },
+  gpsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  gpsTitleActive: {
     color: '#1E4D2B',
     fontWeight: '800',
   },
-  modernSignoutBtnHovered: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
-    transform: [{ translateY: -1 }],
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
+  gpsSubtitle: {
+    fontSize: 12,
+    marginTop: 1,
   },
-  modernSignoutTextActive: {
-    color: '#DC2626',
-    fontWeight: '800',
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
   },
-  modernBtnText: {
-    fontSize: 12.5,
+  sectionHeaderTitle: {
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#334155',
-    textAlign: 'center',
   },
-  modernBtnTextActive: {
+  sectionHeaderHint: {
+    fontSize: 12,
+  },
+  mapCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#E2ECE6',
+  },
+  coordsBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EAF4EF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#D4E8DC',
+  },
+  coordsText: {
+    fontSize: 12.5,
+    fontWeight: '700',
     color: '#1E4D2B',
-    fontWeight: '800',
   },
-  modernPrimaryBtn: {
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    padding: 10,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 12.5,
+    fontWeight: '600',
+    flex: 1,
+  },
+  acknowledgmentWrapper: {
+    backgroundColor: '#F8FAF9',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#E2ECE6',
+  },
+  primarySubmitBtn: {
     minHeight: 52,
     backgroundColor: '#1E4D2B',
     borderRadius: 14,
@@ -487,19 +511,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
     shadowColor: '#1E4D2B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
+    marginTop: 4,
   },
-  modernPrimaryBtnHovered: {
-    backgroundColor: '#163E22',
-    transform: [{ translateY: -1 }, { scale: 1.01 }],
-    shadowOpacity: 0.32,
-    shadowRadius: 10,
-    elevation: 6,
+  primaryBtnDisabled: {
+    opacity: 0.55,
+    shadowOpacity: 0.05,
+    elevation: 0,
   },
   primaryBtnInner: {
     flexDirection: 'row',
@@ -507,10 +529,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  modernPrimaryBtnText: {
-    fontSize: 15,
+  primaryBtnText: {
+    fontSize: 15.5,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
+  },
+  footerRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  escapeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  escapeBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
   },
 });

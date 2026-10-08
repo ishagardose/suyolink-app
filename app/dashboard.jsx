@@ -27,6 +27,8 @@ import { useDeviceLocation } from '../context/LocationContext';
 import { useTheme } from '../theme/ThemeContext';
 import { formatOffer } from '../data/suyoRequests';
 import { distanceKm } from '../lib/geo';
+import { supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RefreshControl } from 'react-native';
 import WalletIncomeLineGraph from '../components/wallet/WalletIncomeLineGraph';
 
@@ -76,114 +78,145 @@ const formatDateTimeNow = () => {
   return `${dateStr} · ${timeStr}`;
 };
 
-const INITIAL_AVAILABLE_SUYOS = [
-  {
-    id: 'SYL-101',
-    title: 'Drop off documents - Unit 402',
-    category: 'Documents',
-    location: 'Makati CBD',
-    distance: 0.5,
-    distanceText: '0.5 km away',
-    reward: '₱300',
-    rewardAmount: 300,
-    tag: 'Urgent',
-    postedTime: 'Just now',
-    createdAt: Date.now() - 2 * 60 * 1000,
-    due: 'Due today ASAP',
-    dueDate: getTodayFormatted(),
-    details: 'Drop off notarized lease agreements and corporate papers at the 4th floor reception.',
-    notes: 'Please hand directly to Ms. Santos.',
-    requesterName: 'Atty. Rafael Cruz',
-    requesterPhone: '0917 842 1983',
-    requesterRating: '4.9★',
-    completedCount: '34 completed',
-  },
-  {
-    id: 'SYL-102',
-    title: 'Buy groceries - SM Tagum',
-    category: 'Groceries',
-    location: 'SM Tagum',
-    distance: 0.8,
-    distanceText: '0.8 km away',
-    reward: '₱150',
-    rewardAmount: 150,
-    tag: 'Due today',
-    postedTime: '12 mins ago',
-    createdAt: Date.now() - 12 * 60 * 1000,
-    due: 'Due today at 5:00 PM',
-    dueDate: getTodayFormatted(),
-    details: '2 cartons of milk, 1 loaf of wheat bread, and 1 pack of eggs from supermarket.',
-    notes: 'Receipt will be reimbursed via GCash or cash upon delivery.',
-    requesterName: 'Maria Clarissa',
-    requesterInitials: 'MR',
-    requesterPhone: '0928 341 5520',
-    requesterRating: '4.9★',
-    completedCount: '34 completed',
-  },
-  {
-    id: 'SYL-103',
-    title: 'Queue for bills payment',
-    category: 'Queuing & Bills',
-    location: 'Bayad Center Ayala',
-    distance: 1.4,
-    distanceText: '1.4 km away',
-    reward: '₱100',
-    rewardAmount: 100,
-    tag: 'Normal',
-    postedTime: '35 mins ago',
-    createdAt: Date.now() - 35 * 60 * 1000,
-    due: 'Due tomorrow at 11:00 AM',
-    dueDate: getTomorrowFormatted(),
-    details: 'Line up to pay Meralco electric bill. Cash is prepared in an envelope.',
-    notes: 'Return validated slip to lobby desk.',
-    requesterName: 'Kenneth Gomez',
-    requesterPhone: '0919 720 9144',
-    requesterRating: '4.8★',
-    completedCount: '28 completed',
-  },
-  {
-    id: 'SYL-104',
-    title: 'Pick up birthday cake',
-    category: 'Delivery',
-    location: 'Goldilocks Poblacion',
-    distance: 2.1,
-    distanceText: '2.1 km away',
-    reward: '₱220',
-    rewardAmount: 220,
-    tag: 'Due tomorrow',
-    postedTime: '1 hour ago',
-    createdAt: Date.now() - 60 * 60 * 1000,
-    due: 'Due tomorrow at 2:00 PM',
-    dueDate: getTomorrowFormatted(),
-    details: 'Pre-ordered 8-inch chocolate mousse cake. Needs upright, careful handling.',
-    notes: 'Order #GLD-8821 under name Juan Dela Cruz.',
-    requesterName: 'Patricia Tan',
-    requesterPhone: '0905 188 4390',
-    requesterRating: '5.0★',
-    completedCount: '41 completed',
-  },
-  {
-    id: 'SYL-105',
-    title: 'Prescription pickup at Mercury Drug',
-    category: 'Delivery',
-    location: 'Mercury Drug Legaspi',
-    distance: 1.1,
-    distanceText: '1.1 km away',
-    reward: '₱180',
-    rewardAmount: 180,
-    tag: 'Urgent',
-    postedTime: '2 hours ago',
-    createdAt: Date.now() - 120 * 60 * 1000,
-    due: 'Due today ASAP',
-    dueDate: getTodayFormatted(),
-    details: 'Pick up maintenance heart medication prescription for senior citizen.',
-    notes: 'Prescription slip is with the pharmacist.',
-    requesterName: 'Lola Remedios',
-    requesterPhone: '0939 655 0122',
-    requesterRating: '4.9★',
-    completedCount: '19 completed',
-  },
-];
+const formatTargetDeadline = (suyo) => {
+  if (!suyo) return 'Flexible completion';
+
+  // 1. Explicit targetTime or arrivalWindow if provided
+  if (suyo.targetTime && typeof suyo.targetTime === 'string') {
+    return suyo.targetTime;
+  }
+  if (
+    suyo.arrivalWindow &&
+    typeof suyo.arrivalWindow === 'string' &&
+    suyo.arrivalWindow !== '11:00 AM - 11:30 AM'
+  ) {
+    return suyo.arrivalWindow;
+  }
+
+  // 2. Separate deadlineDate and deadlineTime fields
+  if (suyo.deadlineDate && suyo.deadlineTime) {
+    const rawTime = String(suyo.deadlineTime).trim();
+    let formattedTime = rawTime;
+    const timeMatch = /^(\d{1,2}):(\d{2})$/.exec(rawTime);
+    if (timeMatch) {
+      const hours = parseInt(timeMatch[1], 10);
+      const mins = timeMatch[2];
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const h12 = hours % 12 || 12;
+      formattedTime = `${h12}:${mins} ${ampm}`;
+    }
+
+    const rawDate = String(suyo.deadlineDate).trim();
+    try {
+      const d = new Date(`${rawDate}T00:00:00`);
+      if (!isNaN(d.getTime())) {
+        const now = new Date();
+        const isToday =
+          d.getDate() === now.getDate() &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear();
+        const tomorrow = new Date(now.getTime() + 86400000);
+        const isTomorrow =
+          d.getDate() === tomorrow.getDate() &&
+          d.getMonth() === tomorrow.getMonth() &&
+          d.getFullYear() === tomorrow.getFullYear();
+
+        if (isToday) return `Today · ${formattedTime}`;
+        if (isTomorrow) return `Tomorrow · ${formattedTime}`;
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `${dateStr} · ${formattedTime}`;
+      }
+    } catch (_) {}
+
+    return `${rawDate} · ${formattedTime}`;
+  }
+
+  // 3. ISO / parseable deadline timestamp from database
+  const rawDeadline =
+    suyo.deadline || suyo.deadlineIso || suyo.rawRequest?.deadline;
+  if (rawDeadline) {
+    try {
+      const d = new Date(rawDeadline);
+      if (!isNaN(d.getTime())) {
+        const now = new Date();
+        const isToday =
+          d.getDate() === now.getDate() &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear();
+        const tomorrow = new Date(now.getTime() + 86400000);
+        const isTomorrow =
+          d.getDate() === tomorrow.getDate() &&
+          d.getMonth() === tomorrow.getMonth() &&
+          d.getFullYear() === tomorrow.getFullYear();
+
+        const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        if (isToday) return `Today · ${timeStr}`;
+        if (isTomorrow) return `Tomorrow · ${timeStr}`;
+
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `${dateStr} · ${timeStr}`;
+      }
+    } catch (_) {}
+    if (typeof rawDeadline === 'string' && rawDeadline.trim()) {
+      return rawDeadline.trim();
+    }
+  }
+
+  // 4. Fallback to due / dueDate / timeBadge
+  if (suyo.due && suyo.dueDate) {
+    return `${suyo.dueDate} · ${String(suyo.due).replace(/^Due\s*/i, '')}`;
+  }
+  if (suyo.due) {
+    return String(suyo.due);
+  }
+  if (suyo.timeBadge) {
+    return String(suyo.timeBadge);
+  }
+
+  return 'Flexible completion';
+};
+
+const getTargetTimeBadge = (suyo) => {
+  if (!suyo) return 'Flexible';
+  if (suyo.urgency && ['Urgent', 'Due today', 'Due tomorrow', 'Flexible', 'Normal'].includes(suyo.urgency)) {
+    return suyo.urgency;
+  }
+  const raw =
+    suyo.deadline || suyo.deadlineIso || suyo.rawRequest?.deadline;
+  if (raw) {
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      const diffMs = d.getTime() - Date.now();
+      if (diffMs < 0) return 'Overdue';
+      if (diffMs <= 3 * 3600 * 1000) return 'Urgent (<3h)';
+      if (diffMs <= 24 * 3600 * 1000) return 'Within 24h';
+      return 'Scheduled';
+    }
+  }
+  if (suyo.tag && (suyo.tag === 'Urgent' || suyo.tag === 'Flexible' || suyo.tag.startsWith('Due'))) return suyo.tag;
+  return 'Target Time';
+};
+
+const getTargetTimeSubtext = (suyo) => {
+  if (!suyo) return 'Flexible delivery or fulfillment schedule';
+  const raw =
+    suyo.deadline || suyo.deadlineIso || suyo.rawRequest?.deadline;
+  if (raw) {
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      const diffMs = d.getTime() - Date.now();
+      if (diffMs < 0) return 'Deadline has elapsed';
+      const hours = Math.round(diffMs / 3600000);
+      if (hours <= 1) return 'Must be completed within the hour';
+      if (hours <= 24) return `Scheduled completion within ~${hours} hrs`;
+      const days = Math.round(hours / 24);
+      return `Target deadline in ${days} ${days === 1 ? 'day' : 'days'}`;
+    }
+  }
+  return 'Set by requester for courier fulfillment';
+};
+
+const INITIAL_AVAILABLE_SUYOS = [];
 
 const DEFAULT_DOER = {
   id: 'DOER-101',
@@ -193,606 +226,25 @@ const DEFAULT_DOER = {
   rating: '4.95★',
   reviewCount: '142 reviews',
   completedCount: '142 suyos',
-  vehicle: 'Honda Beat 125cc (Motorcycle)',
-  vehiclePlate: 'ND-8821',
   badge: 'Top Rated Courier',
   onTimeRate: '99.2%',
-  bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum. Fast, reliable, and careful with parcels & documents.',
+  bio: 'Experienced errand runner in Makati, BGC, and Tagum. Fast, reliable, and careful with parcels & documents.',
 };
 
-const INITIAL_POSTED_SUYOS = [
-  {
-    id: 'POST-001',
-    title: 'Buy groceries - SM Tagum',
-    category: 'Groceries',
-    location: 'SM Tagum',
-    distanceText: '0.8 km away',
-    reward: '₱150',
-    rewardAmount: 150,
-    tag: 'Waiting for doer',
-    status: 'Open - waiting for a doer',
-    urgency: 'Due today',
-    due: 'Due today at 5:00 PM',
-    dueDate: getTodayFormatted(),
-    createdAt: Date.now() - 45 * 60 * 1000,
-    formattedDate: 'Sep 28 · 11:20 AM',
-    waitTime: 'Waiting for 45m',
-    needsBoost: true,
-    details: '2 cartons of milk, 1 loaf of wheat bread, and 1 pack of eggs from supermarket.',
-    notes: 'Receipt will be reimbursed via GCash or cash upon delivery.',
-    requesterName: 'Juan Dela Cruz (You)',
-  },
-  {
-    id: 'POST-002',
-    title: 'Package pickup and drop-off at LBC Glorietta',
-    category: 'Delivery',
-    location: 'LBC Express - Glorietta',
-    distanceText: '1.6 km away',
-    reward: '₱160',
-    rewardAmount: 160,
-    tag: 'Waiting for doer',
-    status: 'Open - waiting for a doer',
-    urgency: 'Due tomorrow',
-    due: 'Due tomorrow at 2:00 PM',
-    dueDate: getTomorrowFormatted(),
-    createdAt: Date.now() - 25 * 60 * 1000,
-    formattedDate: 'Today · 5:15 PM',
-    waitTime: 'Waiting for 25m',
-    needsBoost: true,
-    details: 'Drop off pre-packed box with return barcode sticker at LBC branch.',
-    notes: 'Already prepaid, just drop off at counter 2.',
-    requesterName: 'Juan Dela Cruz (You)',
-  },
-];
+const INITIAL_POSTED_SUYOS = [];
+const INITIAL_CANCELLED_SUYOS = [];
 
-const INITIAL_CANCELLED_SUYOS = [
-  {
-    id: 'POST-003',
-    title: 'Pick up documents',
-    category: 'Documents',
-    location: 'Makati CBD',
-    distanceText: '1.2 km away',
-    reward: '₱200',
-    rewardAmount: 200,
-    tag: 'Cancelled',
-    status: 'Cancelled',
-    urgency: 'Normal',
-    due: 'Cancelled',
-    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 22 · 3:40 PM',
-    details: 'Pick up notarized contract copy from law office at 5th floor.',
-    notes: 'Cancelled by requester due to rescheduled meeting.',
-    requesterName: 'Juan Dela Cruz (You)',
-  },
-];
+const INITIAL_ACCEPTED_SUYOS = [];
 
-const INITIAL_ACCEPTED_SUYOS = [
-  {
-    id: 'ACC-001',
-    title: 'Drop off documents - Unit 402',
-    category: 'Documents',
-    location: 'Makati CBD',
-    distanceText: '0.5 km away',
-    reward: '₱300',
-    rewardAmount: 300,
-    tag: 'In Progress',
-    status: 'In Progress - On the way',
-    createdAt: Date.now() - 35 * 60 * 1000,
-    formattedDate: 'Today · 4:00 PM',
-    details: 'Drop off notarized lease agreements and corporate papers at 4th floor reception.',
-    notes: 'Please hand directly to Ms. Santos.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doer: {
-      id: 'DOER-101',
-      name: 'Alex Morales',
-      initials: 'AM',
-      phone: '+63 917 842 1983',
-      rating: '4.95★',
-      reviewCount: '142 reviews',
-      completedCount: '142 suyos',
-      vehicle: 'Honda Beat 125cc (Motorcycle)',
-      vehiclePlate: 'ND-8821',
-      badge: 'Top Rated Courier',
-      onTimeRate: '99.2%',
-      bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum. Fast, reliable, and careful with parcels.',
-    },
-  },
-  {
-    id: 'ACC-002',
-    title: 'Buy fresh groceries and bread at Landmark',
-    category: 'Groceries',
-    location: 'Landmark Supermarket',
-    distanceText: '0.8 km away',
-    reward: '₱200',
-    rewardAmount: 200,
-    tag: 'In Progress',
-    status: 'In Progress - Shopping',
-    createdAt: Date.now() - 90 * 60 * 1000,
-    formattedDate: 'Today · 2:30 PM',
-    details: '2 cartons oat milk, 1 loaf whole wheat bread, 1 tray fresh eggs.',
-    notes: 'Please check expiration date before purchasing.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doer: {
-      id: 'DOER-102',
-      name: 'Maria Clarissa',
-      initials: 'MC',
-      phone: '+63 928 341 5520',
-      rating: '4.88★',
-      reviewCount: '89 reviews',
-      completedCount: '89 suyos',
-      vehicle: 'Bicycle Courier',
-      vehiclePlate: 'BIKE-04',
-      badge: 'Verified Suyo Courier',
-      onTimeRate: '98.5%',
-      bio: 'Eco-friendly bicycle courier servicing Greenbelt and Legazpi village.',
-    },
-  },
-];
-
-const INITIAL_COMPLETED_SUYOS = [
-  {
-    id: 'COMP-001',
-    title: 'Print school project',
-    category: 'Documents',
-    location: 'Davao Printing Hub',
-    distanceText: '1.5 km away',
-    reward: '₱80',
-    rewardAmount: 80,
-    tag: 'Completed',
-    status: 'Completed',
-    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 20 · 3:15 PM',
-    completedDate: 'Sep 20, 2026 at 3:15 PM',
-    details: 'Full color printing and ring binding of 45-page thesis project.',
-    notes: 'Completed ahead of schedule.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doer: {
-      id: 'DOER-103',
-      name: 'Carlos Dalisay',
-      initials: 'CD',
-      phone: '+63 919 720 9144',
-      rating: '4.9★',
-      reviewCount: '210 reviews',
-      completedCount: '210 suyos',
-      vehicle: 'Yamaha Mio (Motorcycle)',
-      vehiclePlate: 'DC-9912',
-      badge: 'Community Hero',
-      onTimeRate: '99.5%',
-      bio: 'Dependable community courier with over 200+ completed local suyos.',
-    },
-  },
-  {
-    id: 'COMP-002',
-    title: 'Pick up medical supplies from Mercury Drug',
-    category: 'Delivery',
-    location: 'Mercury Drug Legaspi',
-    distanceText: '1.1 km away',
-    reward: '₱180',
-    rewardAmount: 180,
-    tag: 'Completed',
-    status: 'Completed',
-    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 23 · 11:40 AM',
-    completedDate: 'Sep 23, 2026 at 11:40 AM',
-    details: 'Pick up prescribed maintenance asthma medication and vitamins.',
-    notes: 'Delivered directly to reception desk.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doer: {
-      id: 'DOER-101',
-      name: 'Alex Morales',
-      initials: 'AM',
-      phone: '+63 917 842 1983',
-      rating: '4.95★',
-      reviewCount: '142 reviews',
-      completedCount: '142 suyos',
-      vehicle: 'Honda Beat 125cc (Motorcycle)',
-      vehiclePlate: 'ND-8821',
-      badge: 'Top Rated Courier',
-      onTimeRate: '99.2%',
-      bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum.',
-    },
-  },
-  {
-    id: 'COMP-003',
-    title: 'Queue for Meralco electric bill payment',
-    category: 'Queuing & Bills',
-    location: 'Bayad Center Ayala',
-    distanceText: '1.4 km away',
-    reward: '₱150',
-    rewardAmount: 150,
-    tag: 'Completed',
-    status: 'Completed',
-    createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Sep 28 · 1:10 PM',
-    completedDate: 'Sep 28, 2026 at 1:10 PM',
-    details: 'Pay monthly electricity bill before 4 PM counter cut-off.',
-    notes: 'Validated payment slip returned.',
-    requesterName: 'Juan Dela Cruz (You)',
-    doer: {
-      id: 'DOER-104',
-      name: 'Kenneth Gomez',
-      initials: 'KG',
-      phone: '+63 905 188 4390',
-      rating: '5.0★',
-      reviewCount: '64 reviews',
-      completedCount: '64 suyos',
-      vehicle: 'Walking / Commute',
-      vehiclePlate: 'COMMUTER',
-      badge: 'Queuing Specialist',
-      onTimeRate: '100%',
-      bio: 'Specialist in government agency and utility bills queuing.',
-    },
-  },
-];
-
-const INITIAL_ARCHIVED_SUYOS = [
-  {
-    id: 'ARCH-001',
-    title: 'Weekly SM Supermarket Grocery Run',
-    category: 'Groceries',
-    location: 'SM Tagum',
-    distanceText: '0.8 km away',
-    reward: '₱180',
-    rewardAmount: 180,
-    tag: 'Archived Template',
-    status: 'Archived Template',
-    createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Saved · Sep 18, 9:15 AM',
-    details: 'Standard weekly supply: 2 cartons milk, 1 loaf whole wheat bread, eggs, fruit.',
-    notes: 'Reimbursement upon delivery receipt.',
-    requesterName: 'Juan Dela Cruz (You)',
-  },
-  {
-    id: 'ARCH-002',
-    title: 'Monthly Electric Bill Bayad Center',
-    category: 'Queuing & Bills',
-    location: 'Bayad Center Ayala',
-    distanceText: '1.4 km away',
-    reward: '₱150',
-    rewardAmount: 150,
-    tag: 'Archived Template',
-    status: 'Archived Template',
-    createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Saved · Sep 15, 1:20 PM',
-    details: 'Pay monthly electricity bill with prepared cash envelope.',
-    notes: 'Return receipt to lobby guard.',
-    requesterName: 'Juan Dela Cruz (You)',
-  },
-  {
-    id: 'ARCH-003',
-    title: 'Emergency Maintenance Medicine Pickup',
-    category: 'Delivery',
-    location: 'Mercury Drug Legaspi',
-    distanceText: '1.1 km away',
-    reward: '₱160',
-    rewardAmount: 160,
-    tag: 'Archived Template',
-    status: 'Archived Template',
-    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    formattedDate: 'Saved · Aug 29, 10:45 AM',
-    details: 'Maintenance prescription pickup from pharmacy counter.',
-    notes: 'Senior citizen discount book is at pharmacy.',
-    requesterName: 'Juan Dela Cruz (You)',
-  },
-];
-
-const INITIAL_DOER_ACCEPTED_SUYOS = [
-  {
-    id: 'DOER-ACC-01',
-    title: 'Express pharmacy pickup at Mercury Drug',
-    category: 'Medicine',
-    icon: 'medkit',
-    location: 'Mercury Drug Legaspi, Makati',
-    distanceText: '1.2 km away',
-    reward: '₱180.00',
-    rewardAmount: 180,
-    status: 'Accepted - In Progress',
-    tag: 'In Progress',
-    acceptedAt: 'Today · 1:15 PM',
-    deadline: 'Today · By 3:00 PM',
-    requesterName: 'Lola Remedios',
-    requesterPhone: '0918 342 9811',
-    details: 'Pick up maintenance medicine (Losartan and Metformin). Senior citizen booklet is at the pharmacy counter.',
-    notes: 'Please call Lola Remedios upon arriving at the building lobby.',
-  },
-  {
-    id: 'DOER-ACC-02',
-    title: 'Drop off sealed documents at Tower 2',
-    category: 'Documents',
-    icon: 'document-text',
-    location: 'Makati CBD, Tower 2 Reception',
-    distanceText: '0.6 km away',
-    reward: '₱120.00',
-    rewardAmount: 120,
-    status: 'Accepted - In Progress',
-    tag: 'In Progress',
-    acceptedAt: 'Today · 2:00 PM',
-    deadline: 'Today · By 4:30 PM',
-    requesterName: 'Patricia Mendoza',
-    requesterPhone: '0922 841 0293',
-    details: 'Drop off sealed envelope to Atty. Gabriel on 12th Floor.',
-    notes: 'Sign recipient visitor log at front desk.',
-  },
-];
-
-const INITIAL_DOER_CANCELLED_SUYOS = [
-  {
-    id: 'DOER-CAN-01',
-    title: 'Buy medicine at Mercury Drug Tagum',
-    category: 'Medicine',
-    icon: 'medkit',
-    location: 'Mercury Drug Pioneer, Tagum City',
-    distanceText: '1.4 km away',
-    reward: '₱160.00',
-    rewardAmount: 160,
-    status: 'Cancelled',
-    tag: 'Cancelled',
-    requesterName: 'Tita Gloria',
-    requesterPhone: '0917 482 9102',
-    cancelledAt: 'Yesterday · 5:20 PM',
-    reason: 'Vehicle broke down on route',
-    details: 'Maintenance vitamins and cough syrup. Senior citizen booklet is at the pharmacy counter.',
-    notes: 'Cancelled due to flat tire. Notified requester immediately.',
-  },
-  {
-    id: 'DOER-CAN-02',
-    title: 'Deliver bakery boxes to Visayan Village',
-    category: 'Food & Pastries',
-    icon: 'fast-food',
-    location: 'Tagum City Commercial Center',
-    distanceText: '2.1 km away',
-    reward: '₱140.00',
-    rewardAmount: 140,
-    status: 'Cancelled',
-    tag: 'Cancelled',
-    requesterName: 'Bakery Co.',
-    requesterPhone: '0922 711 0932',
-    cancelledAt: 'Oct 1 · 10:45 AM',
-    reason: 'Store closed early',
-    details: 'Pick up 2 pastry boxes and drop off at Visayan Village.',
-    notes: 'Requester cancelled order because store kitchen had closed.',
-  },
-];
-
-const WALLET_EARNED_SUYOS = [
-  {
-    id: 'WAL-001',
-    title: 'Drop off documents - Unit 402',
-    category: 'Documents',
-    icon: 'document-text',
-    date: 'Today (W4) · 4:00 PM',
-    requesterName: 'Atty. Rafael Cruz',
-    location: 'Makati CBD, Tower 1',
-    earnedAmount: 300,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9842',
-  },
-  {
-    id: 'WAL-002',
-    title: 'Express parcel delivery to Greenbelt',
-    category: 'Delivery',
-    icon: 'bicycle',
-    date: 'Today (W4) · 10:00 AM',
-    requesterName: 'Patricia Mendoza',
-    location: 'Greenbelt 5 Concierge',
-    earnedAmount: 90,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9801',
-  },
-  {
-    id: 'WAL-003',
-    title: 'Buy groceries - SM Tagum',
-    category: 'Groceries',
-    icon: 'cart',
-    date: 'Oct 20 (W3) · 12:15 PM',
-    requesterName: 'Maria Clarissa',
-    location: 'SM Tagum Supermarket',
-    earnedAmount: 150,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9755',
-  },
-  {
-    id: 'WAL-004',
-    title: 'Queue for Meralco bills payment',
-    category: 'Queuing & Bills',
-    icon: 'time',
-    date: 'Oct 17 (W3) · 11:30 AM',
-    requesterName: 'Kenneth Gomez',
-    location: 'Bayad Center Ayala',
-    earnedAmount: 180,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9510',
-  },
-  {
-    id: 'WAL-005',
-    title: 'Print school project & binding',
-    category: 'Documents',
-    icon: 'print',
-    date: 'Oct 13 (W2) · 4:15 PM',
-    requesterName: 'Dave B. (Student)',
-    location: 'Davao Printing Hub',
-    earnedAmount: 160,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9321',
-  },
-  {
-    id: 'WAL-006',
-    title: 'Prescription pickup at Mercury Drug',
-    category: 'Medicine',
-    icon: 'medkit',
-    date: 'Oct 10 (W2) · 3:45 PM',
-    requesterName: 'Lola Remedios',
-    location: 'Mercury Drug Legaspi',
-    earnedAmount: 180,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9120',
-  },
-  {
-    id: 'WAL-007',
-    title: 'Pick up medical supplies & vitamins',
-    category: 'Delivery',
-    icon: 'bag-check-outline',
-    date: 'Oct 04 (W1) · 10:00 AM',
-    requesterName: 'Mrs. Angela Santos',
-    location: 'Generika Drugstore',
-    earnedAmount: 220,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-8940',
-  },
-];
-
-const INITIAL_ACTIVITY_RECORDS = [
-  {
-    id: 'ACT-001',
-    refNo: 'SYL-REC-9842',
-    title: 'Drop off documents - Unit 402',
-    category: 'Documents',
-    icon: 'document-text',
-    date: 'Today · 4:00 PM',
-    timestamp: Date.now() - 30 * 60 * 1000,
-    role: 'requester',
-    status: 'In Progress',
-    amount: 300,
-    platformFee: 20,
-    totalAmount: 320,
-    paymentMethod: 'GCash',
-    paymentRef: 'GC-9842109841',
-    doer: {
-      name: 'Alex Morales',
-      rating: '4.95★',
-      phone: '+63 917 842 1983',
-      vehicle: 'Honda Beat 125cc (Motorcycle)',
-    },
-    location: 'Makati CBD',
-    hasProof: false,
-    notes: 'Urgent contract document hand-off. Courier currently en route.',
-  },
-  {
-    id: 'ACT-002',
-    refNo: 'SYL-REC-9801',
-    title: 'Buy groceries - SM Tagum',
-    category: 'Groceries',
-    icon: 'cart',
-    date: 'Sep 28, 2026 · 12:15 PM',
-    timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    role: 'requester',
-    status: 'Completed',
-    amount: 150,
-    platformFee: 15,
-    totalAmount: 165,
-    paymentMethod: 'GCash',
-    paymentRef: 'GC-8812903412',
-    doer: {
-      name: 'Alex Morales',
-      rating: '4.95★',
-      phone: '+63 917 842 1983',
-      vehicle: 'Honda Beat 125cc (Motorcycle)',
-    },
-    location: 'SM Tagum',
-    hasProof: true,
-    proofDetails: 'Official supermarket register receipt & packed grocery bags verified.',
-    notes: '2 cartons milk, wheat bread, and eggs delivered fresh.',
-  },
-  {
-    id: 'ACT-003',
-    refNo: 'SYL-REC-9755',
-    title: 'Prescription pickup at Mercury Drug',
-    category: 'Medicine',
-    icon: 'medkit',
-    date: 'Sep 26, 2026 · 3:45 PM',
-    timestamp: Date.now() - 4 * 24 * 60 * 60 * 1000,
-    role: 'doer',
-    status: 'Completed',
-    amount: 180,
-    platformFee: 0,
-    totalAmount: 180,
-    paymentMethod: 'SuyoLink Wallet',
-    paymentRef: 'SW-771920391',
-    requesterName: 'Lola Remedios',
-    requesterRating: '4.9★',
-    location: 'Mercury Drug Legaspi',
-    hasProof: true,
-    proofDetails: 'Official pharmacy receipt & sealed prescription bag verified.',
-    notes: 'Delivered maintenance cardiac medicine safely to senior citizen.',
-  },
-  {
-    id: 'ACT-004',
-    refNo: 'SYL-REC-9620',
-    title: 'Print school project & binding',
-    category: 'Documents',
-    icon: 'print',
-    date: 'Sep 20, 2026 · 3:15 PM',
-    timestamp: Date.now() - 10 * 24 * 60 * 60 * 1000,
-    role: 'requester',
-    status: 'Completed',
-    amount: 80,
-    platformFee: 10,
-    totalAmount: 90,
-    paymentMethod: 'Cash on Delivery',
-    paymentRef: 'COD-66210984',
-    doer: {
-      name: 'Carlos Dalisay',
-      rating: '4.9★',
-      phone: '+63 919 720 9144',
-      vehicle: 'Yamaha Mio',
-    },
-    location: 'Davao Printing Hub',
-    hasProof: true,
-    proofDetails: 'Photo of bound 45-page thesis document verified.',
-    notes: 'Delivered ahead of deadline, cleanly bound with cover sleeve.',
-  },
-  {
-    id: 'ACT-005',
-    refNo: 'SYL-REC-9510',
-    title: 'Queue for Meralco bills payment',
-    category: 'Queuing & Bills',
-    icon: 'time',
-    date: 'Sep 18, 2026 · 11:30 AM',
-    timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000,
-    role: 'doer',
-    status: 'Completed',
-    amount: 250,
-    platformFee: 0,
-    totalAmount: 250,
-    paymentMethod: 'SuyoLink Wallet',
-    paymentRef: 'SW-651098231',
-    requesterName: 'Kenneth Gomez',
-    requesterRating: '4.8★',
-    location: 'Bayad Center Ayala',
-    hasProof: true,
-    proofDetails: 'Machine-validated payment stamp slip photographed.',
-    notes: 'Queued for 35 minutes, validated slip handed to client lobby desk.',
-  },
-  {
-    id: 'ACT-006',
-    refNo: 'SYL-REC-9402',
-    title: 'Pick up notarized contract copy',
-    category: 'Documents',
-    icon: 'close-circle',
-    date: 'Sep 15, 2026 · 2:10 PM',
-    timestamp: Date.now() - 15 * 24 * 60 * 60 * 1000,
-    role: 'requester',
-    status: 'Refunded',
-    amount: 200,
-    platformFee: 0,
-    totalAmount: 200,
-    paymentMethod: 'GCash (Refunded)',
-    paymentRef: 'REF-55102948',
-    location: 'Makati CBD',
-    hasProof: false,
-    notes: 'Cancelled due to lawyer rescheduling. 100% refund credited back to GCash.',
-  },
-];
+const INITIAL_COMPLETED_SUYOS = [];
+const INITIAL_ARCHIVED_SUYOS = [];
+const INITIAL_DOER_ACCEPTED_SUYOS = [];
+const INITIAL_DOER_CANCELLED_SUYOS = [];
+const WALLET_EARNED_SUYOS = [];
+const INITIAL_ACTIVITY_RECORDS = [];
 
 const CATEGORY_OPTIONS = ['All', 'Delivery', 'Groceries', 'Documents', 'Queuing & Bills', 'Household'];
-const URGENCY_OPTIONS = ['All', 'Normal', 'Urgent', 'Due today', 'Due tomorrow'];
+const URGENCY_OPTIONS = ['All', 'Normal', 'Urgent', 'Due today', 'Due tomorrow', 'Flexible'];
 
 const CATEGORY_CONFIG = {
   All: {
@@ -832,6 +284,11 @@ const URGENCY_CONFIG = {
     gradient: ['#FEFCE8', '#FEF9C3'],
     border: '#FDE047',
     text: '#854D0E',
+  },
+  Flexible: {
+    gradient: ['#F3E8FF', '#E9D5FF'],
+    border: '#D8B4FE',
+    text: '#7E22CE',
   },
 };
 
@@ -1008,6 +465,20 @@ function SwipeableNotificationItem({
   );
 }
 
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return 'Just now';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'Just now';
+  const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  const diffDays = Math.floor(diffSec / 86400);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
   const searchParams = useLocalSearchParams();
@@ -1016,7 +487,16 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState('home');
   const { user, logout } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const { requests, transactions = [], workflowError, error, refresh, isLoading } = useSuyos();
+  const {
+    requests,
+    transactions = [],
+    notifications: dbNotifications = [],
+    markRead: markDbNotifRead,
+    workflowError,
+    error,
+    refresh,
+    isLoading,
+  } = useSuyos();
   const { position, hasSavedLocation, locate } = useDeviceLocation();
 
   // Sidebar & Modal animation state
@@ -1054,7 +534,7 @@ export default function DashboardScreen() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // MySuyo Tab Navigation & Management state (dynamically populated from live requests)
-  const [postedSuyos, setPostedSuyos] = useState([]);
+  const [postedSuyos, setPostedSuyos] = useState(INITIAL_POSTED_SUYOS);
   const [acceptedSuyos, setAcceptedSuyos] = useState([]);
   const [completedSuyos, setCompletedSuyos] = useState([]);
   const [cancelledSuyos, setCancelledSuyos] = useState([]);
@@ -1093,51 +573,170 @@ export default function DashboardScreen() {
   const [activitySearchQuery, setActivitySearchQuery] = useState('');
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
-  // Favorites / Saved Suyos state
+  // Persistent tracking across device reopens and logins
+  const [deletedSuyoIds, setDeletedSuyoIds] = useState(() => new Set());
+  const [cancelledSuyoIds, setCancelledSuyoIds] = useState(() => new Set());
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => new Set());
+  const [readNotifIds, setReadNotifIds] = useState(() => new Set());
   const [favoriteSuyoIds, setFavoriteSuyoIds] = useState([]);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [openedFromFavorites, setOpenedFromFavorites] = useState(false);
 
+  // Load persisted IDs from AsyncStorage on mount / user change
+  useEffect(() => {
+    const scopeKey = user?.id ? user.id : 'guest';
+    const loadPersistedData = async () => {
+      try {
+        const [storedDeleted, storedCancelled, storedDismissed, storedFavorites] = await Promise.all([
+          AsyncStorage.getItem(`@suyolink_deleted_suyos_${scopeKey}`),
+          AsyncStorage.getItem(`@suyolink_cancelled_suyos_${scopeKey}`),
+          AsyncStorage.getItem(`@suyolink_dismissed_notifs_${scopeKey}`),
+          AsyncStorage.getItem(`@suyolink_favorites_${scopeKey}`),
+        ]);
+        if (storedDeleted) {
+          const parsed = JSON.parse(storedDeleted);
+          if (Array.isArray(parsed)) setDeletedSuyoIds(new Set(parsed));
+          else setDeletedSuyoIds(new Set());
+        } else {
+          setDeletedSuyoIds(new Set());
+        }
+        if (storedCancelled) {
+          const parsed = JSON.parse(storedCancelled);
+          if (Array.isArray(parsed)) setCancelledSuyoIds(new Set(parsed));
+          else setCancelledSuyoIds(new Set());
+        } else {
+          setCancelledSuyoIds(new Set());
+        }
+        if (storedDismissed) {
+          const parsed = JSON.parse(storedDismissed);
+          if (Array.isArray(parsed)) setDismissedNotifIds(new Set(parsed));
+          else setDismissedNotifIds(new Set());
+        } else {
+          setDismissedNotifIds(new Set());
+        }
+        if (storedFavorites) {
+          const parsed = JSON.parse(storedFavorites);
+          if (Array.isArray(parsed)) setFavoriteSuyoIds(parsed);
+          else setFavoriteSuyoIds([]);
+        } else {
+          setFavoriteSuyoIds([]);
+        }
+      } catch (err) {
+        console.warn('Error loading persisted suyo state:', err);
+      }
+    };
+    loadPersistedData();
+  }, [user?.id]);
+
+  const persistDeletedIds = (idsToAdd) => {
+    const scopeKey = user?.id ? user.id : 'guest';
+    setDeletedSuyoIds((prev) => {
+      const next = new Set(prev);
+      idsToAdd.forEach((id) => next.add(id));
+      AsyncStorage.setItem(
+        `@suyolink_deleted_suyos_${scopeKey}`,
+        JSON.stringify(Array.from(next))
+      ).catch(() => {});
+      return next;
+    });
+  };
+
+  const persistCancelledId = (id) => {
+    const scopeKey = user?.id ? user.id : 'guest';
+    setCancelledSuyoIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      AsyncStorage.setItem(
+        `@suyolink_cancelled_suyos_${scopeKey}`,
+        JSON.stringify(Array.from(next))
+      ).catch(() => {});
+      return next;
+    });
+  };
+
+  const persistDismissedNotifs = (idsToAdd) => {
+    const scopeKey = user?.id ? user.id : 'guest';
+    setDismissedNotifIds((prev) => {
+      const next = new Set(prev);
+      idsToAdd.forEach((id) => next.add(id));
+      AsyncStorage.setItem(
+        `@suyolink_dismissed_notifs_${scopeKey}`,
+        JSON.stringify(Array.from(next))
+      ).catch(() => {});
+      return next;
+    });
+  };
+
+  const persistFavoriteIds = (nextList) => {
+    const scopeKey = user?.id ? user.id : 'guest';
+    setFavoriteSuyoIds(nextList);
+    AsyncStorage.setItem(
+      `@suyolink_favorites_${scopeKey}`,
+      JSON.stringify(nextList)
+    ).catch(() => {});
+  };
+
   // Helper to ensure every public suyo on the dashboard has a valid urgency tag
   const resolveUrgencyTag = (item) => {
-    if (item?.urgency && ['Normal', 'Urgent', 'Due today', 'Due tomorrow'].includes(item.urgency)) {
+    if (item?.urgency && ['Normal', 'Urgent', 'Due today', 'Due tomorrow', 'Flexible'].includes(item.urgency)) {
       return item.urgency;
     }
     const dueStr = `${item?.due || ''} ${item?.dueDate || ''}`.toLowerCase();
     if (dueStr.includes('urgent') || dueStr.includes('asap')) return 'Urgent';
     if (dueStr.includes('tomorrow')) return 'Due tomorrow';
     if (dueStr.includes('today')) return 'Due today';
+    if (dueStr.includes('flexible')) return 'Flexible';
     return 'Normal';
   };
+
+  const isMyRequest = (r) =>
+    Boolean(
+      (user?.id && (r.requesterId === user.id || r.requester_id === user.id || r.user_id === user.id)) ||
+      (r.scope === 'posted' && user?.id) ||
+      (user?.email && r.requesterEmail === user.email)
+    );
 
   // Sync live Supabase requests & transactions with MySuyo & Doer Hub state
   useEffect(() => {
     if (!requests) return;
+
+    const isMyAssigned = (r) =>
+      (user?.id && (r.providerId === user.id || r.provider_id === user.id)) ||
+      r.scope === 'assigned' ||
+      r.isAcceptedByMe;
+
     const myPosted = requests
-      .filter((r) => r.requesterId === user?.id && r.status === 'open')
-      .map((r) => ({
-        id: r.id,
-        title: r.title,
-        category: r.category || 'General',
-        location: r.location || 'Nearby',
-        distanceText: 'Nearby',
-        reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
-        rewardAmount: (r.offerCentavos || 0) / 100,
-        tag: 'Waiting for doer',
-        status: 'Open - waiting for a doer',
-        urgency: resolveUrgencyTag(r),
-        due: r.deadline ? `Due ${new Date(r.deadline).toLocaleDateString()}` : 'Due today',
-        dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
-        createdAt: Date.parse(r.createdAt || Date.now()),
-        formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today',
-        details: r.details || '',
-        notes: r.specialInstructions || '',
-        requesterName: r.requesterName || 'You',
-        rawRequest: r,
-      }));
+      .filter((r) => isMyRequest(r) && r.status === 'open' && !deletedSuyoIds.has(r.id) && !cancelledSuyoIds.has(r.id))
+      .map((r) => {
+        const dist = position && r.latitude && r.longitude ? distanceKm(position, r) : 0.8;
+        const distNum = typeof dist === 'number' ? Number(dist.toFixed(1)) : 0.8;
+        return {
+          id: r.id,
+          title: r.title,
+          category: r.category || 'General',
+          location: r.location || 'Nearby',
+          distance: distNum,
+          distanceText: `${distNum} km away`,
+          reward: formatOffer(r.offerCentavos || 0),
+          rewardAmount: (r.offerCentavos || 0) / 100,
+          tag: 'Waiting for doer',
+          status: 'Open - waiting for a doer',
+          urgency: resolveUrgencyTag(r),
+          due: r.deadline ? `Due ${new Date(r.deadline).toLocaleDateString()}` : 'Due today',
+          dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
+          createdAt: Date.parse(r.createdAt || Date.now()),
+          formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today',
+          details: r.details || '',
+          notes: r.specialInstructions || '',
+          requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
+          requesterPhone: userProfile?.phone || '+63 917 123 4567',
+          isMine: true,
+          rawRequest: r,
+        };
+      });
 
     const myAccepted = requests
-      .filter((r) => r.requesterId === user?.id && ['assigned', 'in_progress'].includes(r.status))
+      .filter((r) => isMyRequest(r) && ['assigned', 'in_progress'].includes(r.status) && !deletedSuyoIds.has(r.id))
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -1154,12 +753,13 @@ export default function DashboardScreen() {
         formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today',
         details: r.details || '',
         notes: r.specialInstructions || '',
-        requesterName: r.requesterName || 'You',
+        requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
+        isMine: true,
         rawRequest: r,
       }));
 
     const myCompleted = requests
-      .filter((r) => r.requesterId === user?.id && r.status === 'completed')
+      .filter((r) => isMyRequest(r) && r.status === 'completed' && !deletedSuyoIds.has(r.id))
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -1176,12 +776,13 @@ export default function DashboardScreen() {
         formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recently',
         details: r.details || '',
         notes: r.specialInstructions || '',
-        requesterName: r.requesterName || 'You',
+        requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
+        isMine: true,
         rawRequest: r,
       }));
 
     const myCancelled = requests
-      .filter((r) => r.requesterId === user?.id && r.status === 'cancelled')
+      .filter((r) => isMyRequest(r) && r.status === 'cancelled' && !deletedSuyoIds.has(r.id))
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -1198,12 +799,13 @@ export default function DashboardScreen() {
         formattedDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recently',
         details: r.details || '',
         notes: r.specialInstructions || '',
-        requesterName: r.requesterName || 'You',
+        requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
+        isMine: true,
         rawRequest: r,
       }));
 
     const myAssigned = requests
-      .filter((r) => r.providerId === user?.id && ['assigned', 'in_progress'].includes(r.status))
+      .filter((r) => isMyAssigned(r) && ['assigned', 'in_progress'].includes(r.status) && !deletedSuyoIds.has(r.id))
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -1222,7 +824,7 @@ export default function DashboardScreen() {
       }));
 
     const myDoerCompleted = requests
-      .filter((r) => r.providerId === user?.id && r.status === 'completed')
+      .filter((r) => isMyAssigned(r) && r.status === 'completed' && !deletedSuyoIds.has(r.id))
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -1243,7 +845,7 @@ export default function DashboardScreen() {
       }));
 
     const myDoerCancelled = requests
-      .filter((r) => r.providerId === user?.id && r.status === 'cancelled')
+      .filter((r) => isMyAssigned(r) && r.status === 'cancelled' && !deletedSuyoIds.has(r.id))
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -1257,11 +859,17 @@ export default function DashboardScreen() {
     setPostedSuyos(myPosted);
     setAcceptedSuyos(myAccepted);
     setCompletedSuyos(myCompleted);
-    setCancelledSuyos(myCancelled);
+    setCancelledSuyos((prev) => {
+      const dbIds = new Set(myCancelled.map((m) => m.id));
+      const localCancelled = prev.filter(
+        (p) => !dbIds.has(p.id) && !deletedSuyoIds.has(p.id) && cancelledSuyoIds.has(p.id)
+      );
+      return [...myCancelled, ...localCancelled];
+    });
     setDoerAcceptedSuyos(myAssigned);
     setDoerCompletedSuyos(myDoerCompleted);
     setDoerCancelledSuyos(myDoerCancelled);
-  }, [requests, user?.id]);
+  }, [requests, user?.id, user?.email, userProfile?.name, userProfile?.phone, position, deletedSuyoIds, cancelledSuyoIds]);
 
   // Wallet dynamic computations from live Supabase transactions
   const providerTransactions = useMemo(
@@ -1324,19 +932,141 @@ export default function DashboardScreen() {
     }).length;
   }, [providerTransactions, currentYear, currentMonth]);
 
+  const overallCompletedCount = Math.max(overallSuyosCount, (completedSuyos?.length || 0) + (doerCompletedSuyos?.length || 0));
+
+  // Live user rating stats fetched dynamically from Supabase ratings table
+  const [userRatingStats, setUserRatingStats] = useState({
+    rating: null,
+    reviewCount: 0,
+    breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    satisfactionRate: 100,
+  });
+
+  useEffect(() => {
+    if (!user?.id || !supabase) return;
+    const fetchUserRatings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ratings')
+          .select('rating')
+          .eq('target_user_id', user.id);
+        if (!error && data && data.length > 0) {
+          const count = data.length;
+          const sum = data.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+          const avg = (sum / count).toFixed(1);
+          const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+          data.forEach((r) => {
+            const val = Math.round(Number(r.rating) || 5);
+            if (breakdown[val] !== undefined) breakdown[val] += 1;
+            else if (val >= 5) breakdown[5] += 1;
+            else breakdown[1] += 1;
+          });
+          const positive = data.filter((r) => Number(r.rating) >= 4).length;
+          setUserRatingStats({
+            rating: avg,
+            reviewCount: count,
+            breakdown,
+            satisfactionRate: Math.round((positive / count) * 100),
+          });
+        } else {
+          setUserRatingStats({
+            rating: null,
+            reviewCount: 0,
+            breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+            satisfactionRate: 100,
+          });
+        }
+      } catch (err) {
+        console.warn('Could not fetch user ratings:', err);
+      }
+    };
+    fetchUserRatings();
+
+    const channelName = `user-ratings-dashboard-${user.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ratings', filter: `target_user_id=eq.${user.id}` },
+        () => {
+          fetchUserRatings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   // Overall available suyos in Dashboard: public suyos from different users + account owner's open posted suyos
   // Note: 'Waiting for doer' is a lifecycle status ONLY applied and visible to MySuyo nav;
   // on the main dashboard where public available suyos are listed for all users, the tag turns into
   // an urgency indicator: 'Normal', 'Urgent', 'Due today', or 'Due tomorrow'.
   const availableSuyosBase = useMemo(() => {
+    // Exclude any requests that have been cancelled, completed, accepted, archived, or deleted
+    const excludedIds = new Set([
+      ...(deletedSuyoIds ? Array.from(deletedSuyoIds) : []),
+      ...(cancelledSuyoIds ? Array.from(cancelledSuyoIds) : []),
+      ...(cancelledSuyos || []).map((c) => c.id),
+      ...(acceptedSuyos || []).map((a) => a.id),
+      ...(completedSuyos || []).map((c) => c.id),
+      ...(archivedSuyos || []).map((a) => a.id),
+    ]);
+
+    // 1. Owner's active posted suyos from MySuyo -> Posted tab (waiting for doers)
+    const ownerPosted = (postedSuyos || [])
+      .filter((p) => p.status !== 'Cancelled' && !p.status?.includes('Completed') && !excludedIds.has(p.id))
+      .map((p) => {
+        const urgency = resolveUrgencyTag(p);
+        const distNum = typeof p.distance === 'number' ? p.distance : 0.8;
+        return {
+          ...p,
+          distance: distNum,
+          distanceText: p.distanceText || `${distNum} km away`,
+          tag: urgency,
+          urgency,
+          reward: p.reward || (p.rewardAmount ? `₱${p.rewardAmount}` : '₱150'),
+          rewardAmount: p.rewardAmount || 150,
+          mySuyoStatus: p.status || 'Open - waiting for a doer',
+          mySuyoTag: p.tag || 'Waiting for doer',
+          isMine: true,
+          postedTime: p.formattedDate || 'Active now',
+          due: p.due || 'Due today',
+          dueDate: p.dueDate || getTodayFormatted(),
+          deadline: p.deadline || p.deadlineIso || p.rawRequest?.deadline,
+          createdAt: typeof p.createdAt === 'number' ? p.createdAt : Date.parse(p.createdAt || Date.now()) || Date.now(),
+          requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
+          requesterPhone: userProfile?.phone || '+63 917 123 4567',
+        };
+      });
+
+    const ownerPostedIds = new Set(ownerPosted.map((p) => p.id));
+
+    // 2. Open public requests from backend
     const fromBackend = (requests || [])
-      .filter((r) => r.status === 'open' && (!r.deadline || Date.parse(r.deadline) > Date.now()))
+      .filter((r) =>
+        r.status === 'open' &&
+        !excludedIds.has(r.id) &&
+        !ownerPostedIds.has(r.id)
+      )
       .map((r) => {
         const dist = position && r.latitude && r.longitude ? distanceKm(position, r) : 0.8;
         const distNum = typeof dist === 'number' ? Number(dist.toFixed(1)) : 0.8;
         const offer = formatOffer(r.offerCentavos || 0);
-        const isUrgent = r.deadline && Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
-        const urgency = isUrgent ? 'Urgent' : 'Normal';
+        const chosenUrgency = r.urgency || r.statusTag || r.tag;
+        const urgency = resolveUrgencyTag({
+          urgency: chosenUrgency,
+          due: r.deadline ? 'Due ' + new Date(r.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Due today',
+          rawRequest: r,
+        });
+        const isOwner =
+          Boolean(
+            (user?.id && (r.requesterId === user.id || r.requester_id === user.id || r.user_id === user.id)) ||
+            (r.scope === 'posted' && user?.id) ||
+            (user?.email && r.requesterEmail === user.email)
+          );
+
         return {
           id: r.id,
           title: r.title,
@@ -1352,45 +1082,21 @@ export default function DashboardScreen() {
           createdAt: Date.parse(r.createdAt || r.deadline || Date.now()),
           due: r.deadline ? 'Due ' + new Date(r.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Due today',
           dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
+          deadline: r.deadline,
           details: r.details || 'No details provided.',
           notes: r.specialInstructions || '',
-          requesterName: r.requesterName || 'Community Member',
-          requesterPhone: r.requesterPhone || '+63 917 000 0000',
+          requesterName: isOwner ? `${userProfile?.name || 'Juan Dela Cruz'} (You)` : (r.requesterName || 'Community Member'),
+          requesterPhone: isOwner ? (userProfile?.phone || '+63 917 123 4567') : (r.requesterPhone || '+63 917 000 0000'),
           requesterRating: '4.9★',
           completedCount: '15 completed',
+          isMine: isOwner,
           rawRequest: r,
         };
       });
 
-    // Owner's active posted suyos that are open and waiting for doers to take
-    const ownerPosted = (postedSuyos || [])
-      .filter((p) => p.status !== 'Cancelled' && !p.status?.includes('Completed'))
-      .map((p) => ({
-        ...p,
-        tag: resolveUrgencyTag(p), // Always convert to urgency on Dashboard (Normal, Urgent, Due today, Due tomorrow)
-        mySuyoStatus: p.status || 'Open - waiting for a doer',
-        mySuyoTag: p.tag || 'Waiting for doer',
-        isMine: true,
-        distance: 0.8,
-        distanceText: p.distanceText || '0.8 km away',
-        postedTime: p.formattedDate || 'Active now',
-        due: p.due || 'Due today',
-        dueDate: p.dueDate || getTodayFormatted(),
-      }));
-
     // Merge: Owner's open posted suyos + backend open requests without duplicate IDs.
-    // In-progress accepted suyos are excluded from public available board (they belong in MySuyo -> Accepted).
-    const merged = [...ownerPosted, ...fromBackend];
-    const seenIds = new Set();
-    const result = [];
-    for (const item of merged) {
-      if (!seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        result.push(item);
-      }
-    }
-    return result;
-  }, [requests, position, postedSuyos]);
+    return [...ownerPosted, ...fromBackend];
+  }, [requests, position, postedSuyos, cancelledSuyos, acceptedSuyos, completedSuyos, archivedSuyos, user?.id, userProfile?.name, userProfile?.phone, deletedSuyoIds, cancelledSuyoIds]);
 
   // List of suyos favorited by the user
   const favoriteSuyos = useMemo(() => {
@@ -1486,18 +1192,21 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (searchParams?.justPosted === 'true') {
+      refresh?.();
       triggerToast('suyo is successfully posted', 'paper-plane');
     }
-  }, [searchParams?.justPosted]);
+  }, [searchParams?.justPosted, refresh]);
 
   const toggleFavoriteSuyo = (suyo) => {
     if (!suyo) return;
     const isFav = favoriteSuyoIds.includes(suyo.id);
     if (isFav) {
-      setFavoriteSuyoIds((prev) => prev.filter((id) => id !== suyo.id));
+      const next = favoriteSuyoIds.filter((id) => id !== suyo.id);
+      persistFavoriteIds(next);
       triggerToast('suyo is removed from favourite', 'heart-dislike');
     } else {
-      setFavoriteSuyoIds((prev) => [...prev, suyo.id]);
+      const next = [...favoriteSuyoIds, suyo.id];
+      persistFavoriteIds(next);
       triggerToast('suyo is successfully added to favourite', 'heart');
     }
   };
@@ -1523,7 +1232,9 @@ export default function DashboardScreen() {
 
     // Dynamic context resolution for Dashboard / Urgent / Favorites
     const isPosted =
+      suyo.isMine ||
       postedSuyos.some((p) => p.id === suyo.id) ||
+      (user?.id && (suyo.requesterId === user.id || suyo.rawRequest?.requesterId === user.id || suyo.rawRequest?.requester_id === user.id)) ||
       (suyo.requesterName && (suyo.requesterName.includes('(You)') || suyo.requesterName === userProfile?.name));
 
     const isAccepted =
@@ -1707,9 +1418,8 @@ export default function DashboardScreen() {
   const handleConfirmDeleteSelectedFavs = () => {
     if (selectedFavIdsToDelete.length === 0) return;
     const count = selectedFavIdsToDelete.length;
-    setFavoriteSuyoIds((prev) =>
-      prev.filter((id) => !selectedFavIdsToDelete.includes(id))
-    );
+    const next = favoriteSuyoIds.filter((id) => !selectedFavIdsToDelete.includes(id));
+    persistFavoriteIds(next);
     setSelectedFavIdsToDelete([]);
     setIsFavDeleteMode(false);
     triggerToast(
@@ -1720,49 +1430,6 @@ export default function DashboardScreen() {
     );
   };
 
-  // Sync any newly posted backend requests into postedSuyos
-  useEffect(() => {
-    if (requests && requests.length > 0) {
-      const userBackendRequests = requests.filter(
-        (r) =>
-          r.scope === 'posted' ||
-          r.requesterEmail === user?.email ||
-          r.requesterName === userProfile?.name
-      );
-      if (userBackendRequests.length > 0) {
-        setPostedSuyos((prev) => {
-          const prevIds = new Set(prev.map((p) => p.id));
-          const newItems = userBackendRequests
-            .filter((r) => !prevIds.has(r.id))
-            .map((r) => {
-              const isUrgent = r.deadline && Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
-              return {
-                id: r.id,
-                title: r.title,
-                category: r.category || 'General',
-                location: r.location || 'Nearby',
-                distanceText: '0.8 km away',
-                reward: formatOffer(r.offerCentavos || 0),
-                rewardAmount: (r.offerCentavos || 0) / 100,
-                tag: 'Waiting for doer',
-                status: 'Open - waiting for a doer',
-                urgency: r.urgency || (isUrgent ? 'Urgent' : 'Due today'),
-                due: r.deadline ? 'Due ' + new Date(r.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Due today',
-                dueDate: r.deadline ? new Date(r.deadline).toLocaleDateString() : getTodayFormatted(),
-                createdAt: Date.parse(r.createdAt || Date.now()),
-                formattedDate: 'Just now',
-                waitTime: 'Just posted',
-                needsBoost: false,
-                details: r.details || 'No details provided.',
-                requesterName: r.requesterName || userProfile?.name || 'You',
-              };
-            });
-          if (newItems.length === 0) return prev;
-          return [...newItems, ...prev];
-        });
-      }
-    }
-  }, [requests, user?.email, userProfile?.name]);
 
   const handleToggleMySuyoSelect = (id) => {
     setSelectedMySuyoIdsToDelete((prev) =>
@@ -1772,19 +1439,51 @@ export default function DashboardScreen() {
 
   const handleConfirmDeleteMySuyo = () => {
     if (selectedMySuyoIdsToDelete.length === 0) return;
+    const toDelete = [...selectedMySuyoIdsToDelete];
+    persistDeletedIds(toDelete);
+
+    // Dismiss any notifications associated with these deleted suyos so they never show up
+    const notifsToDismiss = [];
+    toDelete.forEach((id) => {
+      notifsToDismiss.push(id, `notif-suyo-${id}`, `notif-own-${id}`, `notif-live-${id}`);
+    });
+    persistDismissedNotifs(notifsToDismiss);
+
+    // Unfavorite if deleted
+    const updatedFavs = favoriteSuyoIds.filter((id) => !toDelete.includes(id));
+    if (updatedFavs.length !== favoriteSuyoIds.length) {
+      persistFavoriteIds(updatedFavs);
+    }
+
     if (mySuyoNavTab === 'posted') {
       setPostedSuyos((prev) =>
-        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+        prev.filter((item) => !toDelete.includes(item.id))
       );
     } else if (mySuyoNavTab === 'cancelled') {
       setCancelledSuyos((prev) =>
-        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+        prev.filter((item) => !toDelete.includes(item.id))
       );
     } else if (mySuyoNavTab === 'archived') {
       setArchivedSuyos((prev) =>
-        prev.filter((item) => !selectedMySuyoIdsToDelete.includes(item.id))
+        prev.filter((item) => !toDelete.includes(item.id))
       );
     }
+
+    // Attempt backend delete or status cancellation
+    if (supabase) {
+      toDelete.forEach((id) => {
+        if (typeof id === 'string' && !id.startsWith('POST-') && !id.startsWith('ARCH-')) {
+          supabase.from('suyo_requests').delete().eq('id', id).then(() => {
+            refresh?.();
+          }).catch(() => {
+            supabase.from('suyo_requests').update({ status: 'cancelled' }).eq('id', id).then(() => {
+              refresh?.();
+            }).catch(() => {});
+          });
+        }
+      });
+    }
+
     setSelectedMySuyoIdsToDelete([]);
     setIsMySuyoEditMode(false);
     triggerToast('suyo is successfully deleted', 'trash-outline');
@@ -1799,8 +1498,10 @@ export default function DashboardScreen() {
 
   const handleConfirmDeleteDoerCancelled = () => {
     if (selectedDoerCancelledIds.length === 0) return;
+    const toDelete = [...selectedDoerCancelledIds];
+    persistDeletedIds(toDelete);
     setDoerCancelledSuyos((prev) =>
-      prev.filter((item) => !selectedDoerCancelledIds.includes(item.id))
+      prev.filter((item) => !toDelete.includes(item.id))
     );
     setSelectedDoerCancelledIds([]);
     setIsDoerCancelledEditMode(false);
@@ -1809,6 +1510,7 @@ export default function DashboardScreen() {
 
   // Feature: Increase / Boost Reward (Supports resetting with +0)
   const handleBoostReward = (suyoId, addAmount) => {
+    const target = postedSuyos.find((s) => s.id === suyoId) || selectedSuyo;
     setPostedSuyos((prev) =>
       prev.map((s) => {
         if (s.id === suyoId) {
@@ -1826,19 +1528,31 @@ export default function DashboardScreen() {
         return s;
       })
     );
+    let finalAmt = 150;
     if (selectedSuyo && selectedSuyo.id === suyoId) {
       const baseAmt = Number(
         selectedSuyo.baseRewardAmount ?? selectedSuyo.rewardAmount ?? 150
       );
-      const newAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
+      finalAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
       setSelectedSuyo((prev) => ({
         ...prev,
         baseRewardAmount: baseAmt,
         currentBoost: addAmount,
-        rewardAmount: newAmt,
-        reward: `₱${newAmt}`,
+        rewardAmount: finalAmt,
+        reward: `₱${finalAmt}`,
         needsBoost: false,
       }));
+    } else if (target) {
+      const baseAmt = Number(target.baseRewardAmount ?? target.rewardAmount ?? 150);
+      finalAmt = addAmount === 0 ? baseAmt : baseAmt + addAmount;
+    }
+    if (supabase && target) {
+      const dbId = target.rawRequest?.id || (typeof target.id === 'string' && !target.id.startsWith('POST-') ? target.id : null);
+      if (dbId) {
+        supabase.from('suyo_requests').update({ offer_centavos: Math.round(finalAmt * 100) }).eq('id', dbId).then(() => {
+          refresh?.();
+        }).catch(() => {});
+      }
     }
     if (addAmount === 0) {
       triggerToast('Reward boost reset to original amount', 'refresh');
@@ -1850,6 +1564,21 @@ export default function DashboardScreen() {
   // Feature: Cancel Suyo
   const handleCancelSuyo = (suyoId) => {
     const target = postedSuyos.find((s) => s.id === suyoId) || selectedSuyo;
+    persistCancelledId(suyoId);
+
+    // Dismiss related notifications so it disappears from notifications
+    persistDismissedNotifs([
+      suyoId,
+      `notif-suyo-${suyoId}`,
+      `notif-own-${suyoId}`,
+      `notif-live-${suyoId}`,
+    ]);
+
+    // Remove from favorites if favorited
+    if (favoriteSuyoIds.includes(suyoId)) {
+      persistFavoriteIds(favoriteSuyoIds.filter((id) => id !== suyoId));
+    }
+
     if (target) {
       const cancelledItem = {
         ...target,
@@ -1860,11 +1589,32 @@ export default function DashboardScreen() {
       };
       setCancelledSuyos((prev) => [cancelledItem, ...prev.filter((s) => s.id !== suyoId)]);
       setPostedSuyos((prev) => prev.filter((s) => s.id !== suyoId));
+
+      if (supabase && target) {
+        const dbId = target.rawRequest?.id || (typeof target.id === 'string' && !target.id.startsWith('POST-') ? target.id : null);
+        if (dbId) {
+          // Use Supabase RPC change_suyo_status with update fallback
+          supabase
+            .rpc('change_suyo_status', { p_request_id: dbId, p_status: 'cancelled' })
+            .then(() => {
+              refresh?.();
+            })
+            .catch(() => {
+              supabase
+                .from('suyo_requests')
+                .update({ status: 'cancelled' })
+                .eq('id', dbId)
+                .then(() => {
+                  refresh?.();
+                })
+                .catch(() => {});
+            });
+        }
+      }
     }
     if (selectedSuyo && selectedSuyo.id === suyoId) {
       setSelectedSuyo(null);
     }
-    triggerToast('suyo is successfully cancelled', 'close-circle');
   };
 
   // Feature: Open Edit Suyo
@@ -1918,6 +1668,25 @@ export default function DashboardScreen() {
       }));
     }
 
+    if (supabase && editingSuyoData.id) {
+      const dbId = !String(editingSuyoData.id).startsWith('POST-') && !String(editingSuyoData.id).startsWith('ARCH-') ? editingSuyoData.id : null;
+      if (dbId) {
+        supabase
+          .from('suyo_requests')
+          .update({
+            title: editingSuyoData.title.trim(),
+            details: editingSuyoData.details.trim(),
+            special_instructions: editingSuyoData.notes.trim(),
+            offer_centavos: Math.round((Number(editingSuyoData.rewardAmount) || 150) * 100),
+          })
+          .eq('id', dbId)
+          .then(() => {
+            refresh?.();
+          })
+          .catch(() => {});
+      }
+    }
+
     setIsEditingSuyoModalOpen(false);
     triggerToast('Suyo details updated successfully', 'checkmark-circle');
   };
@@ -1961,111 +1730,297 @@ export default function DashboardScreen() {
     triggerToast('suyo is successfully posted', 'paper-plane');
   };
 
-  // Functional Notifications state
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'NOTIF-1',
-      title: 'Doer Assigned',
-      body: 'Alex M. accepted your suyo "Drop off documents - Unit 402". Estimated arrival in 5 mins.',
-      time: '5m ago',
-      category: 'doer',
-      icon: 'bicycle',
-      unread: true,
-      targetScreen: '/requester-fulfill',
-    },
-    {
-      id: 'NOTIF-2',
-      title: 'Task Accepted',
-      body: 'You are now fulfilling "Buy groceries - SM Tagum". Tap to view task directions.',
-      time: '25m ago',
-      category: 'task',
-      icon: 'cart-outline',
-      unread: true,
-      targetScreen: '/fulfill',
-      taskParams: {
-        id: 'SYL-102',
-        title: 'Buy groceries - SM Tagum',
-        category: 'Groceries',
-        location: 'SM Tagum',
-        reward: '₱150',
-        requesterName: 'Maria Clarissa',
-      },
-    },
-    {
-      id: 'NOTIF-3',
-      title: 'Reward Credited',
-      body: '₱300 has been credited to your account for completing suyo #SYL-984.',
-      time: '1h ago',
-      category: 'payment',
-      icon: 'cash-outline',
-      unread: true,
-      targetScreen: null,
-    },
-    {
-      id: 'NOTIF-4',
-      title: 'New Suyo Nearby',
-      body: 'An urgent suyo "Prescription pickup at Mercury Drug" was posted 1.1 km away.',
-      time: '3h ago',
-      category: 'nearby',
-      icon: 'location-outline',
-      unread: false,
-      targetScreen: null,
-    },
-  ]);
+  // Functional dynamic Notifications state
+  const [notifications, setNotifications] = useState([]);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [notificationFilter, setNotificationFilter] = useState('All'); // 'All' | 'Unread'
+
+  // Synchronize dynamic notifications from real database records and recent requests
+  useEffect(() => {
+    const list = [];
+
+    // 1. Database notifications (applications, status updates, completions)
+    (dbNotifications || []).forEach((item) => {
+      if (
+        dismissedNotifIds.has(item.id) ||
+        (item.request_id && (deletedSuyoIds.has(item.request_id) || dismissedNotifIds.has(item.request_id)))
+      ) return;
+      const isUnread = !item.read_at && !readNotifIds.has(item.id);
+      list.push({
+        id: item.id,
+        title:
+          item.kind === 'application'
+            ? 'Doer Applied'
+            : item.kind === 'application_decision'
+            ? 'Application Update'
+            : item.kind === 'status_update'
+            ? 'Suyo In Progress'
+            : item.kind === 'completed'
+            ? 'Suyo Completed'
+            : 'Suyo Notification',
+        body: item.body,
+        time: formatRelativeTime(item.created_at),
+        category:
+          item.kind === 'application'
+            ? 'doer'
+            : item.kind === 'completed'
+            ? 'payment'
+            : 'task',
+        icon:
+          item.kind === 'application'
+            ? 'bicycle'
+            : item.kind === 'completed'
+            ? 'cash-outline'
+            : 'document-text-outline',
+        unread: isUnread,
+        requestId: item.request_id,
+        targetScreen: item.request_id ? '/suyo' : null,
+      });
+    });
+
+    // 2. Real community open requests (real-time notification for nearby/new suyos)
+    (requests || [])
+      .filter((r) => r.status === 'open' && !isMyRequest(r) && !deletedSuyoIds.has(r.id) && !cancelledSuyoIds.has(r.id))
+      .slice(0, 10)
+      .forEach((r) => {
+        const notifId = `notif-suyo-${r.id}`;
+        if (dismissedNotifIds.has(notifId) || dismissedNotifIds.has(r.id)) return;
+        const isUnread = !readNotifIds.has(notifId);
+        list.push({
+          id: notifId,
+          title: 'New Suyo Nearby',
+          body: `"${r.title}" (${r.category || 'General'}) posted in ${r.location || 'Nearby'} · ₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
+          time: formatRelativeTime(r.createdAt || r.created_at),
+          category: 'nearby',
+          icon: 'location-outline',
+          unread: isUnread,
+          requestId: r.id,
+          rawRequest: r,
+        });
+      });
+
+    // 3. User's own posted requests confirmation
+    (requests || [])
+      .filter((r) => r.requesterId === user?.id && r.status === 'open' && !deletedSuyoIds.has(r.id) && !cancelledSuyoIds.has(r.id))
+      .slice(0, 3)
+      .forEach((r) => {
+        const notifId = `notif-own-${r.id}`;
+        if (dismissedNotifIds.has(notifId) || dismissedNotifIds.has(r.id)) return;
+        list.push({
+          id: notifId,
+          title: 'Suyo Posted Successfully',
+          body: `Your suyo "${r.title}" is live and waiting for community couriers.`,
+          time: formatRelativeTime(r.createdAt || r.created_at),
+          category: 'task',
+          icon: 'paper-plane-outline',
+          unread: !readNotifIds.has(notifId),
+          requestId: r.id,
+          rawRequest: r,
+        });
+      });
+
+    setNotifications((prev) => {
+      // Preserve any live real-time notifications received via Supabase broadcast/changes
+      const liveOnly = prev.filter(
+        (p) =>
+          p.id.startsWith('notif-live-') &&
+          !dismissedNotifIds.has(p.id) &&
+          (!p.requestId || (!deletedSuyoIds.has(p.requestId) && !cancelledSuyoIds.has(p.requestId) && !dismissedNotifIds.has(p.requestId)))
+      );
+      const combined = [...liveOnly, ...list];
+      const deduped = [];
+      const seen = new Set();
+      for (const item of combined) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          deduped.push(item);
+        }
+      }
+      return deduped;
+    });
+  }, [dbNotifications, requests, user?.id, dismissedNotifIds, readNotifIds, deletedSuyoIds, cancelledSuyoIds]);
+
+  const deletedSuyoIdsRef = useRef(deletedSuyoIds);
+  deletedSuyoIdsRef.current = deletedSuyoIds;
+  const cancelledSuyoIdsRef = useRef(cancelledSuyoIds);
+  cancelledSuyoIdsRef.current = cancelledSuyoIds;
+  const dismissedNotifIdsRef = useRef(dismissedNotifIds);
+  dismissedNotifIdsRef.current = dismissedNotifIds;
+
+  // Real-time listener: reflect newly posted suyos from any user/device in real time
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channelName = `suyo-dashboard-live-${user?.id || 'guest'}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'suyo_requests' },
+        (payload) => {
+          const newReq = payload.new;
+          if (!newReq) return;
+          if (
+            deletedSuyoIdsRef.current.has(newReq.id) ||
+            cancelledSuyoIdsRef.current.has(newReq.id) ||
+            dismissedNotifIdsRef.current.has(`notif-live-${newReq.id}`) ||
+            dismissedNotifIdsRef.current.has(newReq.id)
+          ) return;
+
+          const isOwn = newReq.requester_id === user?.id;
+          const notifItem = {
+            id: `notif-live-${newReq.id}`,
+            title: isOwn ? 'Your Suyo Was Posted' : 'New Suyo Posted Nearby',
+            body: `"${newReq.title}" (${newReq.category || 'General'}) · ₱${((newReq.offer_centavos || 0) / 100).toFixed(0)} in ${newReq.location || 'Nearby'}`,
+            time: 'Just now',
+            category: isOwn ? 'task' : 'nearby',
+            icon: isOwn ? 'paper-plane-outline' : 'location-outline',
+            unread: true,
+            requestId: newReq.id,
+          };
+          setNotifications((prev) => [
+            notifItem,
+            ...prev.filter((n) => n.id !== notifItem.id),
+          ]);
+          triggerToast(
+            isOwn
+              ? 'Your suyo was posted successfully!'
+              : `New suyo nearby: "${newReq.title}"`,
+            isOwn ? 'checkmark-circle' : 'sparkles'
+          );
+          refresh();
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'new_suyo' },
+        (event) => {
+          const newReq = event.payload;
+          if (!newReq) return;
+          if (
+            deletedSuyoIdsRef.current.has(newReq.id) ||
+            cancelledSuyoIdsRef.current.has(newReq.id) ||
+            dismissedNotifIdsRef.current.has(`notif-live-${newReq.id}`) ||
+            dismissedNotifIdsRef.current.has(newReq.id)
+          ) return;
+
+          const isOwn =
+            newReq.requesterId === user?.id || newReq.requester_id === user?.id;
+          const notifItem = {
+            id: `notif-live-${newReq.id}`,
+            title: isOwn ? 'Your Suyo Was Posted' : 'New Suyo Posted Nearby',
+            body: `"${newReq.title}" (${newReq.category || 'General'}) · ₱${((newReq.offerCentavos || newReq.offer_centavos || 0) / 100).toFixed(0)} in ${newReq.location || 'Nearby'}`,
+            time: 'Just now',
+            category: isOwn ? 'task' : 'nearby',
+            icon: isOwn ? 'paper-plane-outline' : 'location-outline',
+            unread: true,
+            requestId: newReq.id,
+            rawRequest: newReq,
+          };
+          setNotifications((prev) => [
+            notifItem,
+            ...prev.filter((n) => n.id !== notifItem.id),
+          ]);
+          if (!isOwn) {
+            triggerToast(`New suyo nearby: "${newReq.title}"`, 'sparkles');
+          }
+          refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refresh]);
 
   const unreadNotificationsCount = notifications.filter((n) => n.unread).length;
 
   const markNotificationRead = (id) => {
+    setReadNotifIds((prev) => new Set([...prev, id]));
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
     );
+    if (markDbNotifRead && !id.startsWith('notif-')) {
+      markDbNotifRead(id).catch(() => {});
+    }
     triggerToast('Notification marked as read', 'checkmark-circle');
   };
 
   const markAllNotificationsRead = () => {
+    setReadNotifIds((prev) => {
+      const next = new Set(prev);
+      notifications.forEach((n) => next.add(n.id));
+      return next;
+    });
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
     triggerToast('All notifications marked as read', 'checkmark-done');
   };
 
   const clearAllNotifications = () => {
+    const idsToDismiss = notifications.map((n) => n.id);
+    notifications.forEach((n) => {
+      if (n.requestId) {
+        idsToDismiss.push(
+          n.requestId,
+          `notif-suyo-${n.requestId}`,
+          `notif-own-${n.requestId}`,
+          `notif-live-${n.requestId}`
+        );
+      }
+    });
+    persistDismissedNotifs(idsToDismiss);
     setNotifications([]);
     triggerToast('All notifications cleared', 'trash-outline');
   };
 
   const removeNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const targetNotif = notifications.find((n) => n.id === id);
+    const idsToDismiss = [id];
+    if (targetNotif?.requestId) {
+      idsToDismiss.push(
+        targetNotif.requestId,
+        `notif-suyo-${targetNotif.requestId}`,
+        `notif-own-${targetNotif.requestId}`,
+        `notif-live-${targetNotif.requestId}`
+      );
+    }
+    persistDismissedNotifs(idsToDismiss);
+    setNotifications((prev) => prev.filter((n) => !idsToDismiss.includes(n.id)));
     triggerToast('Notification removed', 'trash-outline');
   };
 
   const handleTapNotification = (notif) => {
-    // Mark as read
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notif.id ? { ...n, unread: false } : n))
-    );
+    markNotificationRead(notif.id);
     setIsNotificationsModalOpen(false);
 
+    if (notif.requestId || notif.rawRequest) {
+      const targetReq =
+        (availableSuyosBase || []).find((s) => s.id === notif.requestId) ||
+        (requests || []).find((r) => r.id === notif.requestId) ||
+        notif.rawRequest;
+      if (targetReq) {
+        handleOpenSuyoDetail(targetReq);
+        return;
+      }
+    }
+
     if (notif.targetScreen === '/requester-fulfill') {
-      router.push('/requester-fulfill');
-    } else if (notif.targetScreen === '/fulfill') {
+      router.push({
+        pathname: '/requester-fulfill',
+        params: notif.taskParams || (notif.requestId ? { id: notif.requestId } : {}),
+      });
+    } else if (notif.targetScreen === '/fulfill' || notif.targetScreen === '/suyo') {
       router.push({
         pathname: '/fulfill',
-        params: notif.taskParams || {
-          id: 'SYL-102',
-          title: 'Buy groceries - SM Tagum',
-          category: 'Groceries',
-          location: 'SM Tagum',
-          reward: '₱150',
-          requesterName: 'Maria Clarissa',
-        },
+        params: notif.taskParams || (notif.requestId ? { id: notif.requestId } : {}),
       });
     } else if (notif.category === 'payment') {
-      triggerToast('₱300 reward credited to your SuyoLink Wallet', 'cash-outline');
+      triggerToast('Earnings recorded in your SuyoLink Wallet', 'cash-outline');
     } else if (notif.category === 'nearby') {
-      const urgentSuyo = filteredSuyos.find((s) => s.tag === 'Urgent') || filteredSuyos[0];
-      if (urgentSuyo) {
-        handleOpenSuyoDetail(urgentSuyo);
+      const targetSuyo = filteredSuyos[0];
+      if (targetSuyo) {
+        handleOpenSuyoDetail(targetSuyo);
       } else {
         router.push('/map');
       }
@@ -2076,11 +2031,13 @@ export default function DashboardScreen() {
 
   // Active Suyo floating banner state (matching live task for current user)
   const activeSuyo = useMemo(() => {
-    const live = (requests || []).find(
-      (r) =>
-        (r.requesterId === user?.id || r.providerId === user?.id) &&
-        ['assigned', 'in_progress'].includes(r.status)
-    );
+    const live =
+      (requests || []).find(
+        (r) =>
+          (r.requesterId === user?.id || r.userId === user?.id || r.providerId === user?.id) &&
+          ['assigned', 'in_progress', 'accepted', 'active'].includes(r.status)
+      ) ||
+      (acceptedSuyos && acceptedSuyos.length > 0 ? acceptedSuyos[0] : null);
     if (!live) return null;
     const isDoer = live.providerId === user?.id;
     return {
@@ -2092,7 +2049,7 @@ export default function DashboardScreen() {
       progress: live.status === 'in_progress' ? '75%' : '40%',
       raw: live,
     };
-  }, [requests, user?.id]);
+  }, [requests, user?.id, acceptedSuyos]);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   const hasActiveSuyo = Boolean(activeSuyo);
@@ -2116,10 +2073,10 @@ export default function DashboardScreen() {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.details.toLowerCase().includes(q) ||
-          item.location.toLowerCase().includes(q) ||
-          item.category.toLowerCase().includes(q)
+          item.title?.toLowerCase().includes(q) ||
+          item.details?.toLowerCase().includes(q) ||
+          item.location?.toLowerCase().includes(q) ||
+          item.category?.toLowerCase().includes(q)
       );
     }
 
@@ -2130,19 +2087,19 @@ export default function DashboardScreen() {
 
     // Distance filter
     if (currentDistanceKm !== 'Any') {
-      list = list.filter((item) => item.distance <= currentDistanceKm);
+      list = list.filter((item) => (item.distance ?? 0.8) <= currentDistanceKm);
     }
 
     // Urgency filter
     if (selectedUrgency !== 'All') {
-      list = list.filter((item) => item.tag === selectedUrgency);
+      list = list.filter((item) => item.tag === selectedUrgency || item.urgency === selectedUrgency);
     }
 
     // Sort newest first
     list.sort((a, b) => b.createdAt - a.createdAt);
 
     return list;
-  }, [searchQuery, selectedCategory, selectedDistance, selectedUrgency]);
+  }, [availableSuyosBase, searchQuery, selectedCategory, currentDistanceKm, selectedUrgency]);
 
   // Dynamic header title
   const availableHeaderTitle = useMemo(() => {
@@ -2414,15 +2371,30 @@ export default function DashboardScreen() {
                   onPress={() => handleOpenSuyoDetail(suyo)}
                 >
                   <View style={styles.suyoCardTopRow}>
-                    <Text style={styles.suyoCardTitle} numberOfLines={2}>
-                      {suyo.title}
-                    </Text>
+                    <View style={{ flex: 1, marginRight: 10 }}>
+                      <Text style={styles.suyoCardTitle} numberOfLines={2}>
+                        {suyo.title}
+                      </Text>
+                      {suyo.isMine && (
+                        <View style={{ alignSelf: 'flex-start', backgroundColor: '#E8F5E9', borderColor: '#C8E6C9', borderWidth: 1, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1, marginTop: 4 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#1B5E20' }}>Posted by you</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.suyoCardReward}>{suyo.reward}</Text>
+                  </View>
+
+                  {/* Target Time Row on Available Suyo Card */}
+                  <View style={styles.suyoCardTargetRow}>
+                    <Ionicons name="time" size={12.5} color="#D97706" />
+                    <Text style={styles.suyoCardTargetText} numberOfLines={1}>
+                      Target: {formatTargetDeadline(suyo)}
+                    </Text>
                   </View>
 
                   <View style={styles.suyoCardBottomRow}>
                     <Text style={styles.suyoCardDistanceSub}>
-                      {suyo.distanceText} • {suyo.postedTime}
+                      {suyo.isMine ? 'Your Suyo' : suyo.distanceText} • {suyo.postedTime}
                     </Text>
 
                     <View
@@ -2434,6 +2406,8 @@ export default function DashboardScreen() {
                           ? styles.suyoTagToday
                           : suyo.tag === 'Due tomorrow'
                           ? styles.suyoTagTomorrow
+                          : suyo.tag === 'Flexible'
+                          ? styles.suyoTagFlexible
                           : styles.suyoTagNormal,
                       ]}
                     >
@@ -2446,6 +2420,8 @@ export default function DashboardScreen() {
                             ? styles.suyoTagTodayText
                             : suyo.tag === 'Due tomorrow'
                             ? styles.suyoTagTomorrowText
+                            : suyo.tag === 'Flexible'
+                            ? styles.suyoTagFlexibleText
                             : styles.suyoTagNormalText,
                         ]}
                       >
@@ -3249,12 +3225,14 @@ export default function DashboardScreen() {
                                   reward: suyo.reward,
                                   requesterName: suyo.requesterName,
                                   requesterPhone: suyo.requesterPhone,
+                                  contactPhone: suyo.contactPhone || suyo.requesterPhone,
                                   details: suyo.details,
+                                  arrivalWindow: suyo.timeBadge || '11:00 AM - 11:30 AM',
                                 },
                               });
                             }}
                           >
-                            <Ionicons name="bicycle" size={15} color="#FFFFFF" />
+                            <Ionicons name="navigate" size={15} color="#FFFFFF" />
                             <Text style={styles.doerContinueBtnText}>Continue Suyo</Text>
                           </TouchableOpacity>
 
@@ -3474,33 +3452,33 @@ export default function DashboardScreen() {
               <Text style={styles.walletBalanceLabel}>Today's Earnings - {todayDateFormatted}</Text>
               <Text style={styles.walletBalanceAmount}>₱{todayEarningsSum.toFixed(2)}</Text>
 
+              {/* 3 Fitted Summary Metric Tiles */}
               <View style={styles.walletSummaryRow}>
-                <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>
-                    {todaySuyosCount} Suyos
+                <View style={styles.walletSummaryTile}>
+                  <Text style={styles.walletSummaryCount} numberOfLines={1} adjustsFontSizeToFit>
+                    {todaySuyosCount}
                   </Text>
-                  <Text style={styles.walletSummaryLabel}>Today's Suyos</Text>
-                </View>
-                <View style={styles.walletSummaryDivider} />
-                <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>
-                    {monthlySuyosCount} Suyos
+                  <Text style={styles.walletSummaryLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    Today's Suyos
                   </Text>
-                  <Text style={styles.walletSummaryLabel}>Monthly Suyos</Text>
                 </View>
-                <View style={styles.walletSummaryDivider} />
-                <View style={styles.walletSummaryItem}>
-                  <Text style={styles.walletSummaryCount}>{overallSuyosCount} Suyos</Text>
-                  <Text style={styles.walletSummaryLabel}>Overall Completed</Text>
+                <View style={styles.walletSummaryTile}>
+                  <Text style={styles.walletSummaryCount} numberOfLines={1} adjustsFontSizeToFit>
+                    {monthlySuyosCount}
+                  </Text>
+                  <Text style={styles.walletSummaryLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    Monthly Suyos
+                  </Text>
+                </View>
+                <View style={styles.walletSummaryTile}>
+                  <Text style={styles.walletSummaryCount} numberOfLines={1} adjustsFontSizeToFit>
+                    {overallSuyosCount}
+                  </Text>
+                  <Text style={styles.walletSummaryLabel} numberOfLines={1} adjustsFontSizeToFit>
+                    Overall Done
+                  </Text>
                 </View>
               </View>
-
-              {/* Literal Modern Graphical Line Graph */}
-              <WalletIncomeLineGraph
-                transactions={providerTransactions}
-                totalOverride={displayWalletTotal}
-                hasTransactions={providerTransactions.length > 0}
-              />
 
               {/* Informative Note: Direct Settlement Outside App */}
               <View style={styles.walletPaymentNoticeRow}>
@@ -3511,17 +3489,19 @@ export default function DashboardScreen() {
               </View>
             </View>
 
+            {/* Literal Modern Graphical Line Graph - Full Width Standalone Tile */}
+            <WalletIncomeLineGraph
+              transactions={providerTransactions}
+              totalOverride={displayWalletTotal}
+              hasTransactions={providerTransactions.length > 0}
+            />
+
             {/* 2. Section Header: Just the Lists */}
             <View style={styles.walletSectionHeader}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.walletSectionTitle}>Accepted Suyo Earnings</Text>
                 <Text style={styles.walletSectionSub}>
                   Tracked rewards earned from every accepted suyo request
-                </Text>
-              </View>
-              <View style={styles.walletCountChip}>
-                <Text style={styles.walletCountChipText}>
-                  {dynamicWalletList.length} earned ({displayWalletTotal})
                 </Text>
               </View>
             </View>
@@ -3633,7 +3613,44 @@ export default function DashboardScreen() {
           <TouchableOpacity
             style={styles.floatingActiveModalTouchable}
             activeOpacity={0.92}
-            onPress={() => router.push('/requester-fulfill')}
+            onPress={() => {
+              const live = activeSuyo?.raw;
+              const isDoer = live?.providerId === user?.id;
+              if (isDoer) {
+                router.push({
+                  pathname: '/fulfill',
+                  params: {
+                    id: live?.id || activeSuyo?.id || 'SYL-102',
+                    title: live?.title || 'Drop off documents - Unit 402',
+                    category: live?.category || 'Documents',
+                    location: live?.location || live?.exactAddress || 'Unit 402, Makati CBD',
+                    distanceText: live?.distanceText || '0.8 km away',
+                    reward: live?.reward || (live?.price ? `₱${live.price}` : null) || '₱300',
+                    requesterName: live?.requesterName || 'Atty. Rafael Cruz',
+                    requesterPhone: live?.requesterPhone || live?.contactPhone || '0917 842 1983',
+                    details: live?.details || 'Delivery of notarized legal documents to Unit 402.',
+                    arrivalWindow: live?.timeBadge || '11:00 AM - 11:30 AM',
+                  },
+                });
+              } else {
+                router.push({
+                  pathname: '/requester-fulfill',
+                  params: {
+                    id: live?.id || activeSuyo?.id || 'SYL-102',
+                    title: live?.title || 'Drop off documents - Unit 402',
+                    category: live?.category || 'Documents',
+                    location: live?.location || live?.exactAddress || 'Unit 402, Makati CBD',
+                    distanceText: live?.distanceText || '0.8 km away',
+                    reward: live?.reward || (live?.price ? `₱${live.price}` : null) || '₱300',
+                    doerName: live?.assignedDoer || live?.doer?.name || live?.doerName || 'Alex M.',
+                    doerRating: live?.doer?.rating || live?.doerRating || '4.9',
+                    doerPhone: live?.doer?.phone || live?.doerPhone || '0917 552 8910',
+                    details: live?.details || 'Delivery of notarized legal documents to Unit 402.',
+                    arrivalWindow: live?.timeBadge || '11:00 AM - 11:30 AM',
+                  },
+                });
+              }
+            }}
           >
             <LinearGradient
               colors={['#E5F4EC', '#F4FAF6']}
@@ -3785,8 +3802,7 @@ export default function DashboardScreen() {
               pathname: '/account',
               params: {
                 name: userProfile?.name || 'Juan Dela Cruz',
-                rating: '4.9',
-                done: '48',
+                done: String(overallCompletedCount),
                 phone: userProfile?.phone || '+63 917 123 4567',
                 isOtherUser: 'false',
               },
@@ -4118,19 +4134,18 @@ export default function DashboardScreen() {
                   onPress={() => {
                     const doer = selectedSuyo.doer || DEFAULT_DOER;
                     const doerName = doer.name || 'Carlos Dalisay';
-                    const doerRating = (doer.rating || '4.9★').replace(/[★*]/g, '').trim();
+                    const doerRating = doer.rating ? String(doer.rating).replace(/[★*?]/g, '').trim() : '';
                     const doerPhone = doer.phone || '+63 919 720 9144';
-                    const doerDone = doer.done || '42';
+                    const doerDone = (doer.done || '0').replace(/[^0-9]/g, '') || '0';
 
                     setSelectedSuyo(null);
                     router.push({
                       pathname: '/profile',
                       params: {
                         name: doerName,
-                        rating: doerRating,
+                        ...(doerRating ? { rating: doerRating } : {}),
                         done: doerDone,
                         phone: doerPhone,
-                        vehicle: doer.vehicle || 'Motorcycle',
                         isOtherUser: 'true',
                       },
                     });
@@ -4156,8 +4171,7 @@ export default function DashboardScreen() {
                       {selectedSuyoContext === 'completed'
                         ? 'Fulfilled your Suyo'
                         : 'Accepted Courier'}{' '}
-                      · {selectedSuyo.doer?.rating || DEFAULT_DOER.rating} ·{' '}
-                      {selectedSuyo.doer?.vehicle || DEFAULT_DOER.vehicle}
+                      · {selectedSuyo.doer?.rating || DEFAULT_DOER.rating}
                     </Text>
                     <TouchableOpacity
                       activeOpacity={0.7}
@@ -4201,15 +4215,15 @@ export default function DashboardScreen() {
                             });
                           } else {
                             const reqName = selectedSuyo.requesterName || 'Maria Clarissa';
-                            const reqRating = (selectedSuyo.requesterRating || '4.9★').replace(/[★*]/g, '').trim();
-                            const reqDone = (selectedSuyo.completedCount || '15 completed').replace(/[^0-9]/g, '') || '15';
+                            const reqRating = selectedSuyo.requesterRating ? String(selectedSuyo.requesterRating).replace(/[★*?]/g, '').trim() : '';
+                            const reqDone = (selectedSuyo.completedCount || '0').replace(/[^0-9]/g, '') || '0';
                             const reqPhone = selectedSuyo.requesterPhone || '0928 341 5520';
 
                             router.push({
                               pathname: '/profile',
                               params: {
                                 name: reqName,
-                                rating: reqRating,
+                                ...(reqRating ? { rating: reqRating } : {}),
                                 done: reqDone,
                                 phone: reqPhone,
                                 isOtherUser: 'true',
@@ -4238,8 +4252,8 @@ export default function DashboardScreen() {
                           </Text>
                           <Text style={styles.detailRequestorMeta}>
                             {isOwnSuyo
-                              ? `Requester (You) · ${userProfile?.rating || '5.0★'}`
-                              : `Requestor · ${selectedSuyo.requesterRating || '4.9★'}  -  ${(selectedSuyo.completedCount || '15 completed').replace(/[()]/g, '')}`}
+                              ? `Requester (You) · ${userRatingStats.rating ? `${userRatingStats.rating}★` : 'New'}`
+                              : `Requestor · ${selectedSuyo.requesterRating || 'New'} · ${(selectedSuyo.completedCount || '0 completed').replace(/[()]/g, '')}`}
                           </Text>
                           <View style={styles.detailRequestorPhoneRow}>
                             <Ionicons name="call" size={11} color="#6D8777" />
@@ -4295,7 +4309,7 @@ export default function DashboardScreen() {
 
               <View style={styles.detailDivider} />
 
-              {/* Reward & Location Stats */}
+              {/* Reward, Target Time & Location Stats */}
               <View style={styles.detailStatsRow}>
                 <View style={styles.detailStatCol}>
                   <Text style={styles.detailStatLabel}>REWARD</Text>
@@ -4309,13 +4323,45 @@ export default function DashboardScreen() {
                 </View>
 
                 <View style={styles.detailStatCol}>
+                  <Text style={styles.detailStatLabel}>TARGET TIME</Text>
+                  <View style={styles.detailTargetTimeStatRow}>
+                    <Ionicons name="time" size={15} color="#D97706" />
+                    <Text style={styles.detailTargetTimeStatValue} numberOfLines={1}>
+                      {formatTargetDeadline(selectedSuyo)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailStatCol}>
                   <Text style={styles.detailStatLabel}>LOCATION</Text>
                   <View style={styles.detailLocationRow}>
-                    <Ionicons name="location-sharp" size={17} color="#0D9488" />
+                    <Ionicons name="location-sharp" size={16} color="#0D9488" />
                     <Text style={styles.detailLocationName} numberOfLines={1}>
                       {selectedSuyo.location || 'SM Tagum'}
                     </Text>
                   </View>
+                </View>
+              </View>
+
+              {/* Prominent Target Time Card for Doers */}
+              <View style={styles.detailTargetTimeCard}>
+                <View style={styles.detailTargetTimeIconCircle}>
+                  <Ionicons name="alarm-outline" size={20} color="#B45309" />
+                </View>
+                <View style={styles.detailTargetTimeTextCol}>
+                  <Text style={styles.detailTargetTimeLabel}>TARGET COMPLETION TIME</Text>
+                  <Text style={styles.detailTargetTimeValue}>
+                    {formatTargetDeadline(selectedSuyo)}
+                  </Text>
+                  <Text style={styles.detailTargetTimeSub}>
+                    {getTargetTimeSubtext(selectedSuyo)}
+                  </Text>
+                </View>
+                <View style={styles.detailTargetTimeBadge}>
+                  <Ionicons name="hourglass-outline" size={12} color="#92400E" />
+                  <Text style={styles.detailTargetTimeBadgeText}>
+                    {getTargetTimeBadge(selectedSuyo)}
+                  </Text>
                 </View>
               </View>
 
@@ -4643,7 +4689,8 @@ export default function DashboardScreen() {
                               reward: taskToFulfill.reward || '₱150',
                               requesterName: taskToFulfill.requesterName || 'Community Member',
                               requesterPhone: taskToFulfill.requesterPhone || '09564781552',
-                              deadline: taskToFulfill.timeBadge || 'Within 2 hours',
+                              deadline: formatTargetDeadline(taskToFulfill),
+                              arrivalWindow: formatTargetDeadline(taskToFulfill),
                               acceptedAt: 'Today · Just now',
                               details: taskToFulfill.details || 'Fulfill this suyo request according to requester requirements.',
                               notes: taskToFulfill.notes || 'Handle with care.',
@@ -4657,20 +4704,25 @@ export default function DashboardScreen() {
                         pathname: '/fulfill',
                         params: {
                           id: taskToFulfill?.id || 'SYL-102',
-                          title: taskToFulfill?.title || 'Quick Grocery Delivery (5 items)',
-                          category: taskToFulfill?.category || 'Groceries',
-                          location: taskToFulfill?.location || 'SM Tagum',
+                          title: taskToFulfill?.title || 'Drop off documents - Unit 402',
+                          category: taskToFulfill?.category || 'Documents',
+                          location: taskToFulfill?.location || taskToFulfill?.exactAddress || 'Unit 402, Makati CBD',
                           distanceText: taskToFulfill?.distanceText || '0.8 km away',
-                          reward: taskToFulfill?.reward || '₱150',
-                          requesterName: taskToFulfill?.requesterName || 'Maria Santos',
-                          requesterLocation: taskToFulfill?.location || 'Quezon City',
-                          requesterPhone: taskToFulfill?.requesterPhone || '09564781552',
-                          details: taskToFulfill?.details || 'Grocery delivery items',
+                          reward: taskToFulfill?.reward || (taskToFulfill?.price ? `₱${taskToFulfill.price}` : null) || '₱300',
+                          requesterName: taskToFulfill?.requesterName || 'Atty. Rafael Cruz',
+                          requesterLocation: taskToFulfill?.location || 'Makati CBD',
+                          requesterPhone: taskToFulfill?.requesterPhone || taskToFulfill?.contactPhone || '0917 842 1983',
+                          contactPhone: taskToFulfill?.contactPhone || taskToFulfill?.requesterPhone || '0917 842 1983',
+                          details: taskToFulfill?.details || 'Delivery of notarized legal documents to Unit 402.',
+                          arrivalWindow: formatTargetDeadline(taskToFulfill),
+                          deadline: formatTargetDeadline(taskToFulfill),
+                          latitude: taskToFulfill?.exactLatitude ?? taskToFulfill?.latitude ?? 7.4528,
+                          longitude: taskToFulfill?.exactLongitude ?? taskToFulfill?.longitude ?? 125.8035,
                         },
                       });
                     }}
                   >
-                    <Ionicons name="bicycle" size={18} color="#FFFFFF" />
+                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
                     <Text style={styles.detailFulfillBtnText}>Fulfill Suyo</Text>
                   </TouchableOpacity>
                 )}
@@ -4846,15 +4898,15 @@ export default function DashboardScreen() {
                       });
                     } else {
                       const reqName = selectedDoerSuyo.requesterName || 'Community Member';
-                      const reqRating = (selectedDoerSuyo.requesterRating || '4.9★').replace(/[★*]/g, '').trim();
-                      const reqDone = (selectedDoerSuyo.completedCount || selectedDoerSuyo.suyosPosted || '42 completed').replace(/[^0-9]/g, '') || '42';
+                      const reqRating = selectedDoerSuyo.requesterRating ? String(selectedDoerSuyo.requesterRating).replace(/[★*?]/g, '').trim() : '';
+                      const reqDone = (selectedDoerSuyo.completedCount || selectedDoerSuyo.suyosPosted || '0').replace(/[^0-9]/g, '') || '0';
                       const reqPhone = selectedDoerSuyo.requesterPhone || '+63 917 888 2341';
 
                       router.push({
                         pathname: '/profile',
                         params: {
                           name: reqName,
-                          rating: reqRating,
+                          ...(reqRating ? { rating: reqRating } : {}),
                           done: reqDone,
                           phone: reqPhone,
                           location: selectedDoerSuyo.location || 'Tagum City',
@@ -4888,7 +4940,7 @@ export default function DashboardScreen() {
                         <Ionicons name="checkmark-circle" size={13} color="#059669" />
                       </View>
                       <Text style={styles.doerRequesterSubMeta}>
-                        {selectedDoerSuyo.requesterRating || '4.9★'} · Prompt Payer
+                        {selectedDoerSuyo.requesterRating || 'New'} · Prompt Payer
                       </Text>
                     </View>
 
@@ -5100,7 +5152,7 @@ export default function DashboardScreen() {
                   <Text style={styles.doerVerifiedTagText}>Verified Courier & Doer</Text>
                 </View>
                 <Text style={styles.doerProfileRating}>
-                  ⭐ {selectedDoerProfile.rating || '4.9★'} · {selectedDoerProfile.completedCount || '128 suyos delivered'}
+                  ⭐ {selectedDoerProfile.rating ? `${selectedDoerProfile.rating}★` : 'New'} · {selectedDoerProfile.completedCount || '0 suyos delivered'}
                 </Text>
               </View>
 
@@ -5124,11 +5176,6 @@ export default function DashboardScreen() {
 
               {/* Details List */}
               <View style={styles.doerInfoList}>
-                <View style={styles.doerInfoRow}>
-                  <Ionicons name="bicycle" size={15} color="#1E4D2B" />
-                  <Text style={styles.doerInfoLabel}>Transport:</Text>
-                  <Text style={styles.doerInfoValue}>{selectedDoerProfile.vehicle || 'Motorcycle'}</Text>
-                </View>
                 <View style={styles.doerInfoRow}>
                   <Ionicons name="call" size={15} color="#1E4D2B" />
                   <Text style={styles.doerInfoLabel}>Contact:</Text>
@@ -5915,12 +5962,18 @@ export default function DashboardScreen() {
 
               <View style={[styles.statsMetricsGrid, { marginTop: 8 }]}>
                 <View style={styles.statsMetricTile}>
-                  <Text style={styles.statsTileValue}>4.95★</Text>
+                  <Text style={styles.statsTileValue}>
+                    {userRatingStats.rating ? `${userRatingStats.rating}★` : 'New'}
+                  </Text>
                   <Text style={styles.statsTileLabel}>Customer Rating</Text>
-                  <Text style={styles.statsTileSub}>142 Reviews</Text>
+                  <Text style={styles.statsTileSub}>
+                    {userRatingStats.reviewCount > 0 ? `${userRatingStats.reviewCount} Reviews` : 'No reviews yet'}
+                  </Text>
                 </View>
                 <View style={styles.statsMetricTile}>
-                  <Text style={[styles.statsTileValue, { color: '#059669' }]}>99.4%</Text>
+                  <Text style={[styles.statsTileValue, { color: '#059669' }]}>
+                    {userRatingStats.reviewCount > 0 ? `${userRatingStats.satisfactionRate}%` : '100%'}
+                  </Text>
                   <Text style={styles.statsTileLabel}>Satisfaction</Text>
                   <Text style={styles.statsTileSub}>Positive Feedback</Text>
                 </View>
@@ -5931,11 +5984,15 @@ export default function DashboardScreen() {
                 <View style={styles.statsCategoryHeaderRow}>
                   <View style={{ flex: 1, paddingRight: 6 }}>
                     <Text style={styles.statsSectionHeading}>Customer Satisfaction</Text>
-                    <Text style={styles.statsSectionSubheading}>Community ratings (142 reviews)</Text>
+                    <Text style={styles.statsSectionSubheading}>
+                      Community ratings ({userRatingStats.reviewCount} reviews)
+                    </Text>
                   </View>
                   <View style={styles.statsSatisfactionScoreBadge}>
                     <Ionicons name="star" size={12} color="#F59E0B" />
-                    <Text style={styles.statsSatisfactionScoreText}>4.95 / 5.0</Text>
+                    <Text style={styles.statsSatisfactionScoreText}>
+                      {userRatingStats.rating ? `${userRatingStats.rating} / 5.0` : 'New'}
+                    </Text>
                   </View>
                 </View>
 
@@ -5948,9 +6005,21 @@ export default function DashboardScreen() {
                       <Ionicons name="star" size={10} color="#F59E0B" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '94%', backgroundColor: '#059669' }]} />
+                      <View
+                        style={[
+                          styles.csatFill,
+                          {
+                            width: `${userRatingStats.reviewCount > 0 ? Math.round(((userRatingStats.breakdown[5] || 0) / userRatingStats.reviewCount) * 100) : 0}%`,
+                            backgroundColor: '#059669',
+                          },
+                        ]}
+                      />
                     </View>
-                    <Text style={styles.csatPctText}>94% (134)</Text>
+                    <Text style={styles.csatPctText}>
+                      {userRatingStats.reviewCount > 0
+                        ? `${Math.round(((userRatingStats.breakdown[5] || 0) / userRatingStats.reviewCount) * 100)}% (${userRatingStats.breakdown[5] || 0})`
+                        : '0% (0)'}
+                    </Text>
                   </View>
 
                   {/* 4 Stars */}
@@ -5960,9 +6029,21 @@ export default function DashboardScreen() {
                       <Ionicons name="star" size={10} color="#F59E0B" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '5%', backgroundColor: '#0284C7' }]} />
+                      <View
+                        style={[
+                          styles.csatFill,
+                          {
+                            width: `${userRatingStats.reviewCount > 0 ? Math.round(((userRatingStats.breakdown[4] || 0) / userRatingStats.reviewCount) * 100) : 0}%`,
+                            backgroundColor: '#0284C7',
+                          },
+                        ]}
+                      />
                     </View>
-                    <Text style={styles.csatPctText}>5% (7)</Text>
+                    <Text style={styles.csatPctText}>
+                      {userRatingStats.reviewCount > 0
+                        ? `${Math.round(((userRatingStats.breakdown[4] || 0) / userRatingStats.reviewCount) * 100)}% (${userRatingStats.breakdown[4] || 0})`
+                        : '0% (0)'}
+                    </Text>
                   </View>
 
                   {/* 3 Stars */}
@@ -5972,9 +6053,21 @@ export default function DashboardScreen() {
                       <Ionicons name="star" size={10} color="#F59E0B" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '1%', backgroundColor: '#D97706' }]} />
+                      <View
+                        style={[
+                          styles.csatFill,
+                          {
+                            width: `${userRatingStats.reviewCount > 0 ? Math.round(((userRatingStats.breakdown[3] || 0) / userRatingStats.reviewCount) * 100) : 0}%`,
+                            backgroundColor: '#D97706',
+                          },
+                        ]}
+                      />
                     </View>
-                    <Text style={styles.csatPctText}>1% (1)</Text>
+                    <Text style={styles.csatPctText}>
+                      {userRatingStats.reviewCount > 0
+                        ? `${Math.round(((userRatingStats.breakdown[3] || 0) / userRatingStats.reviewCount) * 100)}% (${userRatingStats.breakdown[3] || 0})`
+                        : '0% (0)'}
+                    </Text>
                   </View>
 
                   {/* 2 Stars */}
@@ -5984,9 +6077,21 @@ export default function DashboardScreen() {
                       <Ionicons name="star" size={10} color="#CBD5E1" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#94A3B8' }]} />
+                      <View
+                        style={[
+                          styles.csatFill,
+                          {
+                            width: `${userRatingStats.reviewCount > 0 ? Math.round(((userRatingStats.breakdown[2] || 0) / userRatingStats.reviewCount) * 100) : 0}%`,
+                            backgroundColor: '#94A3B8',
+                          },
+                        ]}
+                      />
                     </View>
-                    <Text style={styles.csatPctText}>0% (0)</Text>
+                    <Text style={styles.csatPctText}>
+                      {userRatingStats.reviewCount > 0
+                        ? `${Math.round(((userRatingStats.breakdown[2] || 0) / userRatingStats.reviewCount) * 100)}% (${userRatingStats.breakdown[2] || 0})`
+                        : '0% (0)'}
+                    </Text>
                   </View>
 
                   {/* 1 Star */}
@@ -5996,9 +6101,21 @@ export default function DashboardScreen() {
                       <Ionicons name="star" size={10} color="#CBD5E1" />
                     </View>
                     <View style={styles.csatTrack}>
-                      <View style={[styles.csatFill, { width: '0%', backgroundColor: '#94A3B8' }]} />
+                      <View
+                        style={[
+                          styles.csatFill,
+                          {
+                            width: `${userRatingStats.reviewCount > 0 ? Math.round(((userRatingStats.breakdown[1] || 0) / userRatingStats.reviewCount) * 100) : 0}%`,
+                            backgroundColor: '#94A3B8',
+                          },
+                        ]}
+                      />
                     </View>
-                    <Text style={styles.csatPctText}>0% (0)</Text>
+                    <Text style={styles.csatPctText}>
+                      {userRatingStats.reviewCount > 0
+                        ? `${Math.round(((userRatingStats.breakdown[1] || 0) / userRatingStats.reviewCount) * 100)}% (${userRatingStats.breakdown[1] || 0})`
+                        : '0% (0)'}
+                    </Text>
                   </View>
                 </View>
 
@@ -6082,61 +6199,60 @@ export default function DashboardScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Account Card (Matches Suyo Detail Accounts Style) */}
-            <TouchableOpacity
-              style={styles.sidebarAccountCard}
-              activeOpacity={0.75}
-              onPress={() => {
-                closeSidebar();
-                router.push({
-                  pathname: '/account',
-                  params: {
-                    name: userProfile?.name || 'Juan Dela Cruz',
-                    rating: '4.9',
-                    done: '48',
-                    phone: userProfile?.phone || '+63 917 123 4567',
-                    isOtherUser: 'false',
-                  },
-                });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="View account"
-            >
-              <View style={styles.detailAvatarCircle}>
-                <Text style={styles.detailAvatarInitials}>
-                  {getInitials(userProfile?.name || 'Juan Dela Cruz')}
-                </Text>
-              </View>
-              <View style={styles.detailRequestorTextCol}>
-                <View style={styles.sidebarAccountNameRow}>
+            <View style={styles.sidebarAccountCard}>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                activeOpacity={0.75}
+                onPress={() => {
+                  closeSidebar();
+                  router.push({
+                    pathname: '/account',
+                    params: {
+                      name: userProfile?.name || 'Juan Dela Cruz',
+                      done: String(overallCompletedCount),
+                      phone: userProfile?.phone || '+63 917 123 4567',
+                      isOtherUser: 'false',
+                    },
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="View account"
+              >
+                <View style={styles.detailAvatarCircle}>
+                  <Text style={styles.detailAvatarInitials}>
+                    {getInitials(userProfile?.name || 'Juan Dela Cruz')}
+                  </Text>
+                </View>
+                <View style={[styles.detailRequestorTextCol, { flex: 1 }]}>
                   <Text style={styles.detailRequestorName} numberOfLines={1}>
                     {userProfile?.name || 'Juan Dela Cruz'}
                   </Text>
-                  <TouchableOpacity
-                    onPress={(e) => {
-                      e?.stopPropagation?.();
-                      setTempProfile({ ...userProfile });
-                      setIsEditModalOpen(true);
-                    }}
-                    style={styles.smallEditIconButton}
-                    activeOpacity={0.75}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Edit profile"
-                  >
-                    <Ionicons name="pencil" size={13} color="#1E4D2B" />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.detailRequestorMeta}>
-                  4.9★  -  48 completed
-                </Text>
-                <View style={styles.detailRequestorPhoneRow}>
-                  <Ionicons name="call" size={11} color="#6D8777" />
-                  <Text style={styles.detailRequestorPhoneText}>
-                    {userProfile?.phone || '+63 917 123 4567'}
+                  <Text style={styles.detailRequestorMeta}>
+                    {userRatingStats.rating ? `${userRatingStats.rating}★` : 'New'} · {overallCompletedCount} completed
                   </Text>
+                  <View style={styles.detailRequestorPhoneRow}>
+                    <Ionicons name="call" size={11} color="#6D8777" />
+                    <Text style={styles.detailRequestorPhoneText}>
+                      {userProfile?.phone || '+63 917 123 4567'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setTempProfile({ ...userProfile });
+                  setIsEditModalOpen(true);
+                }}
+                style={styles.smallEditIconButton}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile"
+              >
+                <Ionicons name="pencil" size={13} color="#1E4D2B" />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.sidebarDivider} />
             <Text style={styles.sidebarSectionTitle}>Menu & Preferences</Text>
@@ -6754,6 +6870,12 @@ const styles = StyleSheet.create({
   },
   suyoTagTomorrowText: {
     color: '#0369A1',
+  },
+  suyoTagFlexible: {
+    backgroundColor: '#F3E8FF',
+  },
+  suyoTagFlexibleText: {
+    color: '#7E22CE',
   },
 
   /* Empty State */
@@ -7523,32 +7645,119 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 12,
+    gap: 8,
   },
   detailStatCol: {
     flex: 1,
   },
   detailStatLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: '#7E9789',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   detailRewardAmount: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '900',
     color: '#163523',
   },
-  detailLocationRow: {
+  detailTargetTimeStatRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
+  detailTargetTimeStatValue: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  detailLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
   detailLocationName: {
-    fontSize: 14.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#163523',
+  },
+  detailTargetTimeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1.2,
+    borderColor: '#FDE68A',
+    marginBottom: 14,
+    gap: 10,
+  },
+  detailTargetTimeIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FDE68A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailTargetTimeTextCol: {
+    flex: 1,
+  },
+  detailTargetTimeLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  detailTargetTimeValue: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#78350F',
+    letterSpacing: -0.2,
+  },
+  detailTargetTimeSub: {
+    fontSize: 11,
+    color: '#A16207',
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  detailTargetTimeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FDF6B2',
+    borderWidth: 1,
+    borderColor: '#FACC15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  detailTargetTimeBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#854D0E',
+  },
+  suyoCardTargetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+  },
+  suyoCardTargetText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#B45309',
   },
   detailTaskHeadingRow: {
     flexDirection: 'row',
@@ -9413,8 +9622,8 @@ const styles = StyleSheet.create({
   walletHeroCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 18,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E2ECE5',
     elevation: 2,
@@ -9477,12 +9686,18 @@ const styles = StyleSheet.create({
   },
   walletSummaryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    gap: 8,
+    marginBottom: 4,
+  },
+  walletSummaryTile: {
+    flex: 1,
     backgroundColor: '#F8FAF9',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#EDF5F0',
   },
@@ -9495,11 +9710,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#163523',
-    marginBottom: 3,
+    marginBottom: 2,
     textAlign: 'center',
   },
   walletSummaryLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#557261',
     fontWeight: '700',
     textAlign: 'center',

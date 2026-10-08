@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useDeviceLocation } from '../../context/LocationContext';
 import { supabase, authConfigError } from '../../lib/supabase';
 import {
   readVerificationLink,
@@ -23,6 +24,7 @@ import ThemedButton from '../themed/ThemedButton';
 
 export default function VerifyEmailScreen() {
   const { colors } = useTheme();
+  const { hasSavedLocation } = useDeviceLocation();
   const { user, isLoggedIn, resendVerification, verifyEmailCode } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -222,9 +224,11 @@ export default function VerifyEmailScreen() {
           ) : null}
           {verified ? (
             <ThemedButton
-              title="Continue to dashboard"
+              title="Continue to set up location"
               textStyle={{ color: colors.white }}
-              onPress={() => router.replace('/dashboard')}
+              onPress={() =>
+                router.replace(hasSavedLocation ? '/dashboard' : '/set-location')
+              }
             />
           ) : !checking ? (
             <>

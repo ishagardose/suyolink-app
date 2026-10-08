@@ -17,7 +17,7 @@ export default function ReviewProofScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { requests, proofs, detailsById, loadDetails, mutate, refresh } =
+  const { requests, proofs, detailsById, loadDetails, mutate, refresh, recordTransaction, reloadTransactions } =
     useSuyos();
 
   const [reason, setReason] = useState('');
@@ -51,8 +51,27 @@ export default function ReviewProofScreen() {
         p_accept: accept,
         p_reason: accept ? '' : reason.trim(),
       });
+      if (accept && typeof recordTransaction === 'function' && request) {
+        try {
+          await recordTransaction({
+            requestId: request.id,
+            title: request.title,
+            role: 'requester',
+            otherUserName: request.providerName || 'Doer',
+            rewardCentavos: request.rewardCentavos || 0,
+            currency: request.currency || 'PHP',
+            category: request.category || '',
+            location: request.location || '',
+          });
+        } catch (e) {
+          console.warn('[ReviewProofScreen] recordTransaction warning:', e);
+        }
+      }
       if (requestId) await loadDetails(requestId, { force: true });
       await refresh();
+      if (typeof reloadTransactions === 'function') {
+        reloadTransactions();
+      }
       if (accept) {
         router.replace({ pathname: '/rate-suyo', params: { id: requestId } });
       } else {
