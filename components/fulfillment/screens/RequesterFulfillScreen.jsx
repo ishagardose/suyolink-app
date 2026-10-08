@@ -1,3 +1,5 @@
+import LiveTrackingCard from '../../suyo/LiveTrackingCard';
+import useFulfillmentLocation from '../hooks/useFulfillmentLocation.js';
 import RequesterTrackingTimeline from '../tracking/RequesterTrackingTimeline';
 import { styles } from '../styles/requesterFulfill.styles.js';
 import React, { useState, useMemo, useEffect } from 'react';
@@ -22,7 +24,6 @@ import TaskMap from '../../maps/TaskMap';
 import { useAuth } from '../../../context/AuthContext';
 import { useSuyos } from '../../../context/SuyoContext';
 import { supabase } from '../../../lib/supabase';
-import { distanceKm, formatDistance } from '../../../lib/geo';
 
 export default function RequesterFulfillScreen() {
   const router = useRouter();
@@ -133,20 +134,15 @@ export default function RequesterFulfillScreen() {
     getStepFromStatus(task.status),
   );
 
-  const [liveDistanceText, setLiveDistanceText] = useState(task.distanceText);
   const [proofData, setProofData] = useState(null);
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
 
-  // Live GPS Coordinates of Doer & Destination
-  const dropoffLocation = useMemo(
-    () => ({ latitude: task.latitude, longitude: task.longitude }),
-    [task.latitude, task.longitude],
-  );
-
-  const [doerLocation, setDoerLocation] = useState(() => ({
-    latitude: task.latitude - 0.0053,
-    longitude: task.longitude + 0.0043,
-  }));
+  const {
+    dropoffLocation,
+    liveDistanceText,
+    liveDoerLocation: doerLocation,
+    request: trackingRequest,
+  } = useFulfillmentLocation({ task, user });
 
   // Dynamic timestamps
   const [timelineTimes, setTimelineTimes] = useState(() => {
@@ -198,21 +194,7 @@ export default function RequesterFulfillScreen() {
           }));
         }
       })
-      .on('broadcast', { event: 'location_update' }, (payload) => {
-        if (payload?.payload?.latitude && payload?.payload?.longitude) {
-          const newCoords = {
-            latitude: payload.payload.latitude,
-            longitude: payload.payload.longitude,
-          };
-          setDoerLocation(newCoords);
-          if (payload.payload.distanceText) {
-            setLiveDistanceText(payload.payload.distanceText);
-          } else {
-            const d = distanceKm(newCoords, dropoffLocation);
-            if (d !== null) setLiveDistanceText(formatDistance(d));
-          }
-        }
-      })
+
       .on('broadcast', { event: 'proof_submitted' }, (payload) => {
         if (payload?.payload) {
           setProofData(payload.payload);
@@ -252,22 +234,29 @@ export default function RequesterFulfillScreen() {
   // Map markers: Doer (Moving GPS) & Destination
   const mapMarkers = useMemo(
     () => [
-      {
-        id: 'doer-live',
-        latitude: doerLocation.latitude,
-        longitude: doerLocation.longitude,
-        title: `Doer: ${task.doerName}`,
-        isMe: false,
-      },
-      {
-        id: 'dropoff-location',
-        latitude: dropoffLocation.latitude,
-        longitude: dropoffLocation.longitude,
-        title: `Destination: ${task.location}`,
-        isMe: true,
-      },
+      ...(doerLocation
+        ? [
+            {
+              ...doerLocation,
+              id: 'doer-live',
+              kind: 'doer',
+              title: 'Doer',
+              isMe: true,
+            },
+          ]
+        : []),
+      ...(dropoffLocation
+        ? [
+            {
+              ...dropoffLocation,
+              id: 'destination',
+              kind: 'destination',
+              title: 'Destination',
+            },
+          ]
+        : []),
     ],
-    [doerLocation, dropoffLocation, task.doerName, task.location],
+    [doerLocation, dropoffLocation],
   );
 
   const handleCallDoer = () => {
@@ -471,8 +460,20 @@ export default function RequesterFulfillScreen() {
 
           {/* Interactive Map with live doer pin */}
           <View style={styles.mapViewportWrapper}>
+            {trackingRequest ? (
+              <LiveTrackingCard
+                request={trackingRequest}
+                userId={user?.id}
+              />
+            ) : null}
             <TaskMap
               center={dropoffLocation}
+              fitMarkers
+              connection={
+                doerLocation && dropoffLocation
+                  ? [doerLocation, dropoffLocation]
+                  : []
+              }
               markers={mapMarkers}
               pickup={doerLocation}
               dropoff={dropoffLocation}

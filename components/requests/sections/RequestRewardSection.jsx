@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestFormAppearance from '../hooks/useRequestFormAppearance';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,13 +12,14 @@ export default function RequestRewardSection({
   setDraft,
   setFieldErrors,
 }) {
+  const { styles, colors, resolveColor } = useRequestFormAppearance();
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
         <Ionicons
           name="cash-outline"
           size={18}
-          color="#1E4D2B"
+          color={resolveColor('#1E4D2B')}
         />
         <Text style={styles.cardTitle}>Reward Offer (PHP)</Text>
       </View>
@@ -47,7 +48,9 @@ export default function RequestRewardSection({
             <Text
               style={[
                 styles.currencySymbolText,
-                fieldErrors.offerAmount && { color: '#DC2626' },
+                fieldErrors.offerAmount && {
+                  color: resolveColor('#DC2626', 'color'),
+                },
               ]}
             >
               ₱
@@ -56,7 +59,8 @@ export default function RequestRewardSection({
           <TextInput
             style={styles.currencyInput}
             placeholder="150.00"
-            placeholderTextColor={PLACEHOLDER_COLOR}
+            placeholderTextColor={colors.muted}
+            accessibilityLabel="Reward amount"
             value={draft.offerAmount}
             onChangeText={(val) => {
               setDraft((p) => ({

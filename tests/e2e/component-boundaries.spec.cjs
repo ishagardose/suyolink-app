@@ -94,7 +94,7 @@ test('request sections retain draft, picker state, and attachments after validat
   await page.getByLabel('Close clock', { exact: true }).click();
   await page.getByText(/Post Suyo Request .*250.50/).click();
   await expect(
-    page.getByText('Contact info is required to post a suyo', { exact: true }),
+    page.getByText('Enter 10 digits after +63', { exact: true }),
   ).toBeVisible();
   await expect(title).toHaveValue('Refactor regression request');
   await expect(reward).toHaveValue('250.50');

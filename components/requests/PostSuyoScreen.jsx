@@ -5,25 +5,43 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import RequestForm from './RequestForm';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function PostSuyoScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   return (
-    <SafeAreaView style={styles.safeContainer} edges={['top', 'left', 'right']}>
-      <StatusBar style="dark" />
-      <View style={styles.navBar}>
+    <SafeAreaView
+      style={[styles.safeContainer, { backgroundColor: colors.background }]}
+      edges={['top', 'left', 'right']}
+    >
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View
+        style={[
+          styles.navBar,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/dashboard'))}
+          style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace('/dashboard')
+          }
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="arrow-back" size={22} color="#163523" />
+          <Ionicons
+            name="arrow-back"
+            size={22}
+            color={colors.text}
+          />
         </TouchableOpacity>
-        <Text style={styles.navBarTitle}>Post a Suyo</Text>
+        <Text style={[styles.navBarTitle, { color: colors.text }]}>
+          Post a Suyo
+        </Text>
         <View style={{ width: 38 }} />
       </View>
       <RequestForm

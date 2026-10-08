@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestFormAppearance from '../hooks/useRequestFormAppearance';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,13 +18,14 @@ export default function RequestDeadlineSection({
   setIsClockOpen,
   timeInputRef,
 }) {
+  const { styles, colors, resolveColor } = useRequestFormAppearance();
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
         <Ionicons
           name="time-outline"
           size={18}
-          color="#1E4D2B"
+          color={resolveColor('#1E4D2B')}
         />
         <Text style={styles.cardTitle}>Completion Deadline</Text>
       </View>
@@ -41,20 +42,26 @@ export default function RequestDeadlineSection({
             style={[
               styles.deadlineStatusActiveTag,
               {
-                backgroundColor: selectedStatusConfig.bgColor,
-                borderColor: selectedStatusConfig.borderColor,
+                backgroundColor: resolveColor(
+                  selectedStatusConfig.bgColor,
+                  'backgroundColor',
+                ),
+                borderColor: resolveColor(
+                  selectedStatusConfig.borderColor,
+                  'borderColor',
+                ),
               },
             ]}
           >
             <Ionicons
               name={selectedStatusConfig.icon}
               size={11}
-              color={selectedStatusConfig.color}
+              color={resolveColor(selectedStatusConfig.color)}
             />
             <Text
               style={[
                 styles.deadlineStatusActiveTagText,
-                { color: selectedStatusConfig.color },
+                { color: resolveColor(selectedStatusConfig.color, 'color') },
               ]}
             >
               {selectedStatusConfig.label}
@@ -73,6 +80,10 @@ export default function RequestDeadlineSection({
             return (
               <TouchableOpacity
                 key={opt.key}
+                accessibilityRole="radio"
+                accessibilityLabel={opt.label + ' priority'}
+                aria-checked={isSelected}
+                accessibilityState={{ checked: isSelected }}
                 style={[
                   styles.deadlineStatusChip,
                   isSelected && {
@@ -87,7 +98,7 @@ export default function RequestDeadlineSection({
                 <Ionicons
                   name={opt.icon}
                   size={14}
-                  color={isSelected ? '#FFFFFF' : opt.color}
+                  color={isSelected ? '#FFFFFF' : resolveColor(opt.color)}
                 />
                 <Text
                   style={[
@@ -107,22 +118,29 @@ export default function RequestDeadlineSection({
           style={[
             styles.deadlineStatusExplainer,
             {
-              backgroundColor: selectedStatusConfig.bgColor,
-              borderColor: selectedStatusConfig.borderColor,
+              backgroundColor: resolveColor(
+                selectedStatusConfig.bgColor,
+                'backgroundColor',
+              ),
+              borderColor: resolveColor(
+                selectedStatusConfig.borderColor,
+                'borderColor',
+              ),
             },
           ]}
         >
           <Ionicons
             name="information-circle"
             size={15}
-            color={selectedStatusConfig.color}
+            color={resolveColor(selectedStatusConfig.color)}
           />
           <Text
             style={[
               styles.deadlineStatusExplainerText,
               {
-                color:
+                color: resolveColor(
                   selectedStatusConfig.textColor || selectedStatusConfig.color,
+                ),
               },
             ]}
           >
@@ -153,7 +171,8 @@ export default function RequestDeadlineSection({
               ref={dateInputRef}
               style={styles.textInputInner}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor={PLACEHOLDER_COLOR}
+              placeholderTextColor={colors.muted}
+              accessibilityLabel="Target date"
               value={draft.deadlineDate}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineDate: val }));
@@ -169,6 +188,7 @@ export default function RequestDeadlineSection({
             <TouchableOpacity
               style={styles.pickerTrailingButton}
               activeOpacity={0.65}
+              disabled={busy}
               onPress={() => setIsCalendarOpen(true)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
@@ -177,7 +197,9 @@ export default function RequestDeadlineSection({
               <Ionicons
                 name="calendar-outline"
                 size={19}
-                color={fieldErrors.deadlineDate ? '#DC2626' : '#1E4D2B'}
+                color={resolveColor(
+                  fieldErrors.deadlineDate ? '#DC2626' : '#1E4D2B',
+                )}
               />
             </TouchableOpacity>
           </View>
@@ -208,7 +230,8 @@ export default function RequestDeadlineSection({
               ref={timeInputRef}
               style={styles.textInputInner}
               placeholder="HH:mm"
-              placeholderTextColor={PLACEHOLDER_COLOR}
+              placeholderTextColor={colors.muted}
+              accessibilityLabel="Target time"
               value={draft.deadlineTime}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineTime: val }));
@@ -224,6 +247,7 @@ export default function RequestDeadlineSection({
             <TouchableOpacity
               style={styles.pickerTrailingButton}
               activeOpacity={0.65}
+              disabled={busy}
               onPress={() => setIsClockOpen(true)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
@@ -232,7 +256,9 @@ export default function RequestDeadlineSection({
               <Ionicons
                 name="time-outline"
                 size={19}
-                color={fieldErrors.deadlineTime ? '#DC2626' : '#1E4D2B'}
+                color={resolveColor(
+                  fieldErrors.deadlineTime ? '#DC2626' : '#1E4D2B',
+                )}
               />
             </TouchableOpacity>
           </View>
@@ -249,7 +275,7 @@ export default function RequestDeadlineSection({
           <Ionicons
             name="checkmark-circle"
             size={14}
-            color="#1E4D2B"
+            color={resolveColor('#1E4D2B')}
           />
           <Text style={styles.deadlinePillText}>
             Scheduled Deadline: {draft.deadlineDate} at {draft.deadlineTime}

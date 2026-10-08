@@ -1,3 +1,4 @@
+import LiveTrackingCard from '../../suyo/LiveTrackingCard';
 import useFulfillmentLocation from '../hooks/useFulfillmentLocation.js';
 import DoerTrackingTimeline from '../tracking/DoerTrackingTimeline';
 import TaskProofModal from '../proof/TaskProofModal';
@@ -170,17 +171,7 @@ export default function FulfillTaskScreen() {
           setCurrentStepIndex(payload.payload.stepIndex);
         }
       })
-      .on('broadcast', { event: 'location_update' }, (payload) => {
-        if (payload?.payload?.latitude && payload?.payload?.longitude) {
-          setLiveDoerLocation({
-            latitude: payload.payload.latitude,
-            longitude: payload.payload.longitude,
-          });
-          if (payload.payload.distanceText) {
-            setLiveDistanceText(payload.payload.distanceText);
-          }
-        }
-      })
+
       .subscribe();
 
     return () => {
@@ -195,9 +186,8 @@ export default function FulfillTaskScreen() {
     dropoffLocation,
     liveDistanceText,
     liveDoerLocation,
-    setLiveDistanceText,
-    setLiveDoerLocation,
-  } = useFulfillmentLocation({ channelRef, task, user });
+    request: trackingRequest,
+  } = useFulfillmentLocation({ task, user });
 
   // Broadcast and persist step transition
   const handleUpdateStep = async (newIndex) => {
@@ -266,22 +256,29 @@ export default function FulfillTaskScreen() {
   // Markers for TaskMap
   const mapMarkers = useMemo(
     () => [
-      {
-        id: 'doer-location',
-        latitude: liveDoerLocation.latitude,
-        longitude: liveDoerLocation.longitude,
-        title: 'Doer (You)',
-        isMe: true,
-      },
-      {
-        id: 'dropoff-location',
-        latitude: dropoffLocation.latitude,
-        longitude: dropoffLocation.longitude,
-        title: `Drop-off: ${task.location}`,
-        isMe: false,
-      },
+      ...(liveDoerLocation
+        ? [
+            {
+              ...liveDoerLocation,
+              id: 'doer-live',
+              kind: 'doer',
+              title: 'Doer',
+              isMe: true,
+            },
+          ]
+        : []),
+      ...(dropoffLocation
+        ? [
+            {
+              ...dropoffLocation,
+              id: 'destination',
+              kind: 'destination',
+              title: 'Destination',
+            },
+          ]
+        : []),
     ],
-    [liveDoerLocation, dropoffLocation, task.location],
+    [liveDoerLocation, dropoffLocation],
   );
 
   const handlePickProof = async () => {
@@ -624,8 +621,20 @@ export default function FulfillTaskScreen() {
 
           {/* Interactive Map */}
           <View style={styles.mapViewportWrapper}>
+            {trackingRequest ? (
+              <LiveTrackingCard
+                request={trackingRequest}
+                userId={user?.id}
+              />
+            ) : null}
             <TaskMap
               center={dropoffLocation}
+              fitMarkers
+              connection={
+                liveDoerLocation && dropoffLocation
+                  ? [liveDoerLocation, dropoffLocation]
+                  : []
+              }
               markers={mapMarkers}
               pickup={liveDoerLocation}
               dropoff={dropoffLocation}

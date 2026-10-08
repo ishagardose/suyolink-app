@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestFormAppearance from '../hooks/useRequestFormAppearance';
 import {
   View,
   Text,
@@ -20,13 +20,14 @@ export default function RequestDetailsSection({
   handleRemoveAttachment,
   setPreviewImage,
 }) {
+  const { styles, colors, resolveColor } = useRequestFormAppearance();
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
         <Ionicons
           name="images-outline"
           size={18}
-          color="#1E4D2B"
+          color={resolveColor('#1E4D2B')}
         />
         <View style={styles.attachCardHeaderTitleRow}>
           <Text style={styles.cardTitle}>Photos & File Attachments</Text>
@@ -62,16 +63,21 @@ export default function RequestDetailsSection({
           <View
             style={[
               styles.attachActionIconCircle,
-              { backgroundColor: '#DCFCE7' },
+              { backgroundColor: resolveColor('#DCFCE7', 'backgroundColor') },
             ]}
           >
             <Ionicons
               name="camera"
               size={19}
-              color="#15803D"
+              color={resolveColor('#15803D')}
             />
           </View>
-          <Text style={[styles.attachActionBtnText, { color: '#15803D' }]}>
+          <Text
+            style={[
+              styles.attachActionBtnText,
+              { color: resolveColor('#15803D', 'color') },
+            ]}
+          >
             Take Photo
           </Text>
           <Text style={styles.attachActionBtnSub}>Camera</Text>
@@ -94,16 +100,21 @@ export default function RequestDetailsSection({
           <View
             style={[
               styles.attachActionIconCircle,
-              { backgroundColor: '#E0F2FE' },
+              { backgroundColor: resolveColor('#E0F2FE', 'backgroundColor') },
             ]}
           >
             <Ionicons
               name="images"
               size={19}
-              color="#0369A1"
+              color={resolveColor('#0369A1')}
             />
           </View>
-          <Text style={[styles.attachActionBtnText, { color: '#0369A1' }]}>
+          <Text
+            style={[
+              styles.attachActionBtnText,
+              { color: resolveColor('#0369A1', 'color') },
+            ]}
+          >
             Gallery
           </Text>
           <Text style={styles.attachActionBtnSub}>Photos</Text>
@@ -126,16 +137,21 @@ export default function RequestDetailsSection({
           <View
             style={[
               styles.attachActionIconCircle,
-              { backgroundColor: '#FEF3C7' },
+              { backgroundColor: resolveColor('#FEF3C7', 'backgroundColor') },
             ]}
           >
             <Ionicons
               name="document-attach"
               size={19}
-              color="#B45309"
+              color={resolveColor('#B45309')}
             />
           </View>
-          <Text style={[styles.attachActionBtnText, { color: '#B45309' }]}>
+          <Text
+            style={[
+              styles.attachActionBtnText,
+              { color: resolveColor('#B45309', 'color') },
+            ]}
+          >
             Attach File
           </Text>
           <Text style={styles.attachActionBtnSub}>PDF/Docs</Text>
@@ -146,7 +162,7 @@ export default function RequestDetailsSection({
         <View style={styles.attachmentLoadingRow}>
           <ActivityIndicator
             size="small"
-            color="#1E4D2B"
+            color={resolveColor('#1E4D2B')}
           />
           <Text style={styles.attachmentLoadingText}>
             Processing attachment...
@@ -192,7 +208,7 @@ export default function RequestDetailsSection({
                           <Ionicons
                             name="eye"
                             size={10}
-                            color="#FFFFFF"
+                            color={resolveColor('#FFFFFF')}
                           />
                           <Text style={styles.attachImageBadgeText}>View</Text>
                         </View>
@@ -206,7 +222,7 @@ export default function RequestDetailsSection({
                         <Ionicons
                           name="close"
                           size={11}
-                          color="#FFFFFF"
+                          color={resolveColor('#FFFFFF')}
                         />
                       </TouchableOpacity>
                     </View>
@@ -216,7 +232,7 @@ export default function RequestDetailsSection({
                         <Ionicons
                           name="document-text"
                           size={18}
-                          color="#B45309"
+                          color={resolveColor('#B45309')}
                         />
                       </View>
                       <View style={styles.attachDocMeta}>
@@ -239,7 +255,7 @@ export default function RequestDetailsSection({
                         <Ionicons
                           name="trash-outline"
                           size={15}
-                          color="#DC2626"
+                          color={resolveColor('#DC2626')}
                         />
                       </TouchableOpacity>
                     </View>

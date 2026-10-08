@@ -1,6 +1,8 @@
 import { StyleSheet, Platform } from 'react-native';
+import { deadlineStyles } from './sections/RequestDeadlineSection.styles';
 
 export const styles = StyleSheet.create({
+  ...deadlineStyles,
   flex: {
     flex: 1,
   },
@@ -352,10 +354,13 @@ export const styles = StyleSheet.create({
   /* DATE & TIME ROW */
   dateTimeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   dateTimeCol: {
     flex: 1,
+    flexBasis: 140,
+    minWidth: 140,
     gap: 6,
   },
   dateTimeInputWrapper: {
@@ -377,8 +382,10 @@ export const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     alignSelf: 'flex-start',
+    maxWidth: '100%',
   },
   deadlinePillText: {
+    flexShrink: 1,
     fontSize: 11.5,
     fontWeight: '700',
     color: '#1E4D2B',

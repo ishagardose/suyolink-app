@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestFormAppearance from '../hooks/useRequestFormAppearance';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,6 +9,7 @@ export default function RequestSuccessModal({
   onPosted,
   setIsSuccessModalOpen,
 }) {
+  const { styles, colors, resolveColor } = useRequestFormAppearance();
   return (
     <Modal
       visible={isSuccessModalOpen}
@@ -25,7 +26,7 @@ export default function RequestSuccessModal({
             <Ionicons
               name="checkmark-sharp"
               size={38}
-              color="#FFFFFF"
+              color={resolveColor('#FFFFFF')}
             />
           </View>
 
@@ -47,7 +48,10 @@ export default function RequestSuccessModal({
               <Text
                 style={[
                   styles.summaryValue,
-                  { color: '#1E4D2B', fontWeight: '800' },
+                  {
+                    color: resolveColor('#1E4D2B', 'color'),
+                    fontWeight: '800',
+                  },
                 ]}
               >
                 ₱{draft.offerAmount}
@@ -69,7 +73,10 @@ export default function RequestSuccessModal({
                 <Text
                   style={[
                     styles.summaryValue,
-                    { color: '#059669', fontWeight: '700' },
+                    {
+                      color: resolveColor('#059669', 'color'),
+                      fontWeight: '700',
+                    },
                   ]}
                 >
                   {draft.attachments.length} item
