@@ -119,25 +119,25 @@ export default function SuyoContactDetails({
             <View style={styles.detailAvatarCircle}>
               <Text style={styles.detailAvatarInitials}>
                 {isOwnSuyo
-                  ? getInitials(userProfile?.name || 'Juan Dela Cruz')
+                  ? getInitials(userProfile?.name || 'Community member')
                   : selectedSuyo.requesterInitials ||
                     getInitials(
                       selectedSuyo.requesterName ||
                         userProfile?.name ||
-                        'Juan Dela Cruz',
+                        'Community member',
                     )}
               </Text>
             </View>
             <View style={styles.detailRequestorTextCol}>
               <Text style={styles.detailRequestorName}>
                 {isOwnSuyo
-                  ? `${userProfile?.name || 'Juan Dela Cruz'} (You)`
-                  : selectedSuyo.requesterName || 'Maria Clarissa'}
+                  ? `${userProfile?.name || 'Community member'} (You)`
+                  : selectedSuyo.requesterName || 'Requester'}
               </Text>
               <Text style={styles.detailRequestorMeta}>
                 {isOwnSuyo
-                  ? `Requester (You) · ${userProfile?.rating || '5.0★'}`
-                  : `Requestor · ${selectedSuyo.requesterRating || '4.9★'}  -  ${(selectedSuyo.completedCount || '15 completed').replace(/[()]/g, '')}`}
+                  ? `Requester (You) · ${userProfile?.rating || 'No ratings yet'}`
+                  : 'Requester'}
               </Text>
               <View style={styles.detailRequestorPhoneRow}>
                 <Ionicons
@@ -147,8 +147,9 @@ export default function SuyoContactDetails({
                 />
                 <Text style={styles.detailRequestorPhoneText}>
                   {isOwnSuyo
-                    ? userProfile?.phone || '+63 917 123 4567'
-                    : selectedSuyo.requesterPhone || '0928 341 5520'}
+                    ? userProfile?.phone || 'No phone added'
+                    : selectedSuyo.requesterPhone ||
+                      'Contact shared after acceptance'}
                 </Text>
               </View>
             </View>
@@ -183,8 +184,8 @@ export default function SuyoContactDetails({
                 activeOpacity={0.7}
                 onPress={() =>
                   handleCallDoer(
-                    selectedSuyo.requesterPhone || '0917 842 1983',
-                    selectedSuyo.requesterName || 'Atty. Rafael Cruz',
+                    selectedSuyo.requesterPhone || '',
+                    selectedSuyo.requesterName || 'Requester',
                   )
                 }
                 accessibilityRole="button"

@@ -53,6 +53,7 @@ export default function EditProfileModal({
           <TextInput
             style={styles.modalInput}
             value={tempProfile.email}
+            editable={false}
             onChangeText={(text) =>
               setTempProfile({ ...tempProfile, email: text })
             }

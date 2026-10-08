@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestTheme from '../useRequestTheme';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,13 +18,14 @@ export default function RequestDeadlineSection({
   setIsClockOpen,
   timeInputRef,
 }) {
+  const { styles, resolveColor } = useRequestTheme();
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
         <Ionicons
           name="time-outline"
           size={18}
-          color="#1E4D2B"
+          color={resolveColor('#1E4D2B')}
         />
         <Text style={styles.cardTitle}>Completion Deadline</Text>
       </View>
@@ -41,20 +42,26 @@ export default function RequestDeadlineSection({
             style={[
               styles.deadlineStatusActiveTag,
               {
-                backgroundColor: selectedStatusConfig.bgColor,
-                borderColor: selectedStatusConfig.borderColor,
+                backgroundColor: resolveColor(
+                  selectedStatusConfig.bgColor,
+                  'backgroundColor',
+                ),
+                borderColor: resolveColor(
+                  selectedStatusConfig.borderColor,
+                  'borderColor',
+                ),
               },
             ]}
           >
             <Ionicons
               name={selectedStatusConfig.icon}
               size={11}
-              color={selectedStatusConfig.color}
+              color={resolveColor(selectedStatusConfig.color)}
             />
             <Text
               style={[
                 styles.deadlineStatusActiveTagText,
-                { color: selectedStatusConfig.color },
+                { color: resolveColor(selectedStatusConfig.color) },
               ]}
             >
               {selectedStatusConfig.label}
@@ -87,7 +94,11 @@ export default function RequestDeadlineSection({
                 <Ionicons
                   name={opt.icon}
                   size={14}
-                  color={isSelected ? '#FFFFFF' : opt.color}
+                  color={
+                    isSelected
+                      ? resolveColor('#FFFFFF')
+                      : resolveColor(opt.color)
+                  }
                 />
                 <Text
                   style={[
@@ -107,22 +118,29 @@ export default function RequestDeadlineSection({
           style={[
             styles.deadlineStatusExplainer,
             {
-              backgroundColor: selectedStatusConfig.bgColor,
-              borderColor: selectedStatusConfig.borderColor,
+              backgroundColor: resolveColor(
+                selectedStatusConfig.bgColor,
+                'backgroundColor',
+              ),
+              borderColor: resolveColor(
+                selectedStatusConfig.borderColor,
+                'borderColor',
+              ),
             },
           ]}
         >
           <Ionicons
             name="information-circle"
             size={15}
-            color={selectedStatusConfig.color}
+            color={resolveColor(selectedStatusConfig.color)}
           />
           <Text
             style={[
               styles.deadlineStatusExplainerText,
               {
-                color:
+                color: resolveColor(
                   selectedStatusConfig.textColor || selectedStatusConfig.color,
+                ),
               },
             ]}
           >
@@ -153,7 +171,7 @@ export default function RequestDeadlineSection({
               ref={dateInputRef}
               style={styles.textInputInner}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor={PLACEHOLDER_COLOR}
+              placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
               value={draft.deadlineDate}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineDate: val }));
@@ -177,7 +195,11 @@ export default function RequestDeadlineSection({
               <Ionicons
                 name="calendar-outline"
                 size={19}
-                color={fieldErrors.deadlineDate ? '#DC2626' : '#1E4D2B'}
+                color={
+                  fieldErrors.deadlineDate
+                    ? resolveColor('#DC2626')
+                    : resolveColor('#1E4D2B')
+                }
               />
             </TouchableOpacity>
           </View>
@@ -208,7 +230,7 @@ export default function RequestDeadlineSection({
               ref={timeInputRef}
               style={styles.textInputInner}
               placeholder="HH:mm"
-              placeholderTextColor={PLACEHOLDER_COLOR}
+              placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
               value={draft.deadlineTime}
               onChangeText={(val) => {
                 setDraft((p) => ({ ...p, deadlineTime: val }));
@@ -232,7 +254,11 @@ export default function RequestDeadlineSection({
               <Ionicons
                 name="time-outline"
                 size={19}
-                color={fieldErrors.deadlineTime ? '#DC2626' : '#1E4D2B'}
+                color={
+                  fieldErrors.deadlineTime
+                    ? resolveColor('#DC2626')
+                    : resolveColor('#1E4D2B')
+                }
               />
             </TouchableOpacity>
           </View>
@@ -249,7 +275,7 @@ export default function RequestDeadlineSection({
           <Ionicons
             name="checkmark-circle"
             size={14}
-            color="#1E4D2B"
+            color={resolveColor('#1E4D2B')}
           />
           <Text style={styles.deadlinePillText}>
             Scheduled Deadline: {draft.deadlineDate} at {draft.deadlineTime}

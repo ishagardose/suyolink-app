@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
+import { useSuyos } from '../../../context/SuyoContext';
 import { DEFAULT_DOER } from '../data/dashboardData';
 import { Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,29 @@ export default function SuyoDetailActions({
   styles,
   triggerToast,
 }) {
+  const { mutate } = useSuyos();
+  const accepting = useRef(false);
+  const [acceptBusy, setAcceptBusy] = useState(false);
+  const handleAccept = async () => {
+    if (accepting.current || !selectedSuyo?.id) return;
+    accepting.current = true;
+    setAcceptBusy(true);
+    try {
+      await mutate('accept_suyo', { p_request_id: selectedSuyo.id });
+      const id = selectedSuyo.id;
+      setSelectedSuyo(null);
+      setOpenedFromFavorites(false);
+      router.push({ pathname: '/fulfill', params: { id } });
+    } catch (error) {
+      triggerToast(
+        error.message || 'Could not accept this task. Please retry.',
+        'alert-circle',
+      );
+    } finally {
+      accepting.current = false;
+      setAcceptBusy(false);
+    }
+  };
   return (
     <View style={styles.detailActionButtonsRow}>
       {/* POSTED NAV BUTTONS (Edit, Cancel, or Re-post) */}
@@ -240,62 +264,19 @@ export default function SuyoDetailActions({
         <TouchableOpacity
           style={styles.detailFulfillBtn}
           activeOpacity={0.8}
-          onPress={() => {
-            const taskToFulfill = selectedSuyo;
-            setSelectedSuyo(null);
-            setOpenedFromFavorites(false);
-            if (taskToFulfill) {
-              setDoerAcceptedSuyos((prev) => {
-                if (prev.some((s) => s.id === taskToFulfill.id)) return prev;
-                return [
-                  {
-                    id: taskToFulfill.id,
-                    title: taskToFulfill.title,
-                    category: taskToFulfill.category || 'General',
-                    icon: taskToFulfill.icon || 'bicycle',
-                    location: taskToFulfill.location || 'Tagum City',
-                    distanceText: taskToFulfill.distanceText || '0.8 km away',
-                    reward: taskToFulfill.reward || '₱150',
-                    requesterName:
-                      taskToFulfill.requesterName || 'Community Member',
-                    requesterPhone:
-                      taskToFulfill.requesterPhone || '09564781552',
-                    deadline: taskToFulfill.timeBadge || 'Within 2 hours',
-                    acceptedAt: 'Today · Just now',
-                    details:
-                      taskToFulfill.details ||
-                      'Fulfill this suyo request according to requester requirements.',
-                    notes: taskToFulfill.notes || 'Handle with care.',
-                    status: 'Accepted · In Progress',
-                  },
-                  ...prev,
-                ];
-              });
-            }
-            router.push({
-              pathname: '/fulfill',
-              params: {
-                id: taskToFulfill?.id || 'SYL-102',
-                title:
-                  taskToFulfill?.title || 'Quick Grocery Delivery (5 items)',
-                category: taskToFulfill?.category || 'Groceries',
-                location: taskToFulfill?.location || 'SM Tagum',
-                distanceText: taskToFulfill?.distanceText || '0.8 km away',
-                reward: taskToFulfill?.reward || '₱150',
-                requesterName: taskToFulfill?.requesterName || 'Maria Santos',
-                requesterLocation: taskToFulfill?.location || 'Quezon City',
-                requesterPhone: taskToFulfill?.requesterPhone || '09564781552',
-                details: taskToFulfill?.details || 'Grocery delivery items',
-              },
-            });
-          }}
+          disabled={acceptBusy}
+          accessibilityRole="button"
+          accessibilityLabel="Fulfill Suyo"
+          onPress={handleAccept}
         >
           <Ionicons
             name="bicycle"
             size={18}
             color={resolveColor('#FFFFFF', 'color')}
           />
-          <Text style={styles.detailFulfillBtnText}>Fulfill Suyo</Text>
+          <Text style={styles.detailFulfillBtnText}>
+            {acceptBusy ? 'Accepting...' : 'Fulfill Suyo'}
+          </Text>
         </TouchableOpacity>
       )}
     </View>

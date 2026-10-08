@@ -5,12 +5,14 @@
   "scripts": {
     "format": "prettier --write \"**/*.{js,jsx,cjs,ts,json,sql}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,cjs,ts,json,sql}\"",
-    "test": "node --test tests/suyoRequests.test.cjs tests/geo.test.cjs tests/urgency.test.cjs && node tests/supabase-schema.test.cjs",
+    "test": "node --test tests/suyoRequests.test.cjs tests/geo.test.cjs tests/urgency.test.cjs tests/roadRoute.test.cjs tests/requestTiming.test.cjs tests/phone.test.cjs && node tests/supabase-schema.test.cjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test:e2e": "node tests/run-e2e.cjs"
+    "test:e2e": "node tests/run-e2e.cjs",
+    "android:signing": "node scripts/android-release.cjs signing",
+    "build:apk": "node scripts/android-release.cjs build"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -23,6 +25,7 @@
     "expo-constants": "~18.0.14",
     "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.24",
+    "expo-font": "~14.0.12",
     "expo-image-picker": "~17.0.11",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.12",
@@ -47,7 +50,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
-    "@types/react": "^19.3.0",
+    "@types/react": "~19.1.10",
     "prettier": "3.9.9",
     "prettier-plugin-sql-cst": "0.22.1",
     "typescript": "^5.9.3"

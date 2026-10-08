@@ -161,6 +161,7 @@ export const mySuyoStyles = {
   },
   mySuyoCardSubRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 6,
     marginBottom: 6,

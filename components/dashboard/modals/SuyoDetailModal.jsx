@@ -2,6 +2,7 @@ import SuyoContactDetails from '../details/SuyoContactDetails';
 import SuyoRewardBoost from '../details/SuyoRewardBoost';
 import SuyoDetailActions from '../details/SuyoDetailActions';
 import React from 'react';
+import { getRequestTiming } from '../../../lib/requestTiming';
 
 import {
   Text,
@@ -55,15 +56,7 @@ export default function SuyoDetailModal({
                   color={resolveColor('#658172', 'color')}
                 />
                 <Text style={styles.detailPostedTimeText}>
-                  {selectedSuyoContext === 'posted'
-                    ? `Posted: ${selectedSuyo.formattedDate || 'Sep 28 · 11:20 AM'}`
-                    : selectedSuyoContext === 'accepted'
-                      ? `Accepted: ${selectedSuyo.formattedDate || 'Today · 4:00 PM'}`
-                      : selectedSuyoContext === 'completed'
-                        ? `Completed: ${selectedSuyo.formattedDate || 'Sep 20 · 3:15 PM'}`
-                        : selectedSuyoContext === 'archived'
-                          ? `Archived: ${selectedSuyo.formattedDate || 'Sep 18 · 9:15 AM'}`
-                          : `Posted: ${selectedSuyo.formattedDate || selectedSuyo.postedTime || '10m ago'}`}
+                  {`Posted: ${selectedSuyo.formattedDate || getRequestTiming(selectedSuyo.rawRequest || selectedSuyo).formattedDate}`}
                 </Text>
               </View>
 

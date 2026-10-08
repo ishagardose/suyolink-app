@@ -1,4 +1,6 @@
-import React, { useEffect } from 'react';
+import { useMemo } from 'react';
+import { themeStyles, resolvePaletteColor } from '../../theme/paletteAdapter';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,11 +16,27 @@ import { useTheme } from '../../theme/ThemeContext';
 export default function LocationPicker({ value, onChange, disabled }) {
   const { position, locate, loading, error } = useDeviceLocation();
   const { colors, isDark } = useTheme();
+  const choice = useRef(0);
+  const latest = useRef({ onChange, disabled });
+  latest.current = { onChange, disabled };
+  useEffect(
+    () => () => {
+      choice.current++;
+    },
+    [],
+  );
+  const styles = useMemo(
+    () => StyleSheet.create(themeStyles(definitions, colors, isDark)),
+    [colors, isDark],
+  );
+  const resolveColor = (value, property = 'color') =>
+    resolvePaletteColor(value, property, colors, isDark);
 
   const handleUseCurrentLocation = async () => {
+    const request = ++choice.current;
     const next = await locate();
-    if (next) {
-      onChange(next);
+    if (next && request === choice.current && !latest.current.disabled) {
+      latest.current.onChange(next);
     }
   };
 
@@ -29,13 +47,15 @@ export default function LocationPicker({ value, onChange, disabled }) {
           <Ionicons
             name="map-outline"
             size={16}
-            color="#1E4D2B"
+            color={resolveColor('#1E4D2B')}
           />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Task Location Pin
           </Text>
         </View>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Use my location for task pin"
           style={[styles.locateButton, disabled && styles.disabledButton]}
           onPress={handleUseCurrentLocation}
           disabled={disabled || loading}
@@ -44,14 +64,14 @@ export default function LocationPicker({ value, onChange, disabled }) {
           {loading ? (
             <ActivityIndicator
               size="small"
-              color="#1E4D2B"
+              color={resolveColor('#1E4D2B')}
             />
           ) : (
             <>
               <Ionicons
                 name="locate"
                 size={14}
-                color="#1E4D2B"
+                color={resolveColor('#1E4D2B')}
               />
               <Text style={styles.locateButtonText}>My Location</Text>
             </>
@@ -72,7 +92,14 @@ export default function LocationPicker({ value, onChange, disabled }) {
         >
           <TaskMap
             center={value || position}
-            onPick={disabled ? undefined : onChange}
+            onPick={
+              disabled
+                ? undefined
+                : (point) => {
+                    choice.current++;
+                    onChange(point);
+                  }
+            }
             markers={
               value ? [{ ...value, id: 'task', title: 'Task location' }] : []
             }
@@ -86,7 +113,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
             <View
               style={[
                 styles.pinDot,
-                { backgroundColor: value ? '#1E4D2B' : '#C4D6CC' },
+                { backgroundColor: value ? colors.success : colors.border },
               ]}
             />
             <Text style={styles.pinStatusText}>
@@ -100,7 +127,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
               <Ionicons
                 name="checkmark-circle"
                 size={12}
-                color="#1E4D2B"
+                color={resolveColor('#1E4D2B')}
               />
               <Text style={styles.verifiedPinText}>Pin Set</Text>
             </View>
@@ -113,7 +140,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
           <Ionicons
             name="alert-circle"
             size={14}
-            color="#DC2626"
+            color={resolveColor('#DC2626')}
           />
           <Text style={styles.errorText}>{error}</Text>
         </View>
@@ -122,7 +149,7 @@ export default function LocationPicker({ value, onChange, disabled }) {
   );
 }
 
-const styles = StyleSheet.create({
+const definitions = {
   container: {
     gap: 8,
     marginTop: 4,
@@ -234,4 +261,4 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '500',
   },
-});
+};

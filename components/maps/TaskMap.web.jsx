@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { DEFAULT_MAP_CENTER } from '../../lib/geo';
+import { DEFAULT_MAP_CENTER, hasCoordinates } from '../../lib/geo';
 import { FIXED_COLORS } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -10,6 +10,7 @@ export default function TaskMap({
   onPick,
   onSelect,
   height = 300,
+  routeCoordinates = [],
 }) {
   const { colors } = useTheme();
   const element = useRef(null);
@@ -55,9 +56,44 @@ export default function TaskMap({
       instance.current.setView([center.latitude, center.longitude], 14);
   }, [ready, center?.latitude, center?.longitude]);
   useEffect(() => {
+    if (
+      ready &&
+      routeCoordinates.length >= 2 &&
+      routeCoordinates.every(hasCoordinates)
+    )
+      instance.current.fitBounds(
+        routeCoordinates.map((p) => [p.latitude, p.longitude]),
+        {
+          padding: [30, 30],
+          maxZoom: 15,
+        },
+      );
+  }, [
+    ready,
+    routeCoordinates,
+    routeCoordinates[0]?.latitude,
+    routeCoordinates[0]?.longitude,
+    routeCoordinates[routeCoordinates.length - 1]?.latitude,
+    routeCoordinates[routeCoordinates.length - 1]?.longitude,
+  ]);
+  useEffect(() => {
     if (!ready) return;
     const L = require('leaflet');
     layer.current.clearLayers();
+    if (
+      routeCoordinates.length >= 2 &&
+      routeCoordinates.every(hasCoordinates)
+    ) {
+      L.polyline(
+        routeCoordinates.map((p) => [p.latitude, p.longitude]),
+        {
+          color: FIXED_COLORS.mapDoerBlue,
+          weight: 4,
+          className: 'task-road-route',
+          interactive: false,
+        },
+      ).addTo(layer.current);
+    }
     markers.forEach((marker) => {
       const label = document.createElement('span');
       label.textContent = marker.title;
@@ -77,7 +113,7 @@ export default function TaskMap({
         })
         .addTo(layer.current);
     });
-  }, [ready, markers]);
+  }, [ready, markers, routeCoordinates]);
   return (
     <div style={{ width: '100%' }}>
       <div
@@ -91,7 +127,7 @@ export default function TaskMap({
           role="status"
           style={{ color: colors.warning, fontSize: 12 }}
         >
-          Map tiles could not load. Check your connection; saved pins and
+          Map tiles could not load. Check your routeCoordinates; saved pins and
           distances are still available.
         </p>
       ) : null}

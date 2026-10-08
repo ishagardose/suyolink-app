@@ -17,7 +17,6 @@ import {
 } from '../data/suyoApi';
 import { hasCoordinates } from '../lib/geo';
 import { AppState } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SuyoContext = createContext(null);
 
@@ -203,143 +202,31 @@ export function SuyoProvider({ children }) {
     }
   }, [user?.id]);
 
-  const recordTransaction = useCallback(
-    async (tx) => {
-      if (!tx || !tx.requestId) return;
-      const normalized = {
-        requestId: tx.requestId,
-        title: tx.title || 'Completed Suyo',
-        role: tx.role || 'provider',
-        otherUserId: tx.otherUserId || null,
-        otherUserName: tx.otherUserName || (tx.role === 'provider' ? 'Requester' : 'Courier'),
-        rewardCentavos: Number(tx.rewardCentavos) || 15000,
-        currency: tx.currency || 'PHP',
-        completedAt: tx.completedAt || new Date().toISOString(),
-        ratingScore: tx.ratingScore ?? null,
-        ratingComment: tx.ratingComment ?? null,
-        category: tx.category || 'General',
-        location: tx.location || 'Tagum City',
-      };
-
-      setTransactions((prev) => {
-        const key = `${normalized.requestId}_${normalized.role}`;
-        const filtered = (prev || []).filter((item) => `${item.requestId}_${item.role}` !== key);
-        const next = [normalized, ...filtered];
-        const scopeKey = user?.id || 'guest';
-        AsyncStorage.setItem(
-          `@suyolink_local_transactions_${scopeKey}`,
-          JSON.stringify(next)
-        ).catch(() => {});
-        return next;
-      });
-
-      // Broadcast across realtime channels to other devices
-      try {
-        if (supabase) {
-          const ch = supabase.channel('suyo-platform-realtime-feed');
-          ch.send({
-            type: 'broadcast',
-            event: 'transaction_completed',
-            payload: normalized,
-          });
-        }
-      } catch (_) {}
-    },
-    [user?.id]
-  );
-
   const reloadTransactions = useCallback(async () => {
     const id = user?.id;
     const run = ++transactionRevision.current;
-    const scopeKey = id || 'guest';
     setTransactionsLoading(true);
     setTransactionsError('');
     try {
-      let rpcData = [];
-      if (id && supabase) {
-        try {
-          rpcData = await apiListTransactions();
-        } catch (_) {}
-      }
-
-      // Read local storage transactions
-      let localData = [];
-      try {
-        const raw = await AsyncStorage.getItem(`@suyolink_local_transactions_${scopeKey}`);
-        if (raw) localData = JSON.parse(raw);
-      } catch (_) {}
-
-      // Combine with any completed requests from active context
-      const fromRequests = (requests || [])
-        .filter((r) => r.status === 'completed')
-        .map((r) => {
-          const isProvider =
-            (id && (r.providerId === id || r.provider_id === id)) ||
-            r.scope === 'assigned' ||
-            r.isAcceptedByMe;
-          const isRequester =
-            (id && (r.requesterId === id || r.requester_id === id || r.user_id === id)) ||
-            r.scope === 'posted' ||
-            r.isMine ||
-            (user?.email && r.requesterEmail === user.email);
-          if (!isProvider && !isRequester) return null;
-          return {
-            requestId: r.id,
-            title: r.title,
-            role: isProvider ? 'provider' : 'requester',
-            otherUserId: isProvider ? (r.requesterId || null) : (r.providerId || null),
-            otherUserName: isProvider
-              ? (r.requesterName || 'Requester')
-              : (r.providerName || r.doer?.name || 'Courier'),
-            rewardCentavos: r.offerCentavos || Math.round((Number(r.rewardAmount) || 0) * 100) || 15000,
-            currency: 'PHP',
-            completedAt:
-              r.completed_at ||
-              r.completedAt ||
-              r.updated_at ||
-              r.createdAt ||
-              new Date().toISOString(),
-            ratingScore: r.ratingScore ?? null,
-            ratingComment: r.ratingComment ?? null,
-            category: r.category || 'General',
-            location: r.location || 'Nearby',
-          };
-        })
-        .filter(Boolean);
-
-      // Merge and deduplicate by `${requestId}_${role}`
-      const map = new Map();
-      (rpcData || []).forEach((t) => {
-        if (t && t.requestId) map.set(`${t.requestId}_${t.role}`, t);
-      });
-      (localData || []).forEach((t) => {
-        const k = `${t.requestId}_${t.role}`;
-        if (!map.has(k)) map.set(k, t);
-      });
-      fromRequests.forEach((t) => {
-        const k = `${t.requestId}_${t.role}`;
-        if (!map.has(k)) map.set(k, t);
-      });
-
-      const merged = Array.from(map.values()).sort((a, b) => {
-        const tA = a.completedAt ? Date.parse(a.completedAt) : 0;
-        const tB = b.completedAt ? Date.parse(b.completedAt) : 0;
-        return tB - tA;
-      });
-
+      const records = id && supabase ? await apiListTransactions() : [];
+      if (currentUser.current === id && run === transactionRevision.current)
+        setTransactions(records);
+    } catch (error) {
       if (currentUser.current === id && run === transactionRevision.current) {
-        setTransactions(merged);
-      }
-    } catch (err) {
-      if (currentUser.current === id && run === transactionRevision.current) {
-        setTransactionsError(err.message || 'Could not load transactions.');
+        setTransactions([]);
+        setTransactionsError(error.message || 'Could not load transactions.');
       }
     } finally {
-      if (currentUser.current === id && run === transactionRevision.current) {
+      if (currentUser.current === id && run === transactionRevision.current)
         setTransactionsLoading(false);
-      }
     }
-  }, [user?.id, user?.email, requests]);
+  }, [user?.id]);
+
+  // Existing completion/rating callers refresh the authoritative backend ledger.
+  const recordTransaction = useCallback(
+    () => reloadTransactions(),
+    [reloadTransactions],
+  );
 
   useEffect(() => {
     setWorkflow({
@@ -379,44 +266,36 @@ export function SuyoProvider({ children }) {
           () => {
             reload();
             reloadWorkflow();
-          }
+          },
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'notifications' },
           () => {
             reloadWorkflow();
-          }
+          },
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'ratings' },
           () => {
             reloadWorkflow();
-          }
+          },
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'applications' },
           () => {
             reloadWorkflow();
-          }
+          },
         )
-        .on(
-          'broadcast',
-          { event: 'new_suyo' },
-          () => {
-            reload();
-            reloadWorkflow();
-          }
-        )
-        .on(
-          'broadcast',
-          { event: 'transaction_completed' },
-          () => {
-            reloadTransactions();
-          }
-        )
+        .on('broadcast', { event: 'new_suyo' }, () => {
+          reload();
+          reloadWorkflow();
+        })
+        .on('broadcast', { event: 'transaction_completed' }, () => {
+          reloadTransactions();
+        })
         .subscribe();
     }
 

@@ -24,7 +24,12 @@ export default function ActiveSuyoBanner({
         <TouchableOpacity
           style={styles.floatingActiveModalTouchable}
           activeOpacity={0.92}
-          onPress={() => router.push('/requester-fulfill')}
+          onPress={() =>
+            router.push({
+              pathname: '/requester-fulfill',
+              params: { id: activeSuyo.id },
+            })
+          }
         >
           <LinearGradient
             colors={['#E5F4EC', '#F4FAF6'].map((value) =>

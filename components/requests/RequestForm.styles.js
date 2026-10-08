@@ -1,6 +1,74 @@
 import { StyleSheet, Platform } from 'react-native';
+import { themeStyles } from '../../theme/paletteAdapter';
 
-export const styles = StyleSheet.create({
+const definitions = {
+  deadlineStatusSection: {
+    gap: 10,
+    marginBottom: 16,
+  },
+  deadlineStatusHeaderRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  deadlineStatusActiveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  deadlineStatusActiveTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  deadlineStatusSubtitle: {
+    color: '#556E60',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  deadlineStatusChipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  deadlineStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D6E6DC',
+    backgroundColor: '#FFFFFF',
+    minHeight: 44,
+  },
+  deadlineStatusChipText: {
+    color: '#163523',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  deadlineStatusChipTextActive: {
+    color: '#FFFFFF',
+  },
+  deadlineStatusExplainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+  },
+  deadlineStatusExplainerText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+  },
   flex: {
     flex: 1,
   },
@@ -757,4 +825,7 @@ export const styles = StyleSheet.create({
     width: '100%',
     height: '80%',
   },
-});
+};
+
+export const createRequestFormStyles = (colors, isDark) =>
+  StyleSheet.create(themeStyles(definitions, colors, isDark));

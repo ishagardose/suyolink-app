@@ -1,3 +1,6 @@
+import { useMemo } from 'react';
+import { themeStyles, resolvePaletteColor } from '../../theme/paletteAdapter';
+import { useTheme } from '../../theme/ThemeContext';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,21 +10,37 @@ import { Ionicons } from '@expo/vector-icons';
 import RequestForm from './RequestForm';
 
 export default function PostSuyoScreen() {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(
+    () => StyleSheet.create(themeStyles(definitions, colors, isDark)),
+    [colors, isDark],
+  );
+  const resolveColor = (value, property = 'color') =>
+    resolvePaletteColor(value, property, colors, isDark);
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.safeContainer} edges={['top', 'left', 'right']}>
-      <StatusBar style="dark" />
+    <SafeAreaView
+      style={styles.safeContainer}
+      edges={['top', 'left', 'right']}
+    >
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={styles.navBar}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/dashboard'))}
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace('/dashboard')
+          }
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="arrow-back" size={22} color="#163523" />
+          <Ionicons
+            name="arrow-back"
+            size={22}
+            color={resolveColor('#163523')}
+          />
         </TouchableOpacity>
         <Text style={styles.navBarTitle}>Post a Suyo</Text>
         <View style={{ width: 38 }} />
@@ -38,7 +57,7 @@ export default function PostSuyoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const definitions = {
   safeContainer: {
     flex: 1,
     backgroundColor: '#F8FAF8',
@@ -67,4 +86,4 @@ const styles = StyleSheet.create({
     color: '#163523',
     letterSpacing: -0.2,
   },
-});
+};

@@ -4,9 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
+import { useDeviceLocation } from '../../context/LocationContext';
 import { useTheme } from '../../theme/ThemeContext';
 import useTaskTracking from '../../hooks/useTaskTracking';
-import { distanceKm } from '../../lib/geo';
+import { hasCoordinates } from '../../lib/geo';
+import useRoadRoute from '../../hooks/useRoadRoute';
+import RoadRouteSummary from './RoadRouteSummary';
 import { STATUS_LABELS } from '../../data/suyoRequests';
 import ScreenHeader from '../ScreenHeader';
 import ThemedText from '../themed/ThemedText';
@@ -18,7 +21,8 @@ export default function MapScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { mutate } = useSuyos();
+  const { mutate, requests } = useSuyos();
+  const { position: devicePosition } = useDeviceLocation();
   const {
     task,
     position,
@@ -38,16 +42,10 @@ export default function MapScreen() {
     latitude: task.exactLatitude ?? task.latitude,
     longitude: task.exactLongitude ?? task.longitude,
   };
-  const hasDestination =
-    destination?.latitude != null && destination?.longitude != null;
+  const hasDestination = hasCoordinates(destination);
   const fresh =
     position && Date.now() - Date.parse(position.updated_at) < 30000;
-  const remaining =
-    fresh && hasDestination ? distanceKm(position, destination) : null;
-  const eta =
-    remaining != null && position.speed > 0.5
-      ? Math.ceil((remaining * 1000) / position.speed / 60)
-      : null;
+  const routing = useRoadRoute(fresh ? position : null, destination);
   const action = async (name, args) => {
     setActing(true);
     setActionError('');
@@ -86,9 +84,39 @@ export default function MapScreen() {
           </ThemedText>
         ) : null}
         {!id ? (
-          <ThemedText>Open a task to view its location.</ThemedText>
+          <>
+            <ThemedText>Select a task pin to view its location.</ThemedText>
+            <TaskMap
+              center={hasCoordinates(devicePosition) ? devicePosition : null}
+              markers={requests.filter(hasCoordinates).map((request) => ({
+                id: request.id,
+                latitude: request.latitude,
+                longitude: request.longitude,
+                title: request.title,
+              }))}
+              onSelect={(requestId) =>
+                router.push({ pathname: '/map', params: { requestId } })
+              }
+              height={400}
+            />
+            {!requests.some(hasCoordinates) ? (
+              <ThemedText tone="muted">
+                No tasks with map locations are available.
+              </ThemedText>
+            ) : null}
+          </>
         ) : !task ? (
-          <ThemedText>Loading task...</ThemedText>
+          <>
+            <ThemedText>
+              {error ? 'Task unavailable.' : 'Loading task...'}
+            </ThemedText>
+            {error ? (
+              <ThemedButton
+                title="Retry"
+                onPress={refresh}
+              />
+            ) : null}
+          </>
         ) : (
           <>
             <ThemedText style={{ fontSize: 22, fontWeight: '700' }}>
@@ -101,6 +129,7 @@ export default function MapScreen() {
             </ThemedText>
             <TaskMap
               center={hasDestination ? destination : null}
+              routeCoordinates={routing.route?.points}
               markers={[
                 ...(hasDestination
                   ? [
@@ -126,6 +155,7 @@ export default function MapScreen() {
               ]}
               height={360}
             />
+            <RoadRouteSummary routing={routing} />
             {!active || consent?.revoked_at ? (
               <ThemedText>Location sharing has stopped</ThemedText>
             ) : fresh ? (
@@ -134,16 +164,6 @@ export default function MapScreen() {
                   {position.arrived
                     ? 'Doer is near the destination'
                     : 'Receiving live location'}
-                </ThemedText>
-                <ThemedText>
-                  {remaining != null
-                    ? `${remaining.toFixed(2)} km straight-line distance remaining`
-                    : ''}
-                </ThemedText>
-                <ThemedText>
-                  {eta != null
-                    ? `Estimated ${eta} min at current speed (not a road-route ETA)`
-                    : 'ETA unavailable until the doer is moving'}
                 </ThemedText>
               </>
             ) : (
@@ -168,8 +188,10 @@ export default function MapScreen() {
                   <>
                     <ThemedText>
                       Share your live position with this requester while this
-                      screen is open. Sharing stops when you leave, put the app
-                      in the background, submit proof, or end the task.
+                      screen is open. The doer and task coordinates are sent to
+                      the routing service to find a driving route. Sharing stops
+                      when you leave, put the app in the background, submit
+                      proof, or end the task.
                     </ThemedText>
                     <ThemedButton
                       title="Share location"

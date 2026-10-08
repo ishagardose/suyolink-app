@@ -30,14 +30,16 @@ export default function HomeTab({
                 size={11}
                 color={resolveColor('#4ADE80', 'color')}
               />
-              <Text style={styles.locationPillText}>Makati CBD</Text>
+              <Text style={styles.locationPillText}>
+                {userProfile?.address || 'Your browsing area'}
+              </Text>
             </View>
             <Text style={styles.welcomeSubText}>WELCOME BACK</Text>
             <Text
               style={styles.welcomeNameText}
               numberOfLines={1}
             >
-              {userProfile?.name || 'Juan Dela Cruz'}
+              {userProfile?.name || 'Community member'}
             </Text>
             <Text style={styles.welcomeTagline}>Need a suyo done today?</Text>
           </View>

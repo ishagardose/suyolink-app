@@ -477,7 +477,7 @@ const createStyles = (colors) =>
     },
     whiteSheet: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.card,
       borderTopLeftRadius: 36,
       borderTopRightRadius: 36,
       overflow: 'hidden',
@@ -523,14 +523,14 @@ const createStyles = (colors) =>
     titleText: {
       fontSize: 27,
       fontWeight: '800',
-      color: '#163523',
+      color: colors.text,
       textAlign: 'center',
       letterSpacing: -0.3,
       marginBottom: 10,
     },
     descriptionText: {
       fontSize: 15,
-      color: '#52695C',
+      color: colors.textMuted,
       textAlign: 'center',
       lineHeight: 22,
       maxWidth: 300,
@@ -548,7 +548,7 @@ const createStyles = (colors) =>
     },
     paginationDotInactive: {
       width: 14,
-      backgroundColor: '#D8E5DF',
+      backgroundColor: colors.border,
     },
     paginationDotActive: {
       width: 24,
@@ -578,16 +578,16 @@ const createStyles = (colors) =>
       letterSpacing: 0.2,
     },
     secondaryButton: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.card,
       height: 52,
       borderRadius: 14,
       borderWidth: 1.5,
-      borderColor: '#1E4D2B',
+      borderColor: colors.link,
       alignItems: 'center',
       justifyContent: 'center',
     },
     secondaryButtonText: {
-      color: '#1E4D2B',
+      color: colors.link,
       fontSize: 16,
       fontWeight: '700',
       letterSpacing: 0.2,

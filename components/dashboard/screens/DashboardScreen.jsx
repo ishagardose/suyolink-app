@@ -3,7 +3,6 @@ import useDashboardFavorites from '../hooks/useDashboardFavorites.js';
 import useDashboardToast from '../hooks/useDashboardToast.jsx';
 import useDashboardFilters from '../hooks/useDashboardFilters.js';
 import useDashboardNotifications from '../hooks/useDashboardNotifications.js';
-import useDashboardWallet from '../hooks/useDashboardWallet.js';
 import useDashboardSuyoLists from '../hooks/useDashboardSuyoLists.js';
 import DashboardHeader from '../navigation/DashboardHeader';
 import HomeTab from '../tabs/HomeTab';
@@ -30,7 +29,8 @@ import { resolvePaletteColor } from '../../../theme/paletteAdapter';
 
 import { SIDEBAR_WIDTH, USE_NATIVE_DRIVER } from '../utils/dashboardLayout';
 import { getTodayFormatted } from '../utils/dashboardHelpers';
-import { DEFAULT_DOER } from '../data/dashboardData';
+import { getRequestTiming } from '../../../lib/requestTiming';
+import useProfileData from '../../account/useProfileData';
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
@@ -56,7 +56,7 @@ import { useSuyos } from '../../../context/SuyoContext';
 import { useDeviceLocation } from '../../../context/LocationContext';
 import { useTheme } from '../../../theme/ThemeContext';
 import { formatOffer } from '../../../data/suyoRequests';
-import { distanceKm } from '../../../lib/geo';
+import { hasCoordinates, distanceKm } from '../../../lib/geo';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -64,7 +64,13 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 16);
   const [activeTab, setActiveTab] = useState('home');
-  const { user, logout } = useAuth();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  const { user, logout, updateProfile } = useAuth();
+  const profileData = useProfileData(user?.id, true);
   const { colors, isDark } = useTheme();
   const styles = useMemo(
     () => createDashboardStyles(colors, isDark),
@@ -94,20 +100,30 @@ export default function DashboardScreen() {
 
   // User account state (with safe default fallback)
   const [userProfile, setUserProfile] = useState({
-    name: user?.name || user?.user_metadata?.full_name || 'Juan Dela Cruz',
-    email: user?.email || 'juan.delacruz@suyolink.ph',
-    phone: user?.phone || '+63 917 123 4567',
-    address: 'Makati City, Metro Manila',
+    name: user?.name || user?.user_metadata?.full_name || 'Community member',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
   });
   useEffect(() => {
     if (user) {
       setUserProfile((prev) => ({
         ...prev,
         name: user.name || user.user_metadata?.full_name || prev.name,
-        email: user.email || prev.email,
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || '',
       }));
     }
   }, [user]);
+  const accountSummary = {
+    ...userProfile,
+    rating:
+      profileData.rating == null
+        ? 'No ratings yet'
+        : `${Number(profileData.rating).toFixed(2)}★`,
+    completedCount: profileData.completedCount,
+  };
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({ ...userProfile });
@@ -150,46 +166,31 @@ export default function DashboardScreen() {
     doerCancelledSuyos,
     doerCompletedSuyos,
     postedSuyos,
-    resolveUrgencyTag,
     setCancelledSuyos,
     setDoerAcceptedSuyos,
     setDoerCancelledSuyos,
     setPostedSuyos,
-  } = useDashboardSuyoLists({ requests, user });
+  } = useDashboardSuyoLists({ requests, user, now });
 
-  // Wallet dynamic computations from live Supabase transactions
-
-  const {
-    displayWalletTotal,
-    dynamicWalletList,
-    monthlySuyosCount,
-    now,
-    overallSuyosCount,
-    providerTransactions,
-    todayDateFormatted,
-    todayEarningsSum,
-    todaySuyosCount,
-  } = useDashboardWallet({ transactions });
-
-  // Overall available suyos in Dashboard: public suyos from different users + account owner's open posted suyos
-  // Note: 'Waiting for doer' is a lifecycle status ONLY applied and visible to MySuyo nav;
-  // on the main dashboard where public available suyos are listed for all users, the tag turns into
-  // an urgency indicator: 'Normal', 'Urgent', 'Due today', or 'Due tomorrow'.
+  // The public board contains other accounts' open, unexpired requests.
   const availableSuyosBase = useMemo(() => {
     const fromBackend = (requests || [])
       .filter(
         (r) =>
           r.status === 'open' &&
-          (!r.deadline || Date.parse(r.deadline) > Date.now()),
+          r.requesterId !== user?.id &&
+          (!r.deadline || Date.parse(r.deadline) > now),
       )
       .map((r) => {
         const dist =
-          position && r.latitude && r.longitude ? distanceKm(position, r) : 0.8;
+          hasCoordinates(position) && hasCoordinates(r)
+            ? distanceKm(position, r)
+            : null;
         const distNum =
-          typeof dist === 'number' ? Number(dist.toFixed(1)) : 0.8;
+          typeof dist === 'number' ? Number(dist.toFixed(1)) : null;
         const offer = formatOffer(r.offerCentavos || 0);
         const isUrgent =
-          r.deadline && Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
+          r.deadline && Date.parse(r.deadline) < now + 24 * 3600 * 1000;
         const urgency = isUrgent ? 'Urgent' : 'Normal';
         return {
           id: r.id,
@@ -197,64 +198,23 @@ export default function DashboardScreen() {
           category: r.category || 'General',
           location: r.location || 'Nearby',
           distance: distNum,
-          distanceText: distNum + ' km away',
+          distanceText:
+            distNum == null ? 'Distance unavailable' : distNum + ' km away',
           reward: offer,
           rewardAmount: (r.offerCentavos || 0) / 100,
           tag: urgency,
           urgency,
-          postedTime: 'Active now',
-          createdAt: Date.parse(r.createdAt || r.deadline || Date.now()),
-          due: r.deadline
-            ? 'Due ' +
-              new Date(r.deadline).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : 'Due today',
-          dueDate: r.deadline
-            ? new Date(r.deadline).toLocaleDateString()
-            : getTodayFormatted(),
+          ...getRequestTiming(r, now),
           details: r.details || 'No details provided.',
           notes: r.specialInstructions || '',
           requesterName: r.requesterName || 'Community Member',
-          requesterPhone: r.requesterPhone || '+63 917 000 0000',
-          requesterRating: '4.9★',
-          completedCount: '15 completed',
+          requesterPhone: r.contactPhone || '',
           rawRequest: r,
         };
       });
 
-    // Owner's active posted suyos that are open and waiting for doers to take
-    const ownerPosted = (postedSuyos || [])
-      .filter(
-        (p) => p.status !== 'Cancelled' && !p.status?.includes('Completed'),
-      )
-      .map((p) => ({
-        ...p,
-        tag: resolveUrgencyTag(p), // Always convert to urgency on Dashboard (Normal, Urgent, Due today, Due tomorrow)
-        mySuyoStatus: p.status || 'Open - waiting for a doer',
-        mySuyoTag: p.tag || 'Waiting for doer',
-        isMine: true,
-        distance: 0.8,
-        distanceText: p.distanceText || '0.8 km away',
-        postedTime: p.formattedDate || 'Active now',
-        due: p.due || 'Due today',
-        dueDate: p.dueDate || getTodayFormatted(),
-      }));
-
-    // Merge: Owner's open posted suyos + backend open requests without duplicate IDs.
-    // In-progress accepted suyos are excluded from public available board (they belong in MySuyo -> Accepted).
-    const merged = [...ownerPosted, ...fromBackend];
-    const seenIds = new Set();
-    const result = [];
-    for (const item of merged) {
-      if (!seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        result.push(item);
-      }
-    }
-    return result;
-  }, [requests, position, postedSuyos]);
+    return fromBackend;
+  }, [requests, position, user?.id, now]);
 
   // List of suyos favorited by the user
 
@@ -291,16 +251,11 @@ export default function DashboardScreen() {
     // Dynamic context resolution for Dashboard / Urgent / Favorites
     const isPosted =
       postedSuyos.some((p) => p.id === suyo.id) ||
-      (suyo.requesterName &&
-        (suyo.requesterName.includes('(You)') ||
-          suyo.requesterName === userProfile?.name));
+      (!!user?.id &&
+        suyo.rawRequest?.requesterId === user.id &&
+        suyo.rawRequest?.status === 'open');
 
-    const isAccepted =
-      acceptedSuyos.some((a) => a.id === suyo.id) ||
-      Boolean(
-        suyo.doer &&
-        (suyo.requesterName?.includes('(You)') || suyo.isAcceptedByMe),
-      );
+    const isAccepted = acceptedSuyos.some((a) => a.id === suyo.id);
 
     const isCompleted = completedSuyos.some((c) => c.id === suyo.id);
     const isCancelled =
@@ -340,13 +295,17 @@ export default function DashboardScreen() {
       name ||
       selectedSuyo?.doer?.name ||
       selectedSuyo?.requesterName ||
-      DEFAULT_DOER.name;
+      'Community member';
     const rawPhone =
-      phone ||
-      selectedSuyo?.doer?.phone ||
-      selectedSuyo?.requesterPhone ||
-      DEFAULT_DOER.phone;
+      phone || selectedSuyo?.doer?.phone || selectedSuyo?.requesterPhone || '';
     const cleanNumber = (rawPhone || '').replace(/[^0-9+]/g, '');
+    if (!cleanNumber) {
+      triggerToast(
+        'No contact number is available for this task.',
+        'information-circle',
+      );
+      return;
+    }
     const telUrl = `tel:${cleanNumber}`;
 
     if (Platform.OS === 'web') {
@@ -457,7 +416,7 @@ export default function DashboardScreen() {
       waitTime: 'Just posted',
       needsBoost: false,
       details: record.notes || record.title,
-      requesterName: `${userProfile?.name || 'Juan Dela Cruz'} (You)`,
+      requesterName: `${userProfile?.name || 'Community member'} (You)`,
     };
     setPostedSuyos((prev) => [newPostedSuyo, ...prev]);
     setActiveTab('mysuyo');
@@ -486,60 +445,6 @@ export default function DashboardScreen() {
     setSelectedFavIdsToDelete,
     toggleFavoriteSuyo,
   } = useDashboardFavorites({ availableSuyosBase, triggerToast });
-
-  // Sync any newly posted backend requests into postedSuyos
-  useEffect(() => {
-    if (requests && requests.length > 0) {
-      const userBackendRequests = requests.filter(
-        (r) =>
-          r.scope === 'posted' ||
-          r.requesterEmail === user?.email ||
-          r.requesterName === userProfile?.name,
-      );
-      if (userBackendRequests.length > 0) {
-        setPostedSuyos((prev) => {
-          const prevIds = new Set(prev.map((p) => p.id));
-          const newItems = userBackendRequests
-            .filter((r) => !prevIds.has(r.id))
-            .map((r) => {
-              const isUrgent =
-                r.deadline &&
-                Date.parse(r.deadline) < Date.now() + 24 * 3600 * 1000;
-              return {
-                id: r.id,
-                title: r.title,
-                category: r.category || 'General',
-                location: r.location || 'Nearby',
-                distanceText: '0.8 km away',
-                reward: formatOffer(r.offerCentavos || 0),
-                rewardAmount: (r.offerCentavos || 0) / 100,
-                tag: 'Waiting for doer',
-                status: 'Open - waiting for a doer',
-                urgency: r.urgency || (isUrgent ? 'Urgent' : 'Due today'),
-                due: r.deadline
-                  ? 'Due ' +
-                    new Date(r.deadline).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'Due today',
-                dueDate: r.deadline
-                  ? new Date(r.deadline).toLocaleDateString()
-                  : getTodayFormatted(),
-                createdAt: Date.parse(r.createdAt || Date.now()),
-                formattedDate: 'Just now',
-                waitTime: 'Just posted',
-                needsBoost: false,
-                details: r.details || 'No details provided.',
-                requesterName: r.requesterName || userProfile?.name || 'You',
-              };
-            });
-          if (newItems.length === 0) return prev;
-          return [...newItems, ...prev];
-        });
-      }
-    }
-  }, [requests, user?.email, userProfile?.name]);
 
   const handleToggleMySuyoSelect = (id) => {
     setSelectedMySuyoIdsToDelete((prev) =>
@@ -714,10 +619,19 @@ export default function DashboardScreen() {
     setExpandedSection((prev) => (prev === sectionKey ? null : sectionKey));
   };
 
-  const handleSaveProfile = () => {
-    setUserProfile({ ...tempProfile });
-    setIsEditModalOpen(false);
-    triggerToast('Profile updated successfully', 'person');
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile({
+        name: tempProfile.name.trim(),
+        phone: tempProfile.phone.trim(),
+        address: user?.address || '',
+      });
+      setUserProfile({ ...tempProfile, email: user?.email || '' });
+      setIsEditModalOpen(false);
+      triggerToast('Profile saved', 'person');
+    } catch (error) {
+      triggerToast(error.message || 'Could not save profile.', 'alert-circle');
+    }
   };
 
   const {
@@ -781,7 +695,7 @@ export default function DashboardScreen() {
           setIsFilterModalOpen={setIsFilterModalOpen}
           setSearchQuery={setSearchQuery}
           styles={styles}
-          userProfile={userProfile}
+          userProfile={accountSummary}
         />
 
         {/* === MYSUYO HUB SCREEN === */}
@@ -831,17 +745,7 @@ export default function DashboardScreen() {
         {/* === WALLET SCREEN (ACCEPTED SUYO EARNINGS LIST) === */}
         <WalletTab
           activeTab={activeTab}
-          displayWalletTotal={displayWalletTotal}
-          dynamicWalletList={dynamicWalletList}
-          monthlySuyosCount={monthlySuyosCount}
-          overallSuyosCount={overallSuyosCount}
-          providerTransactions={providerTransactions}
-          resolveColor={resolveColor}
           setActiveTab={setActiveTab}
-          styles={styles}
-          todayDateFormatted={todayDateFormatted}
-          todayEarningsSum={todayEarningsSum}
-          todaySuyosCount={todaySuyosCount}
         />
       </ScrollView>
 
@@ -913,7 +817,7 @@ export default function DashboardScreen() {
         styles={styles}
         toggleFavoriteSuyo={toggleFavoriteSuyo}
         triggerToast={triggerToast}
-        userProfile={userProfile}
+        userProfile={accountSummary}
       />
 
       {/* ========================================================== */}
@@ -940,7 +844,7 @@ export default function DashboardScreen() {
         selectedDoerSuyo={selectedDoerSuyo}
         setSelectedDoerSuyo={setSelectedDoerSuyo}
         styles={styles}
-        userProfile={userProfile}
+        userProfile={accountSummary}
       />
 
       {/* ========================================================== */}
@@ -1029,6 +933,7 @@ export default function DashboardScreen() {
       {/* 8. STATISTICS MODAL (Suyo Performance & Community Stats) */}
       {/* ========================================================== */}
       <StatisticsModal
+        profileData={profileData}
         isStatisticsModalOpen={isStatisticsModalOpen}
         resolveColor={resolveColor}
         setIsStatisticsModalOpen={setIsStatisticsModalOpen}
@@ -1065,7 +970,7 @@ export default function DashboardScreen() {
         styles={styles}
         toggleSection={toggleSection}
         triggerToast={triggerToast}
-        userProfile={userProfile}
+        userProfile={accountSummary}
       />
 
       {/* ========================================================== */}

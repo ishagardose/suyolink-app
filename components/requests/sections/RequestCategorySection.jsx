@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from '../RequestForm.styles';
+import useRequestTheme from '../useRequestTheme';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORIES } from '../../../data/suyoRequests';
@@ -13,13 +13,14 @@ export default function RequestCategorySection({
   setDraft,
   setFieldErrors,
 }) {
+  const { styles, resolveColor } = useRequestTheme();
   return (
     <View style={styles.card}>
       <View style={styles.cardHeaderRow}>
         <Ionicons
           name="create-outline"
           size={18}
-          color="#1E4D2B"
+          color={resolveColor('#1E4D2B')}
         />
         <Text style={styles.cardTitle}>Task Overview</Text>
       </View>
@@ -46,13 +47,17 @@ export default function RequestCategorySection({
           <Ionicons
             name="document-text-outline"
             size={18}
-            color={fieldErrors.title ? '#DC2626' : '#1E4D2B'}
+            color={
+              fieldErrors.title
+                ? resolveColor('#DC2626')
+                : resolveColor('#1E4D2B')
+            }
             style={styles.leadingIcon}
           />
           <TextInput
             style={styles.textInputInner}
             placeholder="e.g. Drop off documents - Unit 402"
-            placeholderTextColor={PLACEHOLDER_COLOR}
+            placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
             value={draft.title}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, title: val }));
@@ -93,7 +98,11 @@ export default function RequestCategorySection({
                 <Ionicons
                   name={iconName}
                   size={16}
-                  color={isSelected ? '#FFFFFF' : '#1E4D2B'}
+                  color={
+                    isSelected
+                      ? resolveColor('#FFFFFF')
+                      : resolveColor('#1E4D2B')
+                  }
                 />
                 <Text
                   style={[
@@ -123,7 +132,7 @@ export default function RequestCategorySection({
           <TextInput
             style={styles.textareaInput}
             placeholder="Step-by-step instructions, specific items, or handling details..."
-            placeholderTextColor={PLACEHOLDER_COLOR}
+            placeholderTextColor={resolveColor(PLACEHOLDER_COLOR)}
             value={draft.details}
             onChangeText={(val) => {
               setDraft((p) => ({ ...p, details: val }));

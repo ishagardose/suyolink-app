@@ -1,16 +1,8 @@
 export const DEFAULT_DOER = {
-  id: 'DOER-101',
-  name: 'Alex Morales',
-  initials: 'AM',
-  phone: '+63 917 842 1983',
-  rating: '4.95★',
-  reviewCount: '142 reviews',
-  completedCount: '142 suyos',
-  vehicle: 'Honda Beat 125cc (Motorcycle)',
-  vehiclePlate: 'ND-8821',
-  badge: 'Top Rated Courier',
-  onTimeRate: '99.2%',
-  bio: 'Full-time motorcycle courier in Makati, BGC, and Tagum. Fast, reliable, and careful with parcels & documents.',
+  name: 'Assigned doer',
+  phone: '',
+  rating: 'Rating unavailable',
+  vehicle: 'Vehicle not provided',
 };
 
 export const CATEGORY_OPTIONS = [

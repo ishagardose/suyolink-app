@@ -43,7 +43,9 @@ export default function useDashboardFilters({ availableSuyosBase }) {
 
     // Distance filter
     if (currentDistanceKm !== 'Any') {
-      list = list.filter((item) => item.distance <= currentDistanceKm);
+      list = list.filter(
+        (item) => item.distance != null && item.distance <= currentDistanceKm,
+      );
     }
 
     // Urgency filter
@@ -55,7 +57,13 @@ export default function useDashboardFilters({ availableSuyosBase }) {
     list.sort((a, b) => b.createdAt - a.createdAt);
 
     return list;
-  }, [searchQuery, selectedCategory, selectedDistance, selectedUrgency]);
+  }, [
+    availableSuyosBase,
+    searchQuery,
+    selectedCategory,
+    selectedDistance,
+    selectedUrgency,
+  ]);
 
   const availableHeaderTitle = useMemo(() => {
     if (!isFiltering) {

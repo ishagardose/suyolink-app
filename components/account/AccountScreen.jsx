@@ -1,4 +1,3 @@
-import AppearanceSelector from '../themed/AppearanceSelector';
 import React, { useMemo } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import {
@@ -100,10 +99,6 @@ export default function AccountScreen() {
           colors={colors}
           {...profile}
         />
-
-        <View style={[styles.mainProfileCard, { padding: 20 }]}>
-          <AppearanceSelector />
-        </View>
 
         <ProfileReviews
           styles={styles}

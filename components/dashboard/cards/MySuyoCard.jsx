@@ -70,7 +70,7 @@ export default function MySuyoCard({
         <Text
           style={[
             styles.mySuyoCardStatusText,
-            suyo.status === 'Cancelled'
+            suyo.status === 'Cancelled' || suyo.overdue
               ? { color: resolveColor('#DC2626', 'color') }
               : suyo.status?.includes('Completed')
                 ? { color: resolveColor('#15803D', 'color') }
@@ -89,11 +89,22 @@ export default function MySuyoCard({
         </Text>
         <Text style={styles.mySuyoCardDateDot}>·</Text>
         <Text style={styles.mySuyoCardDateText}>
-          {suyo.formattedDate || 'Recent'}
+          {suyo.postedTime || suyo.formattedDate || 'Date unavailable'}
         </Text>
       </View>
 
       {/* Tab-Specific Feature Rows */}
+      {mySuyoNavTab === 'posted' && suyo.due ? (
+        <Text
+          style={[
+            styles.mySuyoCardDateText,
+            suyo.overdue && { color: resolveColor('#DC2626', 'color') },
+            { marginBottom: 8 },
+          ]}
+        >
+          {suyo.due}
+        </Text>
+      ) : null}
 
       {/* In Posted: Boost Prompt if waiting long */}
       {mySuyoNavTab === 'posted' &&

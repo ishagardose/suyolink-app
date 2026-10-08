@@ -14,11 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function WalletIncomeLineGraph({
-  transactions = [],
-  totalOverride,
-  hasTransactions,
-}) {
+export default function WalletIncomeLineGraph({ transactions = [] }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(
     () => StyleSheet.create(themeStyles(definitions, colors, isDark)),

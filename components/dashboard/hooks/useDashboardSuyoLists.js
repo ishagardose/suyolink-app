@@ -1,7 +1,8 @@
 import { getTodayFormatted } from '../utils/dashboardHelpers';
 import { useState, useEffect } from 'react';
+import { getRequestTiming } from '../../../lib/requestTiming';
 
-export default function useDashboardSuyoLists({ requests, user }) {
+export default function useDashboardSuyoLists({ requests, user, now }) {
   const [postedSuyos, setPostedSuyos] = useState([]);
 
   const [acceptedSuyos, setAcceptedSuyos] = useState([]);
@@ -43,22 +44,15 @@ export default function useDashboardSuyoLists({ requests, user }) {
         reward: `₱${((r.offerCentavos || 0) / 100).toFixed(0)}`,
         rewardAmount: (r.offerCentavos || 0) / 100,
         tag: 'Waiting for doer',
-        status: 'Open - waiting for a doer',
+        status: getRequestTiming(r, now).overdue
+          ? 'Overdue - waiting for a doer'
+          : 'Open - waiting for a doer',
         urgency: resolveUrgencyTag(r),
-        due: r.deadline
-          ? `Due ${new Date(r.deadline).toLocaleDateString()}`
-          : 'Due today',
-        dueDate: r.deadline
-          ? new Date(r.deadline).toLocaleDateString()
-          : getTodayFormatted(),
-        createdAt: Date.parse(r.createdAt || Date.now()),
-        formattedDate: r.createdAt
-          ? new Date(r.createdAt).toLocaleDateString()
-          : 'Today',
         details: r.details || '',
         notes: r.specialInstructions || '',
         requesterName: r.requesterName || 'You',
         rawRequest: r,
+        ...getRequestTiming(r, now),
       }));
 
     const myAccepted = requests
@@ -212,7 +206,7 @@ export default function useDashboardSuyoLists({ requests, user }) {
     setDoerAcceptedSuyos(myAssigned);
     setDoerCompletedSuyos(myDoerCompleted);
     setDoerCancelledSuyos(myDoerCancelled);
-  }, [requests, user?.id]);
+  }, [requests, user?.id, now]);
   return {
     acceptedSuyos,
     cancelledSuyos,

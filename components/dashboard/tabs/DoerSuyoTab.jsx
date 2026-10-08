@@ -2,7 +2,7 @@ import AcceptedSuyosList from '../lists/AcceptedSuyosList';
 import CompletedSuyosList from '../lists/CompletedSuyosList';
 import CancelledSuyosList from '../lists/CancelledSuyosList';
 import React from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DoerSuyoTab({
@@ -48,10 +48,19 @@ export default function DoerSuyoTab({
 
         {/* 2. Modern Text Navigation: Accepted, Completed, Cancelled (Identical to MySuyo screen) */}
         <View style={styles.mySuyoTextNavWrapper}>
-          <View style={styles.mySuyoTextNavRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            contentContainerStyle={styles.mySuyoTextNavRow}
+            style={{ flexGrow: 0 }}
+            testID="doer-status-tabs"
+          >
             {/* Accepted Tab */}
             <TouchableOpacity
-              style={styles.mySuyoTextNavItem}
+              style={[styles.mySuyoTextNavItem, { flexShrink: 0 }]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: doerNavTab === 'accepted' }}
               activeOpacity={0.7}
               onPress={() => {
                 setDoerNavTab('accepted');
@@ -82,7 +91,9 @@ export default function DoerSuyoTab({
 
             {/* Completed Tab */}
             <TouchableOpacity
-              style={styles.mySuyoTextNavItem}
+              style={[styles.mySuyoTextNavItem, { flexShrink: 0 }]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: doerNavTab === 'completed' }}
               activeOpacity={0.7}
               onPress={() => {
                 setDoerNavTab('completed');
@@ -113,7 +124,9 @@ export default function DoerSuyoTab({
 
             {/* Cancelled Tab */}
             <TouchableOpacity
-              style={styles.mySuyoTextNavItem}
+              style={[styles.mySuyoTextNavItem, { flexShrink: 0 }]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: doerNavTab === 'cancelled' }}
               activeOpacity={0.7}
               onPress={() => {
                 setDoerNavTab('cancelled');
@@ -141,7 +154,7 @@ export default function DoerSuyoTab({
                 <View style={styles.mySuyoTextNavUnderline} />
               )}
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
 
         {/* 3. Sub-bar: Title & Subtitle on Left, Edit feature on Right (for Cancelled tab only, matching sample) */}

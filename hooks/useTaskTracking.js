@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
 import { getRequestDetails } from '../data/suyoApi';
+import { watchDevicePosition } from '../lib/watchDevicePosition';
 
 export default function useTaskTracking(requestId, userId) {
   const [task, setTask] = useState(null);
@@ -10,18 +11,23 @@ export default function useTaskTracking(requestId, userId) {
   const [consent, setConsent] = useState(null);
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState('');
+  const [readError, setReadError] = useState('');
   const [busy, setBusy] = useState(false);
   const watcher = useRef(null);
   const generation = useRef(0);
   const sharingRef = useRef(false);
   const mounted = useRef(false);
   const operation = useRef(false);
+  const identity = useRef(null);
+  identity.current = `${requestId}:${userId}`;
   const refresh = useCallback(async () => {
     if (!requestId || !supabase) return;
     const current = generation.current;
     try {
       const next = await getRequestDetails(requestId);
       if (!next) throw new Error('Task unavailable.');
+      if (!mounted.current || current !== generation.current) return;
+      setTask(next);
       // Public viewers can see the approximate task map, never tracking data.
       let point = null,
         permission = null;
@@ -46,6 +52,7 @@ export default function useTaskTracking(requestId, userId) {
       setTask(next);
       setPosition(point);
       setConsent(permission);
+      setReadError('');
       if (
         !['assigned', 'in_progress'].includes(next.status) ||
         permission?.revoked_at
@@ -57,7 +64,7 @@ export default function useTaskTracking(requestId, userId) {
       }
     } catch (e) {
       if (mounted.current && current === generation.current)
-        setError(e.message);
+        setReadError(e.message);
     }
   }, [requestId, userId]);
   const stop = useCallback(async () => {
@@ -78,6 +85,17 @@ export default function useTaskTracking(requestId, userId) {
   }, [requestId, refresh]);
   useEffect(() => {
     mounted.current = true;
+    setTask(null);
+    setPosition(null);
+    setConsent(null);
+    setError('');
+    setReadError('');
+    if (!requestId || !userId || !supabase) {
+      return () => {
+        mounted.current = false;
+        ++generation.current;
+      };
+    }
     refresh();
     const timer = setInterval(refresh, 6000);
     const channel = supabase
@@ -135,13 +153,40 @@ export default function useTaskTracking(requestId, userId) {
     operation.current = true;
     setBusy(true);
     setError('');
-    const current = generation.current;
+    let current = generation.current;
+    const startedFor = identity.current;
+    let locationTimer;
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted)
         throw new Error(
           'Allow location access in settings to share your position.',
         );
+      if (!mounted.current || startedFor !== identity.current) return;
+      // Android permission/provider dialogs can briefly background the app.
+      // Continue on return rather than silently cancelling the button press.
+      if (AppState.currentState === 'background')
+        throw new Error('Return to the app and tap Share location again.');
+      current = generation.current;
+      if (!(await Location.hasServicesEnabledAsync()))
+        throw new Error('Turn on your device location services and try again.');
+      const initialLocation = await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }),
+        new Promise((_, reject) => {
+          locationTimer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Could not get a GPS position. Move near a window or outdoors and try again.',
+                ),
+              ),
+            15000,
+          );
+        }),
+      ]);
+      clearTimeout(locationTimer);
       if (!mounted.current || current !== generation.current) return;
       const result = await supabase.rpc('set_tracking_consent', {
         p_request_id: requestId,
@@ -155,46 +200,45 @@ export default function useTaskTracking(requestId, userId) {
         });
         return;
       }
+      current = ++generation.current;
       sharingRef.current = true;
       let uploading = false,
         lastSent = 0;
-      const subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 0,
-        },
-        async (location) => {
-          if (
-            uploading ||
-            Date.now() - lastSent < 4000 ||
-            !sharingRef.current ||
-            current !== generation.current
-          )
-            return;
-          uploading = true;
-          lastSent = Date.now();
-          try {
-            const c = location.coords;
-            const update = await supabase.rpc('update_task_location', {
-              p_request_id: requestId,
-              p_latitude: c.latitude,
-              p_longitude: c.longitude,
-              p_accuracy: c.accuracy >= 0 ? c.accuracy : null,
-              p_speed: c.speed >= 0 ? c.speed : null,
-            });
-            if (update.error) throw update.error;
-            if (mounted.current && current === generation.current) {
-              setPosition(update.data);
-              setError('');
-            }
-          } catch (e) {
-            if (mounted.current && current === generation.current)
-              setError(e.message);
-          } finally {
-            uploading = false;
+      const uploadLocation = async (location, requireSuccess = false) => {
+        if (
+          uploading ||
+          Date.now() - lastSent < 4000 ||
+          !sharingRef.current ||
+          current !== generation.current
+        )
+          return;
+        uploading = true;
+        lastSent = Date.now();
+        try {
+          const c = location.coords;
+          const update = await supabase.rpc('update_task_location', {
+            p_request_id: requestId,
+            p_latitude: c.latitude,
+            p_longitude: c.longitude,
+            p_accuracy: c.accuracy >= 0 ? c.accuracy : null,
+            p_speed: c.speed >= 0 ? c.speed : null,
+          });
+          if (update.error) throw update.error;
+          if (mounted.current && current === generation.current) {
+            setPosition(update.data);
+            setError('');
           }
-        },
+        } catch (e) {
+          if (mounted.current && current === generation.current)
+            setError(e.message);
+          if (requireSuccess) throw e;
+        } finally {
+          uploading = false;
+        }
+      };
+      await uploadLocation(initialLocation, true);
+      const subscription = await watchDevicePosition(
+        uploadLocation,
         (message) => {
           if (mounted.current) setError(message);
         },
@@ -210,6 +254,7 @@ export default function useTaskTracking(requestId, userId) {
       if (mounted.current) setError(e.message);
       if (sharingRef.current) await stop();
     } finally {
+      clearTimeout(locationTimer);
       operation.current = false;
       if (mounted.current) setBusy(false);
     }
@@ -219,7 +264,7 @@ export default function useTaskTracking(requestId, userId) {
     position,
     consent,
     sharing,
-    error,
+    error: error || readError,
     busy,
     start,
     stop,

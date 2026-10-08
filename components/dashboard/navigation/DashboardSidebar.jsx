@@ -86,7 +86,7 @@ export default function DashboardSidebar({
           >
             <View style={styles.detailAvatarCircle}>
               <Text style={styles.detailAvatarInitials}>
-                {getInitials(userProfile?.name || 'Juan Dela Cruz')}
+                {getInitials(userProfile?.name || 'Community member')}
               </Text>
             </View>
             <View style={styles.detailRequestorTextCol}>
@@ -95,7 +95,7 @@ export default function DashboardSidebar({
                   style={styles.detailRequestorName}
                   numberOfLines={1}
                 >
-                  {userProfile?.name || 'Juan Dela Cruz'}
+                  {userProfile?.name || 'Community member'}
                 </Text>
                 <TouchableOpacity
                   onPress={(e) => {
@@ -117,7 +117,8 @@ export default function DashboardSidebar({
                 </TouchableOpacity>
               </View>
               <Text style={styles.detailRequestorMeta}>
-                4.9★ - 48 completed
+                {userProfile?.rating || 'No ratings yet'} ·{' '}
+                {userProfile?.completedCount ?? '—'} completed
               </Text>
               <View style={styles.detailRequestorPhoneRow}>
                 <Ionicons
@@ -126,7 +127,7 @@ export default function DashboardSidebar({
                   color={resolveColor('#6D8777', 'color')}
                 />
                 <Text style={styles.detailRequestorPhoneText}>
-                  {userProfile?.phone || '+63 917 123 4567'}
+                  {userProfile?.phone || 'No phone added'}
                 </Text>
               </View>
             </View>

@@ -13,7 +13,7 @@ import RequestRewardSection from './sections/RequestRewardSection';
 import RequestDeadlineSection from './sections/RequestDeadlineSection';
 import RequestContactSection from './sections/RequestContactSection';
 import RequestSuccessModal from './modals/RequestSuccessModal';
-import { styles } from './RequestForm.styles';
+import useRequestTheme from './useRequestTheme';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -22,23 +22,25 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Modal,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useTheme } from '../../theme/ThemeContext';
 import { useSuyos } from '../../context/SuyoContext';
 
-import LocationPicker from './LocationPicker';
+import RequestLocationSection from './sections/RequestLocationSection';
+import { privatePinAddress } from '../../lib/philippineAreas';
+import { hasCoordinates } from '../../lib/geo';
+import { formatPhilippineMobile } from '../../lib/phone';
+import { parseDeadline } from '../../data/suyoRequests';
 
 import CalendarModal from './CalendarModal';
 import ClockModal from './ClockModal';
 
 export default function RequestForm({ onPosted }) {
-  const { colors } = useTheme();
+  const { styles, resolveColor } = useRequestTheme();
   const { postRequest, isLoading, error: loadError, reload } = useSuyos();
 
   const [draft, setDraft] = useState(() => ({
@@ -168,14 +170,13 @@ export default function RequestForm({ onPosted }) {
     if (!draft.deadlineTime) {
       errors.deadlineTime = 'Target time is required';
     }
-    // 4. Address
-    if (!draft.location.trim()) {
-      errors.location = 'Address/meeting landmark/Drop off is required';
-    }
-    // 5. Contact Info
-    if (!draft.contactPhone.trim()) {
-      errors.contactPhone = 'Contact info is required to post a suyo';
-    }
+    if (!draft.publicLocation.trim())
+      errors.publicLocation = 'Public area is required';
+    if (!hasCoordinates(draft.coordinates))
+      errors.coordinates = 'Choose the exact location on the map';
+    if (!/^9\d{9}$/.test(draft.contactPhone))
+      errors.contactPhone =
+        'Enter a valid 10-digit mobile number starting with 9 after +63';
 
     setFieldErrors(errors);
     return errors;
@@ -208,15 +209,9 @@ export default function RequestForm({ onPosted }) {
 
     const combinedDeadline = `${draft.deadlineDate.trim()} ${draft.deadlineTime.trim()}`;
 
-    let deadlineIso = combinedDeadline;
     // Validate deadline is in the future
     try {
-      const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(
-        combinedDeadline,
-      );
-      if (!match) throw new Error('Invalid deadline date/time format.');
-      const [, y, m, d, h, min] = match.map(Number);
-      const parsedDate = new Date(y, m - 1, d, h, min);
+      const parsedDate = parseDeadline(combinedDeadline);
       if (parsedDate.getTime() <= Date.now()) {
         setFieldErrors((p) => ({
           ...p,
@@ -225,7 +220,6 @@ export default function RequestForm({ onPosted }) {
         setGeneralError('Please set a deadline time in the future.');
         return;
       }
-      deadlineIso = parsedDate.toISOString();
     } catch {
       setFieldErrors((p) => ({ ...p, deadlineDate: 'Invalid date/time' }));
       setGeneralError('Please enter a valid date and time.');
@@ -241,21 +235,16 @@ export default function RequestForm({ onPosted }) {
         ...draft,
         category: draft.category || 'Delivery',
         details: draft.details.trim() || draft.title.trim(),
-        location: draft.location.trim(),
-        publicLocation: draft.location.trim(),
-        exactAddress: draft.location.trim(),
-        phone: draft.contactPhone.trim() || draft.phone || 'N/A',
-        coordinates: draft.coordinates || {
-          latitude: 7.4475,
-          longitude: 125.8078,
-        },
+        location: draft.publicLocation.trim(),
+        publicLocation: draft.publicLocation.trim(),
+        exactAddress:
+          draft.location.trim() || privatePinAddress(draft.coordinates),
+        phone: formatPhilippineMobile(draft.contactPhone),
+        coordinates: draft.coordinates,
         deadline: combinedDeadline,
         attachments: draft.attachments || [],
         notes: [
           draft.urgency ? `[Status: ${draft.urgency}]` : '',
-          draft.contactPhone
-            ? `Contact Phone: ${draft.contactPhone.trim()}`
-            : '',
           draft.notes || '',
         ]
           .filter(Boolean)
@@ -285,24 +274,6 @@ export default function RequestForm({ onPosted }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.formContainer}>
-          {/* TOP BANNER */}
-          <View style={styles.heroBanner}>
-            <View style={styles.heroIconBadge}>
-              <Ionicons
-                name="sparkles"
-                size={20}
-                color="#1E4D2B"
-              />
-            </View>
-            <View style={styles.heroTextCol}>
-              <Text style={styles.heroTitle}>Post a Suyo Request</Text>
-              <Text style={styles.heroSub}>
-                Fill out your task details, reward offer, and meeting location.
-                Verified community doers will be alerted immediately.
-              </Text>
-            </View>
-          </View>
-
           {/* QUICK SUGGESTION PRESETS */}
           <View style={styles.templatesBlock}>
             <Text style={styles.templatesHeader}>Quick Suggestions:</Text>
@@ -340,7 +311,7 @@ export default function RequestForm({ onPosted }) {
               <Ionicons
                 name="alert-circle"
                 size={18}
-                color="#DC2626"
+                color={resolveColor('#DC2626')}
               />
               <Text style={styles.generalErrorText}>{generalError}</Text>
             </View>
@@ -398,74 +369,13 @@ export default function RequestForm({ onPosted }) {
             timeInputRef={timeInputRef}
           />
 
-          {/* CARD 4: LOCATION & PIN */}
-          <View style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Ionicons
-                name="location-outline"
-                size={18}
-                color="#1E4D2B"
-              />
-              <Text style={styles.cardTitle}>Location & Map Pin</Text>
-            </View>
-
-            {/* Address / Meeting landmark / Drop off */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldLabelRow}>
-                <Text
-                  style={[
-                    styles.fieldLabel,
-                    fieldErrors.location && styles.fieldLabelError,
-                  ]}
-                >
-                  Address/meeting landmark/Drop off *
-                </Text>
-                <Text style={styles.counterText}>
-                  {draft.location.length}/250
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.inputWithIcon,
-                  fieldErrors.location && styles.inputErrorBorder,
-                ]}
-              >
-                <Ionicons
-                  name="location-sharp"
-                  size={18}
-                  color={fieldErrors.location ? '#DC2626' : '#1E4D2B'}
-                  style={styles.leadingIcon}
-                />
-                <TextInput
-                  style={styles.textInputInner}
-                  placeholder="Address, landmark, or drop-off..."
-                  placeholderTextColor={PLACEHOLDER_COLOR}
-                  value={draft.location}
-                  onChangeText={(val) => {
-                    setDraft((p) => ({ ...p, location: val }));
-                    if (fieldErrors.location)
-                      setFieldErrors((p) => ({ ...p, location: undefined }));
-                  }}
-                  maxLength={250}
-                  editable={!busy}
-                />
-              </View>
-              {fieldErrors.location && (
-                <Text style={styles.fieldErrorText}>
-                  {fieldErrors.location}
-                </Text>
-              )}
-            </View>
-
-            {/* Map Pin Picker */}
-            <LocationPicker
-              value={draft.coordinates}
-              disabled={busy}
-              onChange={(coordinates) => {
-                setDraft((previous) => ({ ...previous, coordinates }));
-              }}
-            />
-          </View>
+          <RequestLocationSection
+            fieldErrors={fieldErrors}
+            draft={draft}
+            setDraft={setDraft}
+            setFieldErrors={setFieldErrors}
+            busy={busy}
+          />
 
           {/* CARD 6: CONTACT INFO & SPECIAL INSTRUCTIONS */}
           <RequestContactSection
@@ -484,7 +394,7 @@ export default function RequestForm({ onPosted }) {
               <Ionicons
                 name="cloud-offline-outline"
                 size={20}
-                color="#DC2626"
+                color={resolveColor('#DC2626')}
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.errorCardText}>{loadError}</Text>
@@ -504,6 +414,8 @@ export default function RequestForm({ onPosted }) {
               styles.submitButton,
               (busy || isLoading) && styles.submitButtonDisabled,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Post Suyo Request"
             onPress={submit}
             disabled={busy || isLoading}
             activeOpacity={0.85}
@@ -511,14 +423,14 @@ export default function RequestForm({ onPosted }) {
             {busy ? (
               <ActivityIndicator
                 size="small"
-                color="#FFFFFF"
+                color={resolveColor('#FFFFFF')}
               />
             ) : (
               <>
                 <Ionicons
                   name="paper-plane"
                   size={20}
-                  color="#FFFFFF"
+                  color={resolveColor('#FFFFFF')}
                 />
                 <Text style={styles.submitButtonText}>
                   Post Suyo Request • ₱{draft.offerAmount || '0.00'}
@@ -589,7 +501,7 @@ export default function RequestForm({ onPosted }) {
               <Ionicons
                 name="close"
                 size={26}
-                color="#FFFFFF"
+                color={resolveColor('#FFFFFF')}
               />
             </TouchableOpacity>
             <Image

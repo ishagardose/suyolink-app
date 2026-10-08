@@ -52,14 +52,18 @@ test('appearance switches dashboard colors and persists across reload and profil
     'color',
     rgb(dark.text),
   );
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await page.goto('/dashboard');
+  await page.getByRole('button', { name: 'Open sidebar', exact: true }).click();
   await page
     .getByRole('radio', { name: 'Light appearance', exact: true })
     .click();
-  await expect(page.getByText('Request Tester', { exact: true })).toHaveCSS(
+  await expect(page.getByText('Available Suyos', { exact: true })).toHaveCSS(
     'color',
     rgb(light.text),
   );
   await page.reload();
+  await page.getByRole('button', { name: 'Open sidebar', exact: true }).click();
   await expect(
     page.getByRole('radio', { name: 'Light appearance', exact: true }),
   ).toHaveAttribute('aria-checked', 'true');
@@ -71,11 +75,12 @@ test('system appearance follows device changes while an explicit selection stays
 }) => {
   await mockSupabase(page, { signedIn: true });
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/account');
+  await page.goto('/dashboard');
+  await page.getByRole('button', { name: 'Open sidebar', exact: true }).click();
   await page
     .getByRole('radio', { name: 'System appearance', exact: true })
     .click();
-  const name = page.getByText('Request Tester', { exact: true });
+  const name = page.getByText('Available Suyos', { exact: true });
   await expect(name).toHaveCSS('color', rgb(dark.text));
   await page.emulateMedia({ colorScheme: 'light' });
   await expect(name).toHaveCSS('color', rgb(light.text));
