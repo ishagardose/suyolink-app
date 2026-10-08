@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import { DEFAULT_MAP_CENTER } from '../../lib/geo';
+import { FIXED_COLORS } from '../../theme/colors';
 
 export default function TaskMap({
   center,
@@ -34,7 +35,9 @@ export default function TaskMap({
           key={marker.id}
           coordinate={marker}
           title={marker.title}
-          pinColor={marker.isMe ? '#2563EB' : '#1E4D2B'}
+          pinColor={
+            marker.isMe ? FIXED_COLORS.mapDoerBlue : FIXED_COLORS.brandGreen
+          }
           onPress={(event) => {
             event.stopPropagation?.();
             onSelect?.(marker.id);

@@ -122,7 +122,11 @@ export function AuthProvider({ children }) {
       },
       signup: async ({ email, password, name, location, acknowledged }) => {
         if (!supabase) throw new Error(authConfigError);
-        if (location && hasCoordinates(location?.position) && acknowledged === true) {
+        if (
+          location &&
+          hasCoordinates(location?.position) &&
+          acknowledged === true
+        ) {
           await stageSignupLocation(email, location.position, location.source);
         }
         const { data, error } = await supabase.auth.signUp({
@@ -179,9 +183,21 @@ export function AuthProvider({ children }) {
             'Use a name up to 100 characters, phone up to 40, and address up to 250.',
           );
         }
+        const publicDetails = { full_name: name };
+        if (draft.handle !== undefined)
+          publicDetails.handle = draft.handle.trim();
+        if (draft.bio !== undefined) publicDetails.bio = draft.bio.trim();
+        if (
+          (publicDetails.handle?.length || 0) > 40 ||
+          (publicDetails.bio?.length || 0) > 1000
+        ) {
+          throw new Error(
+            'Use a handle up to 40 characters and a bio up to 1000.',
+          );
+        }
         const details = await supabase
           .from('profiles')
-          .update({ full_name: name })
+          .update(publicDetails)
           .eq('id', user.id)
           .select('full_name')
           .single();
@@ -197,7 +213,7 @@ export function AuthProvider({ children }) {
           .single();
         if (contacts.error)
           throw new Error(
-            'Name saved, but contact details could not be saved. Please retry.',
+            'Profile saved, but contact details could not be saved. Please retry.',
           );
         setProfile((current) =>
           current?.id === user.id ? { ...current, phone, address } : current,

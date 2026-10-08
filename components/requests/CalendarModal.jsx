@@ -1,13 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Pressable,
-} from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../theme/ThemeContext';
+import { createCalendarModalStyles } from './CalendarModal.styles';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTH_NAMES = [
@@ -38,6 +33,8 @@ export default function CalendarModal({
   onSelectDate,
   currentDate,
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createCalendarModalStyles(colors), [colors]);
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(
     () => formatYMD(today.getFullYear(), today.getMonth(), today.getDate()),
@@ -184,7 +181,7 @@ export default function CalendarModal({
               <Ionicons
                 name="calendar"
                 size={20}
-                color="#1E4D2B"
+                color={colors.link}
               />
               <Text style={styles.headerTitle}>Select Target Date</Text>
             </View>
@@ -198,7 +195,7 @@ export default function CalendarModal({
               <Ionicons
                 name="close"
                 size={20}
-                color="#4A6B56"
+                color={colors.textMuted}
               />
             </TouchableOpacity>
           </View>
@@ -214,7 +211,7 @@ export default function CalendarModal({
               <Ionicons
                 name="chevron-back"
                 size={18}
-                color="#1E4D2B"
+                color={colors.link}
               />
             </TouchableOpacity>
 
@@ -231,7 +228,7 @@ export default function CalendarModal({
               <Ionicons
                 name="chevron-forward"
                 size={18}
-                color="#1E4D2B"
+                color={colors.link}
               />
             </TouchableOpacity>
           </View>
@@ -352,197 +349,3 @@ export default function CalendarModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E6EFEA',
-  },
-  headerTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#163523',
-    letterSpacing: -0.2,
-  },
-  closeBtn: {
-    padding: 4,
-    borderRadius: 8,
-    backgroundColor: '#F3F8F5',
-  },
-  monthNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingHorizontal: 6,
-  },
-  navArrowBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EBF4EF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monthYearText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#1E4D2B',
-  },
-  weekdaysRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingHorizontal: 4,
-  },
-  weekdayText: {
-    width: 38,
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#658071',
-  },
-  weekendText: {
-    color: '#95AFA0',
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  dayCell: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 2,
-    position: 'relative',
-  },
-  dayCellSelected: {
-    backgroundColor: '#1E4D2B',
-  },
-  dayCellToday: {
-    borderWidth: 1.5,
-    borderColor: '#1E4D2B',
-    backgroundColor: '#F2F8F4',
-  },
-  dayText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#163523',
-  },
-  dayTextMuted: {
-    color: '#D4E2DA',
-  },
-  dayTextPast: {
-    color: '#A0B4A9',
-  },
-  dayTextToday: {
-    fontWeight: '800',
-    color: '#1E4D2B',
-  },
-  dayTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  todayDot: {
-    position: 'absolute',
-    bottom: 3,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#1E4D2B',
-  },
-  quickShortcutsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 6,
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#E6EFEA',
-  },
-  shortcutChip: {
-    flex: 1,
-    backgroundColor: '#F3F8F5',
-    borderWidth: 1,
-    borderColor: '#D8E8DF',
-    borderRadius: 8,
-    paddingVertical: 6,
-    alignItems: 'center',
-  },
-  shortcutChipActive: {
-    backgroundColor: '#EBF4EF',
-    borderColor: '#1E4D2B',
-  },
-  shortcutText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#2D4E3A',
-  },
-  shortcutTextActive: {
-    color: '#1E4D2B',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 14,
-    gap: 12,
-  },
-  selectedBadge: {
-    flex: 1,
-  },
-  selectedBadgeLabel: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#658071',
-    textTransform: 'uppercase',
-  },
-  selectedBadgeValue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  confirmBtn: {
-    backgroundColor: '#1E4D2B',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  confirmBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-});

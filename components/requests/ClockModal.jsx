@@ -1,18 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Pressable,
-} from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../theme/ThemeContext';
+import { createClockModalStyles } from './ClockModal.styles';
 
-// Geometry constants for the analog clock face
-const CLOCK_SIZE = 220;
-const RADIUS = 84;
-const CENTER = CLOCK_SIZE / 2;
+import { CLOCK_SIZE, RADIUS, CENTER } from './clockGeometry';
 
 // Hours 1 to 12
 const HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -44,6 +36,8 @@ export default function ClockModal({
   onSelectTime,
   currentTime,
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createClockModalStyles(colors), [colors]);
   const initial = useMemo(() => parseInitialTime(currentTime), [currentTime]);
 
   const [hour, setHour] = useState(initial.hour);
@@ -122,7 +116,7 @@ export default function ClockModal({
               <Ionicons
                 name="time"
                 size={20}
-                color="#1E4D2B"
+                color={colors.link}
               />
               <Text style={styles.headerTitle}>Clock Time Setter</Text>
             </View>
@@ -136,7 +130,7 @@ export default function ClockModal({
               <Ionicons
                 name="close"
                 size={20}
-                color="#4A6B56"
+                color={colors.textMuted}
               />
             </TouchableOpacity>
           </View>
@@ -368,280 +362,3 @@ export default function ClockModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 350,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E6EFEA',
-  },
-  headerTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#163523',
-    letterSpacing: -0.2,
-  },
-  closeBtn: {
-    padding: 4,
-    borderRadius: 8,
-    backgroundColor: '#F3F8F5',
-  },
-  digitalDisplayRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FAFDFB',
-    borderWidth: 1.2,
-    borderColor: '#D4E2DA',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  timeSegmentsWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  timeSegmentBtn: {
-    backgroundColor: '#EBF4EF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    alignItems: 'center',
-    minWidth: 54,
-  },
-  timeSegmentBtnActive: {
-    backgroundColor: '#1E4D2B',
-  },
-  timeSegmentText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1E4D2B',
-  },
-  timeSegmentTextActive: {
-    color: '#FFFFFF',
-  },
-  segmentLabel: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: '#658071',
-    textTransform: 'uppercase',
-  },
-  timeColon: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#163523',
-    marginHorizontal: 2,
-  },
-  periodToggleWrap: {
-    flexDirection: 'column',
-    gap: 4,
-  },
-  periodBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#F3F8F5',
-    borderWidth: 1,
-    borderColor: '#D8E8DF',
-    alignItems: 'center',
-  },
-  periodBtnActive: {
-    backgroundColor: '#1E4D2B',
-    borderColor: '#1E4D2B',
-  },
-  periodBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#3C5C48',
-  },
-  periodBtnTextActive: {
-    color: '#FFFFFF',
-  },
-  modeHintText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#658071',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  clockContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  clockFace: {
-    width: CLOCK_SIZE,
-    height: CLOCK_SIZE,
-    borderRadius: CLOCK_SIZE / 2,
-    backgroundColor: '#F5FAF7',
-    borderWidth: 2,
-    borderColor: '#D4E2DA',
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clockOuterRing: {
-    position: 'absolute',
-    width: CLOCK_SIZE - 20,
-    height: CLOCK_SIZE - 20,
-    borderRadius: (CLOCK_SIZE - 20) / 2,
-    borderWidth: 1,
-    borderColor: '#E6EFEA',
-    borderStyle: 'dashed',
-  },
-  clockCenterPin: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#1E4D2B',
-    zIndex: 10,
-  },
-  clockHandContainer: {
-    position: 'absolute',
-    width: 2,
-    height: RADIUS,
-    top: CENTER - RADIUS,
-    left: CENTER - 1,
-    transformOrigin: 'bottom center',
-    alignItems: 'center',
-    zIndex: 5,
-  },
-  clockHandLine: {
-    width: 2,
-    height: RADIUS - 14,
-    backgroundColor: '#1E4D2B',
-  },
-  clockHandTip: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#1E4D2B',
-  },
-  dialNumberBtn: {
-    position: 'absolute',
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 12,
-  },
-  dialNumberBtnSelected: {
-    backgroundColor: '#1E4D2B',
-    shadowColor: '#1E4D2B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  dialNumberText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#163523',
-  },
-  dialMinuteText: {
-    fontSize: 11.5,
-  },
-  dialNumberTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  quickMinutesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E6EFEA',
-  },
-  minutePresetBtn: {
-    flex: 1,
-    backgroundColor: '#F3F8F5',
-    borderWidth: 1,
-    borderColor: '#D8E8DF',
-    borderRadius: 8,
-    paddingVertical: 5,
-    alignItems: 'center',
-  },
-  minutePresetBtnActive: {
-    backgroundColor: '#EBF4EF',
-    borderColor: '#1E4D2B',
-  },
-  minutePresetText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#2D4E3A',
-  },
-  minutePresetTextActive: {
-    color: '#1E4D2B',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 14,
-    gap: 12,
-  },
-  selectedBadge: {
-    flex: 1,
-  },
-  selectedBadgeLabel: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#658071',
-    textTransform: 'uppercase',
-  },
-  selectedBadgeValue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#163523',
-  },
-  selectedBadge24: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#556E60',
-  },
-  confirmBtn: {
-    backgroundColor: '#1E4D2B',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  confirmBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-});

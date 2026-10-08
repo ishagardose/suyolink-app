@@ -61,9 +61,9 @@ export default function ThemedButton({
           isInteractive &&
           (variant === 'primary'
             ? {
-                backgroundColor: '#163E22',
+                backgroundColor: colors.primaryHover,
                 transform: [{ scale: 1.015 }],
-                shadowColor: '#000',
+                shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.15,
                 shadowRadius: 4,
@@ -71,18 +71,20 @@ export default function ThemedButton({
               }
             : variant === 'danger'
               ? {
-                  backgroundColor: '#B91C1C',
+                  backgroundColor: colors.dangerHover,
                   transform: [{ scale: 1.015 }],
                   elevation: 2,
                 }
               : {
-                  backgroundColor: '#DFECE4',
-                  borderColor: '#C5DCD0',
+                  backgroundColor: colors.surfaceHover,
+                  borderColor: colors.hoverBorder,
                   borderWidth: 1,
                   transform: [{ scale: 1.015 }],
                   elevation: 2,
                 }),
-        typeof style === 'function' ? style({ pressed: false, hovered }) : style,
+        typeof style === 'function'
+          ? style({ pressed: false, hovered })
+          : style,
       ]}
     >
       {loading ? (
