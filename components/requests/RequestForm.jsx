@@ -31,6 +31,7 @@ const EMPTY = {
   offerAmount: '',
   deadlineDate: '',
   deadlineTime: '',
+  urgency: 'Normal',
   location: '',
   publicLocation: '',
   exactAddress: '',
@@ -98,6 +99,69 @@ const REWARD_PRESETS = ['100.00', '150.00', '200.00', '300.00'];
 
 const PLACEHOLDER_COLOR = '#688676';
 
+const DEADLINE_STATUS_OPTIONS = [
+  {
+    key: 'Urgent',
+    label: 'Urgent',
+    sublabel: 'Rush (<3h)',
+    icon: 'flame',
+    color: '#DC2626',
+    bgColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    textColor: '#991B1B',
+    activeBg: '#DC2626',
+    description: 'Signals couriers that this task requires immediate urgent attention and fast acceptance.',
+  },
+  {
+    key: 'Due today',
+    label: 'Due Today',
+    sublabel: 'Finish today',
+    icon: 'today',
+    color: '#D97706',
+    bgColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    textColor: '#92400E',
+    activeBg: '#D97706',
+    description: 'Prioritized for fulfillment today before end of day.',
+  },
+  {
+    key: 'Due tomorrow',
+    label: 'Due Tomorrow',
+    sublabel: 'Next day',
+    icon: 'calendar',
+    color: '#2563EB',
+    bgColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    textColor: '#1E40AF',
+    activeBg: '#2563EB',
+    description: 'Scheduled for fulfillment by tomorrow or next day schedule.',
+  },
+  {
+    key: 'Normal',
+    label: 'Normal',
+    sublabel: 'Standard schedule',
+    icon: 'checkmark-circle',
+    color: '#15803D',
+    bgColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+    textColor: '#166534',
+    activeBg: '#15803D',
+    description: 'Standard delivery and errand schedule with regular courier dispatch.',
+  },
+  {
+    key: 'Flexible',
+    label: 'Flexible',
+    sublabel: 'Open window',
+    icon: 'hourglass-outline',
+    color: '#7C3AED',
+    bgColor: '#F5F3FF',
+    borderColor: '#DDD6FE',
+    textColor: '#5B21B6',
+    activeBg: '#7C3AED',
+    description: 'Flexible timing anytime within the chosen target date and time window.',
+  },
+];
+
 // Helper to get formatted default today & time +3 hours
 const getInitialDate = () => {
   const now = new Date();
@@ -149,6 +213,41 @@ export default function RequestForm({ onPosted }) {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const selectedStatusConfig =
+    DEADLINE_STATUS_OPTIONS.find((opt) => opt.key === (draft.urgency || 'Normal')) ||
+    DEADLINE_STATUS_OPTIONS[3];
+
+  const handleSelectStatus = (opt) => {
+    setDraft((p) => {
+      const next = { ...p, urgency: opt.key };
+      const now = new Date();
+      if (opt.key === 'Due today' || opt.key === 'Urgent') {
+        if (!p.deadlineDate) {
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, '0');
+          const d = String(now.getDate()).padStart(2, '0');
+          next.deadlineDate = `${y}-${m}-${d}`;
+        }
+        if (opt.key === 'Urgent' && !p.deadlineTime) {
+          const urgentTime = new Date(Date.now() + 2 * 3600000);
+          const h = String(urgentTime.getHours()).padStart(2, '0');
+          const min = String(urgentTime.getMinutes()).padStart(2, '0');
+          next.deadlineTime = `${h}:${min}`;
+        }
+      } else if (opt.key === 'Due tomorrow') {
+        const tomorrow = new Date(Date.now() + 86400000);
+        const y = tomorrow.getFullYear();
+        const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const d = String(tomorrow.getDate()).padStart(2, '0');
+        next.deadlineDate = `${y}-${m}-${d}`;
+        if (!p.deadlineTime) {
+          next.deadlineTime = '17:00';
+        }
+      }
+      return next;
+    });
   };
 
   const handlePickFromCamera = async () => {
@@ -413,6 +512,7 @@ export default function RequestForm({ onPosted }) {
 
     const combinedDeadline = `${draft.deadlineDate.trim()} ${draft.deadlineTime.trim()}`;
 
+    let deadlineIso = combinedDeadline;
     // Validate deadline is in the future
     try {
       const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(
@@ -429,6 +529,7 @@ export default function RequestForm({ onPosted }) {
         setGeneralError('Please set a deadline time in the future.');
         return;
       }
+      deadlineIso = parsedDate.toISOString();
     } catch {
       setFieldErrors((p) => ({ ...p, deadlineDate: 'Invalid date/time' }));
       setGeneralError('Please enter a valid date and time.');
@@ -454,9 +555,11 @@ export default function RequestForm({ onPosted }) {
         },
         deadline: combinedDeadline,
         attachments: draft.attachments || [],
-        notes: draft.contactPhone
-          ? `Contact Phone: ${draft.contactPhone.trim()}\n${draft.notes || ''}`.trim()
-          : draft.notes,
+        notes: [
+          draft.urgency ? `[Status: ${draft.urgency}]` : '',
+          draft.contactPhone ? `Contact Phone: ${draft.contactPhone.trim()}` : '',
+          draft.notes || '',
+        ].filter(Boolean).join('\n').trim(),
       });
       setIsSuccessModalOpen(true);
     } catch (err) {
@@ -1027,6 +1130,101 @@ export default function RequestForm({ onPosted }) {
               Set the required target date and time when the suyo must be
               completed.
             </Text>
+
+            {/* Suyo Status / Priority Picker */}
+            <View style={styles.deadlineStatusSection}>
+              <View style={styles.deadlineStatusHeaderRow}>
+                <Text style={styles.fieldLabel}>Suyo Status / Priority *</Text>
+                <View
+                  style={[
+                    styles.deadlineStatusActiveTag,
+                    {
+                      backgroundColor: selectedStatusConfig.bgColor,
+                      borderColor: selectedStatusConfig.borderColor,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={selectedStatusConfig.icon}
+                    size={11}
+                    color={selectedStatusConfig.color}
+                  />
+                  <Text
+                    style={[
+                      styles.deadlineStatusActiveTagText,
+                      { color: selectedStatusConfig.color },
+                    ]}
+                  >
+                    {selectedStatusConfig.label}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.deadlineStatusSubtitle}>
+                Choose a completion status for couriers to prioritize your task:
+              </Text>
+
+              {/* Status Chips */}
+              <View style={styles.deadlineStatusChipsGrid}>
+                {DEADLINE_STATUS_OPTIONS.map((opt) => {
+                  const isSelected = (draft.urgency || 'Normal') === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      style={[
+                        styles.deadlineStatusChip,
+                        isSelected && {
+                          backgroundColor: opt.activeBg,
+                          borderColor: opt.activeBg,
+                        },
+                      ]}
+                      activeOpacity={0.75}
+                      onPress={() => handleSelectStatus(opt)}
+                      disabled={busy}
+                    >
+                      <Ionicons
+                        name={opt.icon}
+                        size={14}
+                        color={isSelected ? '#FFFFFF' : opt.color}
+                      />
+                      <Text
+                        style={[
+                          styles.deadlineStatusChipText,
+                          isSelected && styles.deadlineStatusChipTextActive,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Status Description Box */}
+              <View
+                style={[
+                  styles.deadlineStatusExplainer,
+                  {
+                    backgroundColor: selectedStatusConfig.bgColor,
+                    borderColor: selectedStatusConfig.borderColor,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="information-circle"
+                  size={15}
+                  color={selectedStatusConfig.color}
+                />
+                <Text
+                  style={[
+                    styles.deadlineStatusExplainerText,
+                    { color: selectedStatusConfig.textColor || selectedStatusConfig.color },
+                  ]}
+                >
+                  {selectedStatusConfig.description}
+                </Text>
+              </View>
+            </View>
 
             {/* Separate Date and Time Inputs */}
             <View style={styles.dateTimeRow}>

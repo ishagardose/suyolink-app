@@ -20,100 +20,6 @@ import { useSuyos } from '../context/SuyoContext';
 import { useAuth } from '../context/AuthContext';
 import WalletIncomeLineGraph from '../components/wallet/WalletIncomeLineGraph';
 
-const WALLET_EARNED_SUYOS = [
-  {
-    id: 'WAL-001',
-    title: 'Drop off documents - Unit 402',
-    category: 'Documents',
-    icon: 'document-text',
-    date: 'Today (W4) · 4:00 PM',
-    requesterName: 'Atty. Rafael Cruz',
-    location: 'Makati CBD, Tower 1',
-    earnedAmount: 300,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9842',
-  },
-  {
-    id: 'WAL-002',
-    title: 'Express parcel delivery to Greenbelt',
-    category: 'Delivery',
-    icon: 'bicycle',
-    date: 'Today (W4) · 10:00 AM',
-    requesterName: 'Patricia Mendoza',
-    location: 'Greenbelt 5 Concierge',
-    earnedAmount: 90,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9801',
-  },
-  {
-    id: 'WAL-003',
-    title: 'Buy groceries - SM Tagum',
-    category: 'Groceries',
-    icon: 'cart',
-    date: 'Oct 20 (W3) · 12:15 PM',
-    requesterName: 'Maria Clarissa',
-    location: 'SM Tagum Supermarket',
-    earnedAmount: 150,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9755',
-  },
-  {
-    id: 'WAL-004',
-    title: 'Queue for Meralco bills payment',
-    category: 'Queuing & Bills',
-    icon: 'time',
-    date: 'Oct 17 (W3) · 11:30 AM',
-    requesterName: 'Kenneth Gomez',
-    location: 'Bayad Center Ayala',
-    earnedAmount: 180,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9510',
-  },
-  {
-    id: 'WAL-005',
-    title: 'Print school project & binding',
-    category: 'Documents',
-    icon: 'print',
-    date: 'Oct 13 (W2) · 4:15 PM',
-    requesterName: 'Dave B. (Student)',
-    location: 'Davao Printing Hub',
-    earnedAmount: 160,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9321',
-  },
-  {
-    id: 'WAL-006',
-    title: 'Prescription pickup at Mercury Drug',
-    category: 'Medicine',
-    icon: 'medkit',
-    date: 'Oct 10 (W2) · 3:45 PM',
-    requesterName: 'Lola Remedios',
-    location: 'Mercury Drug Legaspi',
-    earnedAmount: 180,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-9120',
-  },
-  {
-    id: 'WAL-007',
-    title: 'Pick up medical supplies & vitamins',
-    category: 'Delivery',
-    icon: 'bag-check-outline',
-    date: 'Oct 04 (W1) · 10:00 AM',
-    requesterName: 'Mrs. Angela Santos',
-    location: 'Generika Drugstore',
-    earnedAmount: 220,
-    status: 'Received',
-    paymentMethod: 'Direct Payment (Cash/P2P)',
-    refNo: 'SYL-EARN-8940',
-  },
-];
-
 export default function WalletScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -124,10 +30,16 @@ export default function WalletScreen() {
     reloadTransactions,
   } = useSuyos();
   const { user } = useAuth();
+  const [activityFilter, setActivityFilter] = useState('earned'); // 'earned' | 'spent' | 'all'
 
   const providerTransactions = useMemo(
     () => (transactions || []).filter((t) => t.role === 'provider'),
     [transactions],
+  );
+
+  const spentTransactions = useMemo(
+    () => (transactions || []).filter((t) => t.role === 'requester'),
+    [transactions]
   );
 
   const hasLiveTransactions = providerTransactions.length > 0;
@@ -144,18 +56,24 @@ export default function WalletScreen() {
     maximumFractionDigits: 2,
   })}`;
 
-  const dynamicEarnedList = useMemo(() => {
-    if (!hasLiveTransactions) return [];
-    return providerTransactions.map((t, idx) => {
+  // Normalized dynamic list from live user transactions
+  const dynamicList = useMemo(() => {
+    return (transactions || []).map((t, idx) => {
+      const isProvider = t.role === 'provider';
       const d = t.completedAt ? new Date(t.completedAt) : new Date();
-      const isToday = d.toDateString() === new Date().toDateString();
-      const dateStr = isToday
-        ? `Today · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-        : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const isToday = !isNaN(d.getTime()) && d.toDateString() === new Date().toDateString();
+      const dateStr = !isNaN(d.getTime())
+        ? isToday
+          ? `Today · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+          : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Recently';
+
       return {
-        id: t.requestId || `WAL-${idx}`,
-        title: t.title || 'Completed Suyo',
-        category: t.category || 'Documents',
+        id: t.requestId ? `${t.requestId}_${t.role || 'tx'}` : `TX-${idx}`,
+        requestId: t.requestId,
+        role: t.role || 'provider',
+        title: t.title || (isProvider ? 'Completed Suyo Task' : 'Requested Suyo Errand'),
+        category: t.category || (isProvider ? 'Delivery' : 'General'),
         icon:
           t.category === 'Groceries'
             ? 'cart'
@@ -175,7 +93,17 @@ export default function WalletScreen() {
           .toUpperCase()}`,
       };
     });
-  }, [providerTransactions, hasLiveTransactions]);
+  }, [transactions]);
+
+  const displayedList = useMemo(() => {
+    if (activityFilter === 'earned') {
+      return dynamicList.filter((item) => item.role === 'provider');
+    }
+    if (activityFilter === 'spent') {
+      return dynamicList.filter((item) => item.role === 'requester');
+    }
+    return dynamicList;
+  }, [dynamicList, activityFilter]);
 
   const todayEarnedList = dynamicEarnedList.filter((s) =>
     s.date?.startsWith('Today'),
@@ -229,7 +157,14 @@ export default function WalletScreen() {
 
         <Text style={styles.headerTitle}>Wallet</Text>
 
-        <View style={styles.headerRightPlaceholder} />
+        <TouchableOpacity
+          onPress={() => router.push('/transactions')}
+          style={styles.headerReceiptButton}
+          activeOpacity={0.75}
+          accessibilityLabel="Transaction History"
+        >
+          <Ionicons name="receipt-outline" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -278,7 +213,7 @@ export default function WalletScreen() {
             ₱{todayEarningsSum.toFixed(2)}
           </Text>
 
-          {/* 3 Summary Items: Today's Suyos, Monthly Suyos, Overall Completed */}
+          {/* 3 Fitted Summary Metric Tiles */}
           <View style={styles.walletSummaryRow}>
             <View style={styles.walletSummaryItem}>
               <Text style={styles.walletSummaryCount}>
@@ -302,13 +237,6 @@ export default function WalletScreen() {
             </View>
           </View>
 
-          {/* Literal Modern Graphical Line Graph */}
-          <WalletIncomeLineGraph
-            transactions={providerTransactions}
-            totalOverride={displayTotal}
-            hasTransactions={hasLiveTransactions}
-          />
-
           {/* Informative Note: Direct Settlement Outside App */}
           <View style={styles.walletPaymentNoticeRow}>
             <Ionicons
@@ -323,26 +251,103 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* 2. Section Header */}
+        {/* Literal Modern Graphical Line Graph - Full Width Standalone Tile */}
+        <WalletIncomeLineGraph
+          transactions={providerTransactions}
+          totalOverride={displayTotal}
+          hasTransactions={hasLiveTransactions}
+        />
+
+        {/* 2. Section Header with Link to History */}
         <View style={styles.walletSectionHeader}>
           <View>
             <Text style={styles.walletSectionTitle}>
               Accepted Suyo Earnings
             </Text>
             <Text style={styles.walletSectionSub}>
-              Tracked rewards earned from every accepted suyo request
+              Tracked rewards and records from what you completed in the app
             </Text>
           </View>
-          <View style={styles.walletCountChip}>
-            <Text style={styles.walletCountChipText}>
-              {dynamicEarnedList.length} earned ({displayTotal})
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={styles.viewHistoryButton}
+            onPress={() => router.push('/transactions')}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.viewHistoryButtonText}>Full History</Text>
+            <Ionicons name="chevron-forward" size={13} color="#059669" />
+          </TouchableOpacity>
         </View>
 
-        {/* 3. The Clean List of Earned Accepted Suyo Requests */}
+        {/* Filter Pills: Earned / Spent / All */}
+        <View style={styles.filterPillsRow}>
+          <TouchableOpacity
+            style={[
+              styles.filterPill,
+              activityFilter === 'earned' && styles.filterPillActive,
+            ]}
+            onPress={() => setActivityFilter('earned')}
+            activeOpacity={0.75}
+          >
+            <Ionicons
+              name="arrow-down-circle"
+              size={13}
+              color={activityFilter === 'earned' ? '#FFFFFF' : '#15803D'}
+            />
+            <Text
+              style={[
+                styles.filterPillText,
+                activityFilter === 'earned' && styles.filterPillTextActive,
+              ]}
+            >
+              Earned ({providerTransactions.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterPill,
+              activityFilter === 'spent' && styles.filterPillActive,
+            ]}
+            onPress={() => setActivityFilter('spent')}
+            activeOpacity={0.75}
+          >
+            <Ionicons
+              name="arrow-up-circle"
+              size={13}
+              color={activityFilter === 'spent' ? '#FFFFFF' : '#DC2626'}
+            />
+            <Text
+              style={[
+                styles.filterPillText,
+                activityFilter === 'spent' && styles.filterPillTextActive,
+              ]}
+            >
+              Spent ({spentTransactions.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterPill,
+              activityFilter === 'all' && styles.filterPillActive,
+            ]}
+            onPress={() => setActivityFilter('all')}
+            activeOpacity={0.75}
+          >
+            <Text
+              style={[
+                styles.filterPillText,
+                activityFilter === 'all' && styles.filterPillTextActive,
+              ]}
+            >
+              All ({dynamicList.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 3. The Clean List of Dynamic Transactions */}
         <View style={styles.walletListWrapper}>
-          {dynamicEarnedList.length === 0 ? (
+          {displayedList.length === 0 ? (
             <View style={styles.walletEmptyCard}>
               <View style={styles.walletEmptyIconCircle}>
                 <Ionicons
@@ -351,11 +356,25 @@ export default function WalletScreen() {
                   color="#1E4D2B"
                 />
               </View>
-              <Text style={styles.walletEmptyTitle}>No suyo earnings yet</Text>
+              <Text style={styles.walletEmptyTitle}>
+                {activityFilter === 'earned'
+                  ? 'No suyo earnings yet'
+                  : activityFilter === 'spent'
+                  ? 'No spending records yet'
+                  : 'No transaction activity yet'}
+              </Text>
               <Text style={styles.walletEmptySub}>
                 When you accept and complete suyos for others, your settled
                 earnings and receipts will be recorded here.
               </Text>
+              <TouchableOpacity
+                style={styles.emptyActionBtn}
+                activeOpacity={0.8}
+                onPress={() => router.push('/dashboard')}
+              >
+                <Ionicons name="compass-outline" size={15} color="#FFFFFF" />
+                <Text style={styles.emptyActionBtnText}>Browse Available Suyos</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             dynamicEarnedList.map((item) => (

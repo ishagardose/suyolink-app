@@ -129,6 +129,8 @@ export function createRequest(draft, user, now = Date.now()) {
   if (phone) result.phone = phone;
   if (coordinates) result.coordinates = coordinates;
   if (draft.attachments) result.attachments = draft.attachments;
+  if (draft.urgency) result.urgency = draft.urgency;
+  if (draft.statusTag) result.statusTag = draft.statusTag;
 
   return result;
 }

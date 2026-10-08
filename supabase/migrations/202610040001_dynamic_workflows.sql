@@ -440,7 +440,7 @@ begin
     where
       -- Scope filtering
       (
-        (p_scope = 'browse' and r.status = 'open' and r.deadline > now())
+        (p_scope = 'browse' and r.status = 'open')
         or (p_scope = 'posted' and r.requester_id = auth.uid())
         or (p_scope = 'assigned' and r.provider_id = auth.uid())
         or (

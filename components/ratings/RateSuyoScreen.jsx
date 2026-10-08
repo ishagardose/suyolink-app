@@ -16,7 +16,7 @@ export default function RateSuyoScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { requests, ratings, detailsById, loadDetails, mutate, refresh } =
+  const { requests, ratings, detailsById, loadDetails, mutate, refresh, recordTransaction, reloadTransactions } =
     useSuyos();
 
   const [score, setScore] = useState(0);
@@ -46,8 +46,29 @@ export default function RateSuyoScreen() {
         p_score: score,
         p_comment: comment.trim(),
       });
+      if (typeof recordTransaction === 'function' && request) {
+        try {
+          await recordTransaction({
+            requestId: request.id,
+            title: request.title,
+            role: request.requesterId === user?.id ? 'requester' : 'provider',
+            otherUserName: request.requesterId === user?.id ? (request.providerName || 'Doer') : (request.requesterName || 'Requester'),
+            rewardCentavos: request.rewardCentavos || 0,
+            currency: request.currency || 'PHP',
+            ratingScore: score,
+            ratingComment: comment.trim(),
+            category: request.category || '',
+            location: request.location || '',
+          });
+        } catch (e) {
+          console.warn('[RateSuyoScreen] recordTransaction warning:', e);
+        }
+      }
       if (id) await loadDetails(id, { force: true });
       await refresh();
+      if (typeof reloadTransactions === 'function') {
+        reloadTransactions();
+      }
       router.replace({ pathname: '/suyo', params: { id } });
     } catch (err) {
       setError(err.message || 'Failed to submit rating. Please retry.');

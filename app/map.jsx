@@ -31,29 +31,32 @@ export default function MapScreen() {
   const {
     task,
     position,
-    consent,
-    sharing,
-    error,
-    busy,
-    start,
-    stop,
-    refresh,
   } = useTaskTracking(id, user?.id);
 
   // If no specific task id passed, find the most relevant active task for current user
   const activeTask =
     task ||
+    (requests || []).find((r) => r.id === id) ||
     (requests || []).find(
       (r) =>
         (r.providerId === user?.id || r.requesterId === user?.id) &&
         ["assigned", "in_progress"].includes(r.status)
-    );
+    ) ||
+    (id || params.title ? {
+      id: id || "SYL-102",
+      title: params.title || "Active Suyo",
+      requesterName: params.requesterName || "Requester",
+      providerName: params.providerName || "Assigned Doer",
+      contactPhone: params.contactPhone || params.requesterPhone || "09178421983",
+      rating: params.rating || "4.9",
+      status: "in_progress",
+    } : null);
 
   const own = activeTask?.providerId === user?.id;
   const doerName = own
-    ? activeTask?.requesterName || "Requester"
-    : activeTask?.providerName || "Assigned Doer";
-  const suyoTitle = activeTask?.title || "Active Suyo";
+    ? activeTask?.requesterName || params.requesterName || "Requester"
+    : activeTask?.providerName || params.providerName || "Assigned Doer";
+  const suyoTitle = activeTask?.title || params.title || "Active Suyo";
 
   const destination = activeTask && {
     latitude: activeTask.exactLatitude ?? activeTask.latitude,
@@ -84,16 +87,17 @@ export default function MapScreen() {
       : 85;
 
   const handleCall = () => {
-    const phone = activeTask?.contactPhone || "09178421983";
+    const phone = activeTask?.contactPhone || activeTask?.requesterPhone || params.requesterPhone || "09178421983";
     Linking.openURL(`tel:${phone}`).catch(() => {
       Alert.alert("Contact", `Phone number: ${phone}`);
     });
   };
 
   const handleChat = () => {
-    if (activeTask?.id) {
-      router.push({ pathname: "/suyo", params: { id: activeTask.id } });
-    }
+    const phone = activeTask?.contactPhone || activeTask?.requesterPhone || params.requesterPhone || "09178421983";
+    Linking.openURL(`sms:${phone}`).catch(() => {
+      Alert.alert("Contact", `SMS: ${phone}`);
+    });
   };
 
   const handleCancel = async () => {

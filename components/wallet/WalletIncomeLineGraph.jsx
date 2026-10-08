@@ -417,21 +417,36 @@ export default function WalletIncomeLineGraph({
   };
 
   const renderNativeFallback = () => {
+    const maxVal = Math.max(...current.pts.map((p) => Number(p.amount) || 0), 10);
     return (
       <View style={styles.walletNativeChartContainer}>
         <View style={styles.walletNativeChartGrid}>
-          {current.pts.map((pt, idx) => (
-            <View key={`n-bar-${idx}`} style={styles.walletNativeBarCol}>
-              <View style={[styles.walletNativeValBadge, pt.isPeak && styles.walletNativeValBadgePeak]}>
-                <Text style={[styles.walletNativeValText, pt.isPeak && styles.walletNativeValTextPeak]}>
-                  {pt.val}{pt.isPeak ? ' Peak' : ''}
-                </Text>
+          {current.pts.map((pt, idx) => {
+            const amt = Number(pt.amount) || 0;
+            const barHeight = Math.max(16, Math.min(68, Math.round((amt / maxVal) * 68)));
+            const parts = pt.label ? pt.label.split(' ') : [pt.label];
+            const mainLabel = parts[0] || pt.label;
+            const subLabel = parts[1] ? parts[1].replace(/[()]/g, '') : null;
+            return (
+              <View key={`n-bar-${idx}`} style={styles.walletNativeBarCol}>
+                <View style={[styles.walletNativeValBadge, pt.isPeak && styles.walletNativeValBadgePeak]}>
+                  <Text
+                    style={[styles.walletNativeValText, pt.isPeak && styles.walletNativeValTextPeak]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {pt.val}{pt.isPeak ? ' ★' : ''}
+                  </Text>
+                </View>
+                <View style={[styles.walletNativeNodeDot, pt.isPeak && styles.walletNativeNodeDotPeak]} />
+                <View style={[styles.walletNativeDropLine, { height: barHeight }]} />
+                <Text style={styles.walletNativeLabelText} numberOfLines={1}>{mainLabel}</Text>
+                {subLabel ? (
+                  <Text style={styles.walletNativeSubLabelText} numberOfLines={1}>{subLabel}</Text>
+                ) : null}
               </View>
-              <View style={[styles.walletNativeNodeDot, pt.isPeak && styles.walletNativeNodeDotPeak]} />
-              <View style={styles.walletNativeDropLine} />
-              <Text style={styles.walletNativeLabelText}>{pt.label}</Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </View>
     );
@@ -445,9 +460,9 @@ export default function WalletIncomeLineGraph({
           <View style={styles.walletLineIconBox}>
             <Ionicons name="trending-up" size={17} color="#059669" />
           </View>
-          <View>
-            <Text style={styles.walletLineTitle}>{current.title}</Text>
-            <Text style={styles.walletLineSub}>{current.subtitle}</Text>
+          <View style={styles.walletLineTitleTextCol}>
+            <Text style={styles.walletLineTitle} numberOfLines={1}>{current.title}</Text>
+            <Text style={styles.walletLineSub} numberOfLines={1}>{current.subtitle}</Text>
           </View>
         </View>
 
@@ -459,9 +474,13 @@ export default function WalletIncomeLineGraph({
 
       {/* 2. Value and Timeframe Controls (Monthly / Yearly) */}
       <View style={styles.walletLineAmountRow}>
-        <View>
-          <Text style={styles.walletLineBigAmount}>{current.total}</Text>
-          <Text style={styles.walletLineTotalNote}>{current.totalNote}</Text>
+        <View style={styles.walletLineAmountCol}>
+          <Text style={styles.walletLineBigAmount} numberOfLines={1} adjustsFontSizeToFit>
+            {current.total}
+          </Text>
+          <Text style={styles.walletLineTotalNote} numberOfLines={1}>
+            {current.totalNote}
+          </Text>
         </View>
 
         <View style={styles.walletTimeFilterRow}>
@@ -505,8 +524,12 @@ export default function WalletIncomeLineGraph({
           <React.Fragment key={m.label || idx}>
             {idx > 0 && <View style={styles.walletFooterMetricDivider} />}
             <View style={styles.walletFooterMetricItem}>
-              <Text style={styles.walletFooterMetricValue}>{m.value}</Text>
-              <Text style={styles.walletFooterMetricLabel}>{m.label}</Text>
+              <Text style={styles.walletFooterMetricValue} numberOfLines={1} adjustsFontSizeToFit>
+                {m.value}
+              </Text>
+              <Text style={styles.walletFooterMetricLabel} numberOfLines={1}>
+                {m.label}
+              </Text>
             </View>
           </React.Fragment>
         ))}
@@ -521,8 +544,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E2EBE5',
-    padding: 16,
-    marginVertical: 12,
+    padding: 14,
+    marginBottom: 16,
     shadowColor: '#163523',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -533,12 +556,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   walletLineTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    marginRight: 6,
+  },
+  walletLineTitleTextCol: {
+    flex: 1,
   },
   walletLineIconBox: {
     width: 32,
@@ -584,6 +612,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F0FDF4',
+  },
+  walletLineAmountCol: {
+    flex: 1,
+    marginRight: 8,
   },
   walletLineBigAmount: {
     fontSize: 22,
@@ -638,63 +670,75 @@ const styles = StyleSheet.create({
   },
   walletNativeChartGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'flex-end',
+    justifyContent: 'space-around',
     height: 125,
     borderBottomWidth: 1,
     borderBottomColor: '#CBD5E1',
     paddingBottom: 4,
+    paddingHorizontal: 2,
   },
   walletNativeBarCol: {
+    flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 1,
   },
   walletNativeValBadge: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 7,
     marginBottom: 4,
+    maxWidth: '100%',
   },
   walletNativeValBadgePeak: {
     backgroundColor: '#064E3B',
     borderColor: '#064E3B',
   },
   walletNativeValText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '700',
     color: '#065F46',
+    textAlign: 'center',
   },
   walletNativeValTextPeak: {
     color: '#FFFFFF',
     fontWeight: '800',
   },
   walletNativeNodeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#059669',
+    marginBottom: 3,
+  },
+  walletNativeNodeDotPeak: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#059669',
-    marginBottom: 4,
-  },
-  walletNativeNodeDotPeak: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
     backgroundColor: '#047857',
     borderWidth: 2,
     borderColor: '#A7F3D0',
   },
   walletNativeDropLine: {
-    width: 1,
-    height: 35,
+    width: 1.5,
     backgroundColor: '#E2E8F0',
   },
   walletNativeLabelText: {
     fontSize: 9.5,
-    fontWeight: '600',
-    color: '#64748B',
+    fontWeight: '700',
+    color: '#475569',
     marginTop: 4,
+    textAlign: 'center',
+  },
+  walletNativeSubLabelText: {
+    fontSize: 8.5,
+    fontWeight: '500',
+    color: '#94A3B8',
+    marginTop: 1,
+    textAlign: 'center',
   },
   walletChartFooterMetrics: {
     flexDirection: 'row',
@@ -702,30 +746,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#F8FAF9',
     borderRadius: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 10,
-    marginTop: 6,
+    marginTop: 8,
     borderWidth: 1,
     borderColor: '#EDF5F1',
+    gap: 8,
   },
   walletFooterMetricItem: {
     alignItems: 'center',
     flex: 1,
+    paddingHorizontal: 2,
   },
   walletFooterMetricDivider: {
     width: 1,
-    height: 20,
+    height: 22,
     backgroundColor: '#E2E8F0',
   },
   walletFooterMetricValue: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#0F172A',
+    textAlign: 'center',
   },
   walletFooterMetricLabel: {
     fontSize: 9.5,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 2,
+    textAlign: 'center',
   },
 });
