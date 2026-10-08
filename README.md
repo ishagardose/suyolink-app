@@ -3,9 +3,8 @@
   <img src="./assets/suyolink_logo.png" alt="SuyoLink logo" width="180" />
 </p>
 
-[Download SuyoLink for Android](https://github.com/ishagardose/suyolink-app/releases/download/1.0.0/suyolink-1.0.0.apk)
 
-Download the APK, open it on your Android phone, and allow installation
+[Download](https://github.com/ishagardose/suyolink-app/releases/download/1.0.0/suyolink-1.0.0.apk) the APK, open it on your Android phone, and allow installation
 from your browser or file manager if prompted.
 
 SuyoLink is a community task app for posting requests, finding nearby tasks, coordinating fulfillment, and reviewing completed work. It runs on Android, iOS, and web using Expo and Supabase.
