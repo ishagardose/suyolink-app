@@ -88,7 +88,7 @@ test('confirmation link signs in, stays on success screen and restores after ref
   await expect(
     page.getByText("You're all set!", { exact: true }),
   ).toBeVisible();
-  await expect(page).toHaveURL('http://127.0.0.1:4173/verify-email');
+  await expect(page).toHaveURL(/\/verify-email$/);
   expect(calls.some((call) => call.path === '/auth/v1/user')).toBe(true);
   expect(
     await page.evaluate((key) => !!localStorage.getItem(key), storageKey),
@@ -127,7 +127,7 @@ test('expired links keep dashboard locked and offer a resend', async ({
   ).toMatchObject({ type: 'signup', email: 'new@example.com' });
   await expect(page.getByRole('button', { name: /Resend in/ })).toBeDisabled();
   await page.goto('/dashboard');
-  await expect(page).toHaveURL('http://127.0.0.1:4173/');
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('a rejected token cannot produce a success screen', async ({ page }) => {

@@ -46,7 +46,7 @@ export default function SetLocationScreen() {
     const activePin = pin || position;
     if (!activePin) {
       setSaveError(
-        'Please tap the map to choose your area or tap "Use my current location".'
+        'Please tap the map to choose your area or tap "Use my current location".',
       );
       return;
     }
@@ -63,7 +63,7 @@ export default function SetLocationScreen() {
       router.replace('/dashboard');
     } catch (err) {
       setSaveError(
-        err?.message || 'Could not save your location. Please try again.'
+        err?.message || 'Could not save your location. Please try again.',
       );
     } finally {
       lock.current = false;
@@ -77,6 +77,7 @@ export default function SetLocationScreen() {
     if (next && request === choice.current) {
       setSelected(next);
       setSource('device');
+      setAcknowledged(false);
       setSaveError('');
     }
   };
@@ -94,10 +95,7 @@ export default function SetLocationScreen() {
         {/* Header Section */}
         <View style={styles.headerBlock}>
           <View
-            style={[
-              styles.headerIconCircle,
-              { backgroundColor: '#EAF4EF' },
-            ]}
+            style={[styles.headerIconCircle, { backgroundColor: '#EAF4EF' }]}
           >
             <Ionicons
               name="location-sharp"
@@ -130,8 +128,14 @@ export default function SetLocationScreen() {
               { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="warning-outline" size={18} color="#DC2626" />
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            >
+              <Ionicons
+                name="warning-outline"
+                size={18}
+                color="#DC2626"
+              />
               <ThemedText
                 style={{ fontWeight: '700', color: '#991B1B', fontSize: 14 }}
               >
@@ -141,7 +145,8 @@ export default function SetLocationScreen() {
             <ThemedText
               style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 18 }}
             >
-              You can still manually pick an area on the map below, or open settings to enable GPS.
+              You can still manually pick an area on the map below, or open
+              settings to enable GPS.
             </ThemedText>
             <ThemedButton
               title="Open settings"
@@ -159,10 +164,7 @@ export default function SetLocationScreen() {
           accessibilityLabel="Use my current location"
           disabled={saving || !isReady || loading}
           onPress={handleLocatePress}
-          style={[
-            styles.gpsCard,
-            isGpsActive && styles.gpsCardActive,
-          ]}
+          style={[styles.gpsCard, isGpsActive && styles.gpsCardActive]}
         >
           <View
             style={[
@@ -171,7 +173,10 @@ export default function SetLocationScreen() {
             ]}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#1E4D2B" />
+              <ActivityIndicator
+                size="small"
+                color="#1E4D2B"
+              />
             ) : (
               <Ionicons
                 name="navigate"
@@ -181,21 +186,34 @@ export default function SetLocationScreen() {
             )}
           </View>
           <View style={styles.gpsTextContainer}>
-            <ThemedText style={[styles.gpsTitle, isGpsActive && styles.gpsTitleActive]}>
+            <ThemedText
+              style={[styles.gpsTitle, isGpsActive && styles.gpsTitleActive]}
+            >
               Use my current location
             </ThemedText>
-            <ThemedText tone="textMuted" style={styles.gpsSubtitle}>
+            <ThemedText
+              tone="textMuted"
+              style={styles.gpsSubtitle}
+            >
               {loading
                 ? 'Detecting GPS coordinates...'
                 : isGpsActive
-                ? 'GPS location active'
-                : 'Automatically detect device location'}
+                  ? 'GPS location active'
+                  : 'Automatically detect device location'}
             </ThemedText>
           </View>
           {isGpsActive && !loading ? (
-            <Ionicons name="checkmark-circle" size={22} color="#1E4D2B" />
+            <Ionicons
+              name="checkmark-circle"
+              size={22}
+              color="#1E4D2B"
+            />
           ) : (
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color="#94A3B8"
+            />
           )}
         </TouchableOpacity>
 
@@ -204,7 +222,10 @@ export default function SetLocationScreen() {
           <ThemedText style={styles.sectionHeaderTitle}>
             Or pick an area on the map
           </ThemedText>
-          <ThemedText tone="textMuted" style={styles.sectionHeaderHint}>
+          <ThemedText
+            tone="textMuted"
+            style={styles.sectionHeaderHint}
+          >
             Tap map to move pin
           </ThemedText>
         </View>
@@ -223,6 +244,7 @@ export default function SetLocationScreen() {
               choice.current++;
               setSelected(point);
               setSource('manual');
+              setAcknowledged(false);
               setSaveError('');
             }}
           />
@@ -231,12 +253,17 @@ export default function SetLocationScreen() {
         {/* Selected Coordinates Chip */}
         {pin ? (
           <View style={styles.coordsBadgeContainer}>
-            <Ionicons name="location" size={16} color="#1E4D2B" />
+            <Ionicons
+              name="location"
+              size={16}
+              color="#1E4D2B"
+            />
             <ThemedText
               accessibilityLabel="Selected area coordinates"
               style={styles.coordsText}
             >
-              Selected area: {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
+              Selected area: {pin.latitude.toFixed(5)},{' '}
+              {pin.longitude.toFixed(5)}
             </ThemedText>
           </View>
         ) : null}
@@ -244,7 +271,11 @@ export default function SetLocationScreen() {
         {/* Error Banners */}
         {error ? (
           <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+            <Ionicons
+              name="alert-circle-outline"
+              size={16}
+              color="#DC2626"
+            />
             <ThemedText
               accessibilityRole="alert"
               style={styles.errorText}
@@ -256,7 +287,11 @@ export default function SetLocationScreen() {
 
         {saveError ? (
           <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+            <Ionicons
+              name="alert-circle-outline"
+              size={16}
+              color="#DC2626"
+            />
             <ThemedText
               accessibilityRole="alert"
               style={styles.errorText}
@@ -298,7 +333,11 @@ export default function SetLocationScreen() {
               <ThemedText style={styles.primaryBtnText}>
                 Find nearby suyos
               </ThemedText>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color="#FFFFFF"
+              />
             </View>
           )}
         </TouchableOpacity>
@@ -340,10 +379,12 @@ export default function SetLocationScreen() {
               }}
               style={styles.escapeBtn}
             >
-              <Ionicons name="log-out-outline" size={16} color="#64748B" />
-              <ThemedText style={styles.escapeBtnText}>
-                Sign out
-              </ThemedText>
+              <Ionicons
+                name="log-out-outline"
+                size={16}
+                color="#64748B"
+              />
+              <ThemedText style={styles.escapeBtnText}>Sign out</ThemedText>
             </TouchableOpacity>
           )}
         </View>

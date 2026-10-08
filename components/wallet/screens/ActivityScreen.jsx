@@ -1,6 +1,6 @@
-import { createActivityStyles } from '../components/wallet/activity.styles';
-import { useTheme } from '../theme/ThemeContext';
-import { resolvePaletteColor } from '../theme/paletteAdapter';
+import { createActivityStyles } from '../activity.styles';
+import { useTheme } from '../../../theme/ThemeContext';
+import { resolvePaletteColor } from '../../../theme/paletteAdapter';
 import React, { useState, useMemo } from 'react';
 import {
   Text,
@@ -18,9 +18,9 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSuyos } from '../context/SuyoContext';
-import { useAuth } from '../context/AuthContext';
-import WalletIncomeLineGraph from '../components/wallet/WalletIncomeLineGraph';
+import { useSuyos } from '../../../context/SuyoContext';
+import { useAuth } from '../../../context/AuthContext';
+import WalletIncomeLineGraph from '../WalletIncomeLineGraph';
 
 export default function WalletScreen() {
   const { colors, isDark } = useTheme();
