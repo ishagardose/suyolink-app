@@ -14,6 +14,7 @@ import RequestDeadlineSection from './sections/RequestDeadlineSection';
 import RequestContactSection from './sections/RequestContactSection';
 import RequestSuccessModal from './modals/RequestSuccessModal';
 import useRequestFormAppearance from './hooks/useRequestFormAppearance';
+import useRepostDraft from './hooks/useRepostDraft';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -36,7 +37,7 @@ import { privatePinAddress } from '../../lib/philippineAreas';
 import CalendarModal from './CalendarModal';
 import ClockModal from './ClockModal';
 
-export default function RequestForm({ onPosted }) {
+export default function RequestForm({ onPosted, repostId }) {
   const { styles, colors, resolveColor } = useRequestFormAppearance();
   const { postRequest, isLoading, error: loadError, reload } = useSuyos();
 
@@ -53,7 +54,9 @@ export default function RequestForm({ onPosted }) {
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [saving, setBusy] = useState(false);
+  const repost = useRepostDraft(repostId, setDraft);
+  const busy = saving || repost.loading;
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isClockOpen, setIsClockOpen] = useState(false);
@@ -183,7 +186,7 @@ export default function RequestForm({ onPosted }) {
   };
 
   const submit = async () => {
-    if (submitting.current) return;
+    if (submitting.current || busy || repost.error) return;
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -311,6 +314,35 @@ export default function RequestForm({ onPosted }) {
           </View>
 
           {/* GENERAL ERROR BANNER */}
+          {repostId ? (
+            <View
+              style={
+                repost.error ? styles.generalErrorBanner : { marginBottom: 12 }
+              }
+            >
+              <Text
+                accessibilityRole={repost.error ? 'alert' : 'text'}
+                style={
+                  repost.error ? styles.generalErrorText : styles.cardSubText
+                }
+              >
+                {repost.loading
+                  ? 'Loading original task...'
+                  : repost.error ||
+                    'Review this request and choose a new completion deadline before reposting.'}
+              </Text>
+              {repost.error ? (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={repost.retry}
+                >
+                  <Text style={styles.generalErrorText}>
+                    Retry loading original task
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
           {generalError ? (
             <View style={styles.generalErrorBanner}>
               <Ionicons
@@ -422,7 +454,7 @@ export default function RequestForm({ onPosted }) {
             accessibilityRole="button"
             accessibilityLabel="Post request"
             onPress={submit}
-            disabled={busy || isLoading}
+            disabled={busy || isLoading || !!repost.error}
             activeOpacity={0.85}
           >
             {busy ? (

@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import RequestForm from './RequestForm';
 import { useTheme } from '../../theme/ThemeContext';
 
 export default function PostSuyoScreen() {
   const router = useRouter();
+  const { repost } = useLocalSearchParams();
   const { colors, isDark } = useTheme();
 
   return (
@@ -45,6 +46,8 @@ export default function PostSuyoScreen() {
         <View style={{ width: 38 }} />
       </View>
       <RequestForm
+        key={typeof repost === 'string' ? repost : 'new'}
+        repostId={typeof repost === 'string' ? repost : null}
         onPosted={() =>
           router.replace({
             pathname: '/dashboard',

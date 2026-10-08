@@ -35,6 +35,10 @@ export default function SuyoRewardBoost({
               selectedSuyo.currentBoost === 0 && styles.detailBoostChipGreen,
             ]}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Reset reward boost"
+            accessibilityState={{ selected: selectedSuyo.currentBoost === 0 }}
+            aria-pressed={selectedSuyo.currentBoost === 0}
             onPress={() => handleBoostReward(selectedSuyo.id, 0)}
           >
             <Text
@@ -55,6 +59,10 @@ export default function SuyoRewardBoost({
               selectedSuyo.currentBoost === 20 && styles.detailBoostChipGreen,
             ]}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Boost reward by 20 pesos"
+            accessibilityState={{ selected: selectedSuyo.currentBoost === 20 }}
+            aria-pressed={selectedSuyo.currentBoost === 20}
             onPress={() => handleBoostReward(selectedSuyo.id, 20)}
           >
             <Text
@@ -75,6 +83,10 @@ export default function SuyoRewardBoost({
               selectedSuyo.currentBoost === 50 && styles.detailBoostChipGreen,
             ]}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Boost reward by 50 pesos"
+            accessibilityState={{ selected: selectedSuyo.currentBoost === 50 }}
+            aria-pressed={selectedSuyo.currentBoost === 50}
             onPress={() => handleBoostReward(selectedSuyo.id, 50)}
           >
             <Text
@@ -95,6 +107,10 @@ export default function SuyoRewardBoost({
               selectedSuyo.currentBoost === 100 && styles.detailBoostChipGreen,
             ]}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Boost reward by 100 pesos"
+            accessibilityState={{ selected: selectedSuyo.currentBoost === 100 }}
+            aria-pressed={selectedSuyo.currentBoost === 100}
             onPress={() => handleBoostReward(selectedSuyo.id, 100)}
           >
             <Text

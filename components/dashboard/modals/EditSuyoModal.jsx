@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 export default function EditSuyoModal({
+  busy,
+  error,
   editingSuyoData,
   handleSaveEditedSuyo,
   isEditingSuyoModalOpen,
@@ -23,13 +25,16 @@ export default function EditSuyoModal({
       visible={isEditingSuyoModalOpen}
       animationType="slide"
       transparent={true}
-      onRequestClose={() => setIsEditingSuyoModalOpen(false)}
+      onRequestClose={() => {
+        if (!busy) setIsEditingSuyoModalOpen(false);
+      }}
     >
       <View style={styles.modalBackdrop}>
         <View style={styles.editSuyoModalCard}>
           <View style={styles.editSuyoHeader}>
             <Text style={styles.editSuyoHeaderTitle}>Edit Suyo Details</Text>
             <TouchableOpacity
+              disabled={busy}
               style={styles.modalCloseButton}
               onPress={() => setIsEditingSuyoModalOpen(false)}
               activeOpacity={0.7}
@@ -48,7 +53,9 @@ export default function EditSuyoModal({
           >
             <Text style={styles.editSuyoInputLabel}>Title</Text>
             <TextInput
+              editable={!busy}
               style={styles.editSuyoTextInput}
+              accessibilityLabel="Edit task title"
               value={editingSuyoData.title}
               onChangeText={(text) =>
                 setEditingSuyoData((prev) => ({ ...prev, title: text }))
@@ -63,12 +70,14 @@ export default function EditSuyoModal({
             <Text style={styles.editSuyoInputLabel}>Reward Offer (₱)</Text>
             <View style={styles.editSuyoRewardRow}>
               <TextInput
+                editable={!busy}
                 style={[styles.editSuyoTextInput, { flex: 1, marginBottom: 0 }]}
+                accessibilityLabel="Edit reward offer"
                 value={String(editingSuyoData.rewardAmount)}
                 onChangeText={(text) =>
                   setEditingSuyoData((prev) => ({
                     ...prev,
-                    rewardAmount: text.replace(/[^0-9]/g, ''),
+                    rewardAmount: text.replace(/[^0-9.]/g, ''),
                   }))
                 }
                 keyboardType="numeric"
@@ -80,6 +89,7 @@ export default function EditSuyoModal({
               />
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 <TouchableOpacity
+                  disabled={busy}
                   style={styles.editSuyoQuickAddPill}
                   activeOpacity={0.75}
                   onPress={() =>
@@ -92,6 +102,7 @@ export default function EditSuyoModal({
                   <Text style={styles.editSuyoQuickAddText}>+₱20</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  disabled={busy}
                   style={styles.editSuyoQuickAddPill}
                   activeOpacity={0.75}
                   onPress={() =>
@@ -108,7 +119,9 @@ export default function EditSuyoModal({
 
             <Text style={styles.editSuyoInputLabel}>Task Description</Text>
             <TextInput
+              editable={!busy}
               style={[styles.editSuyoTextInput, styles.editSuyoTextArea]}
+              accessibilityLabel="Edit task description"
               value={editingSuyoData.details}
               onChangeText={(text) =>
                 setEditingSuyoData((prev) => ({ ...prev, details: text }))
@@ -126,7 +139,9 @@ export default function EditSuyoModal({
               Special Notes / Instructions (Optional)
             </Text>
             <TextInput
+              editable={!busy}
               style={[styles.editSuyoTextInput, styles.editSuyoTextArea]}
+              accessibilityLabel="Edit task notes"
               value={editingSuyoData.notes}
               onChangeText={(text) =>
                 setEditingSuyoData((prev) => ({ ...prev, notes: text }))
@@ -141,8 +156,20 @@ export default function EditSuyoModal({
             />
           </ScrollView>
 
+          {error ? (
+            <Text
+              accessibilityRole="alert"
+              style={{
+                color: resolveColor('#DC2626', 'color'),
+                marginVertical: 8,
+              }}
+            >
+              {error}
+            </Text>
+          ) : null}
           <View style={styles.editSuyoActionsRow}>
             <TouchableOpacity
+              disabled={busy}
               style={styles.editSuyoCancelBtn}
               onPress={() => setIsEditingSuyoModalOpen(false)}
               activeOpacity={0.7}
@@ -150,7 +177,10 @@ export default function EditSuyoModal({
               <Text style={styles.editSuyoCancelBtnText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              disabled={busy}
               style={styles.editSuyoSaveBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Save task changes"
               onPress={handleSaveEditedSuyo}
               activeOpacity={0.8}
             >
@@ -159,7 +189,9 @@ export default function EditSuyoModal({
                 size={16}
                 color={resolveColor('#FFFFFF', 'color')}
               />
-              <Text style={styles.editSuyoSaveBtnText}>Save Changes</Text>
+              <Text style={styles.editSuyoSaveBtnText}>
+                {busy ? 'Saving...' : 'Save Changes'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -6,12 +6,12 @@ export default function DoerCancelModal({
   doerCancelModalItem,
   resolveColor,
   selectedDoerSuyo,
-  setDoerAcceptedSuyos,
+  busy,
+  error,
+  onCancel,
   setDoerCancelModalItem,
-  setDoerCancelledSuyos,
   setSelectedDoerSuyo,
   styles,
-  triggerToast,
 }) {
   return (
     doerCancelModalItem && (
@@ -19,7 +19,9 @@ export default function DoerCancelModal({
         visible={!!doerCancelModalItem}
         animationType="fade"
         transparent={true}
-        onRequestClose={() => setDoerCancelModalItem(null)}
+        onRequestClose={() => {
+          if (!busy) setDoerCancelModalItem(null);
+        }}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.doerCancelModalCard}>
@@ -35,11 +37,23 @@ export default function DoerCancelModal({
             </Text>
             <Text style={styles.doerCancelModalSub}>
               Are you sure you want to cancel "{doerCancelModalItem.title}"? It
-              will be immediately released back to the public available board so
-              other couriers can fulfill it.
+              will be marked cancelled and removed from active tasks. The
+              requester can create a new request if it is still needed.
             </Text>
+            {error ? (
+              <Text
+                accessibilityRole="alert"
+                style={{
+                  color: resolveColor('#DC2626', 'color'),
+                  marginBottom: 8,
+                }}
+              >
+                {error}
+              </Text>
+            ) : null}
             <View style={styles.doerCancelActionRow}>
               <TouchableOpacity
+                disabled={busy}
                 style={styles.doerCancelKeepBtn}
                 activeOpacity={0.7}
                 onPress={() => setDoerCancelModalItem(null)}
@@ -47,36 +61,21 @@ export default function DoerCancelModal({
                 <Text style={styles.doerCancelKeepBtnText}>Keep Suyo</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                disabled={busy}
                 style={styles.doerCancelConfirmBtn}
                 activeOpacity={0.7}
-                onPress={() => {
-                  const itemToCancel = doerCancelModalItem;
+                accessibilityRole="button"
+                accessibilityLabel="Confirm cancellation"
+                onPress={async () => {
+                  const id = doerCancelModalItem.id;
+                  const saved = await onCancel(id);
+                  if (!saved) return;
                   setDoerCancelModalItem(null);
-                  if (selectedDoerSuyo?.id === itemToCancel.id) {
-                    setSelectedDoerSuyo(null);
-                  }
-                  // Remove from accepted, add to cancelled
-                  setDoerAcceptedSuyos((prev) =>
-                    prev.filter((s) => s.id !== itemToCancel.id),
-                  );
-                  setDoerCancelledSuyos((prev) => [
-                    {
-                      ...itemToCancel,
-                      status: 'Cancelled by Doer',
-                      cancelledAt: 'Today · Just now',
-                      cancelReason:
-                        'Cancelled by Doer · Released back to board',
-                    },
-                    ...prev,
-                  ]);
-                  triggerToast(
-                    'Suyo cancelled and returned to public board',
-                    'alert',
-                  );
+                  if (selectedDoerSuyo?.id === id) setSelectedDoerSuyo(null);
                 }}
               >
                 <Text style={styles.doerCancelConfirmBtnText}>
-                  Yes, Cancel Suyo
+                  {busy ? 'Cancelling...' : 'Yes, Cancel Suyo'}
                 </Text>
               </TouchableOpacity>
             </View>
