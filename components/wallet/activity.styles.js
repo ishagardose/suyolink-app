@@ -1,4 +1,4 @@
-import { themeLegacyStyles } from '../../theme/legacyColors';
+import { themeStyles } from '../../theme/paletteAdapter';
 import { StyleSheet, Platform } from 'react-native';
 
 const definitions = {
@@ -544,4 +544,4 @@ const definitions = {
 };
 
 export const createActivityStyles = (colors, isDark) =>
-  StyleSheet.create(themeLegacyStyles(definitions, colors, isDark));
+  StyleSheet.create(themeStyles(definitions, colors, isDark));

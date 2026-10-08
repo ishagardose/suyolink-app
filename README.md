@@ -7,7 +7,7 @@ Expo SDK 54, Expo Router, React Native, and Supabase.
 - `app/`: small route entries organized into `(auth)`, `(main)`, `(requests)`, `(account)`, `(wallet)`, and `(onboarding)` groups. Parenthesized groups preserve existing URLs.
 - `components/`: feature screens and reusable form, map, proof, rating, transaction, and themed components.
 - `components/account/`: profile card, reviews, edit modal, data/summary hooks, formatting helpers, and theme styles. `AccountScreen` composes these sections.
-- `components/dashboard/LegacyDashboardScreen.jsx`: preserves the root dashboard entry, with styles, initial data, layout constants, helpers, and swipeable notifications in separate files. The grouped dashboard still uses `DashboardScreen.jsx`.
+- `components/dashboard/DashboardScreen.jsx`: the single dashboard design, served by `app/(main)/dashboard.jsx` at `/dashboard`, with styles, data, layout constants, helpers, and swipeable notifications in separate files.
 - `components/requests/RequestForm.styles.js` and `components/wallet/activity.styles.js`: styles extracted from the posting form and wallet activity screen.
 - `context/`: authentication, saved browsing location, and persisted task workflows.
 - `data/`: Supabase RPC adapters and domain validation. No production preview dataset.

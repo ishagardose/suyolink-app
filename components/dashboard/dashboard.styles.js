@@ -1,6 +1,6 @@
-import { themeLegacyStyles } from '../../theme/legacyColors';
+import { themeStyles } from '../../theme/paletteAdapter';
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { SCREEN_WIDTH } from './legacyDashboardLayout';
+import { SCREEN_WIDTH } from './dashboardLayout';
 
 const definitions = {
   safeContainer: {
@@ -4961,5 +4961,5 @@ const definitions = {
   },
 };
 
-export const createLegacyDashboardStyles = (colors, isDark) =>
-  StyleSheet.create(themeLegacyStyles(definitions, colors, isDark));
+export const createDashboardStyles = (colors, isDark) =>
+  StyleSheet.create(themeStyles(definitions, colors, isDark));

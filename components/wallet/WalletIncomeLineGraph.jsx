@@ -1,8 +1,5 @@
 import { useTheme } from '../../theme/ThemeContext';
-import {
-  resolveLegacyColor,
-  themeLegacyStyles,
-} from '../../theme/legacyColors';
+import { resolvePaletteColor, themeStyles } from '../../theme/paletteAdapter';
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
@@ -263,11 +260,11 @@ export default function WalletIncomeLineGraph({
 }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(
-    () => StyleSheet.create(themeLegacyStyles(definitions, colors, isDark)),
+    () => StyleSheet.create(themeStyles(definitions, colors, isDark)),
     [colors, isDark],
   );
   const resolveColor = (value, property = 'color') =>
-    resolveLegacyColor(value, property, colors, isDark);
+    resolvePaletteColor(value, property, colors, isDark);
   const [activeRange, setActiveRange] = useState('monthly');
 
   const current = useMemo(() => {

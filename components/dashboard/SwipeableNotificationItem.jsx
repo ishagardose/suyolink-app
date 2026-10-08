@@ -7,10 +7,10 @@ import {
   Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { createLegacyDashboardStyles } from './legacyDashboard.styles';
+import { createDashboardStyles } from './dashboard.styles';
 import { useTheme } from '../../theme/ThemeContext';
-import { resolveLegacyColor } from '../../theme/legacyColors';
-import { SCREEN_WIDTH, USE_NATIVE_DRIVER } from './legacyDashboardLayout';
+import { resolvePaletteColor } from '../../theme/paletteAdapter';
+import { SCREEN_WIDTH, USE_NATIVE_DRIVER } from './dashboardLayout';
 
 export default function SwipeableNotificationItem({
   item,
@@ -21,11 +21,11 @@ export default function SwipeableNotificationItem({
 }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(
-    () => createLegacyDashboardStyles(colors, isDark),
+    () => createDashboardStyles(colors, isDark),
     [colors, isDark],
   );
   const resolveColor = (value, property = 'color') =>
-    resolveLegacyColor(value, property, colors, isDark);
+    resolvePaletteColor(value, property, colors, isDark);
   const translateX = useRef(new Animated.Value(0)).current;
 
   const removing = useRef(false);

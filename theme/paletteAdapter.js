@@ -23,7 +23,7 @@ const greenSurfaces = set(
 const dangerSurfaces = set('#FEE2E2 #FDECEC #FEF2F2 #FFF9F9 #FDEDEC');
 const warningSurfaces = set('#FEF3C7 #FFFBEB #FFFDF5 #F4ECE4');
 
-export function resolveLegacyColor(value, property, colors, isDark) {
+export function resolvePaletteColor(value, property, colors, isDark) {
   if (!isDark || typeof value !== 'string') return value;
   const color = value.toUpperCase();
   if (property === 'shadowColor') return colors.shadow;
@@ -68,7 +68,7 @@ export function resolveLegacyColor(value, property, colors, isDark) {
   return value;
 }
 
-export function themeLegacyStyles(definitions, colors, isDark) {
+export function themeStyles(definitions, colors, isDark) {
   if (!isDark) return definitions;
   return Object.fromEntries(
     Object.entries(definitions).map(([name, style]) => [
@@ -76,7 +76,7 @@ export function themeLegacyStyles(definitions, colors, isDark) {
       Object.fromEntries(
         Object.entries(style).map(([property, value]) => [
           property,
-          resolveLegacyColor(value, property, colors, isDark),
+          resolvePaletteColor(value, property, colors, isDark),
         ]),
       ),
     ]),

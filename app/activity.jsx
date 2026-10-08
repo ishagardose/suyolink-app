@@ -1,6 +1,6 @@
 import { createActivityStyles } from '../components/wallet/activity.styles';
 import { useTheme } from '../theme/ThemeContext';
-import { resolveLegacyColor } from '../theme/legacyColors';
+import { resolvePaletteColor } from '../theme/paletteAdapter';
 import React, { useState, useMemo } from 'react';
 import {
   Text,
@@ -29,7 +29,7 @@ export default function WalletScreen() {
     [colors, isDark],
   );
   const resolveColor = (value, property = 'color') =>
-    resolveLegacyColor(value, property, colors, isDark);
+    resolvePaletteColor(value, property, colors, isDark);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 16);
