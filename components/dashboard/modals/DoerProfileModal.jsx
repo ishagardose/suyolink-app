@@ -64,8 +64,8 @@ export default function DoerProfileModal({
                 </Text>
               </View>
               <Text style={styles.doerProfileRating}>
-                ⭐ {selectedDoerProfile.rating || '4.9★'} ·{' '}
-                {selectedDoerProfile.completedCount || '128 suyos delivered'}
+                ⭐ {selectedDoerProfile.rating ? `${selectedDoerProfile.rating}★` : 'No ratings yet'} ·{' '}
+                {selectedDoerProfile.completedCount ? `${selectedDoerProfile.completedCount} suyos delivered` : 'Active Member'}
               </Text>
             </View>
 
@@ -73,17 +73,21 @@ export default function DoerProfileModal({
             <View style={styles.doerStatsGrid}>
               <View style={styles.doerStatItem}>
                 <Text style={styles.doerStatValue}>
-                  {selectedDoerProfile.completedCount?.split(' ')[0] || '128'}
+                  {selectedDoerProfile.completedCount
+                    ? selectedDoerProfile.completedCount.split(' ')[0]
+                    : '0'}
                 </Text>
                 <Text style={styles.doerStatLabel}>Completed</Text>
               </View>
               <View style={styles.doerStatItem}>
-                <Text style={styles.doerStatValue}>99.4%</Text>
-                <Text style={styles.doerStatLabel}>On-Time</Text>
+                <Text style={styles.doerStatValue}>
+                  {selectedDoerProfile.rating ? `${selectedDoerProfile.rating}★` : '—'}
+                </Text>
+                <Text style={styles.doerStatLabel}>Rating</Text>
               </View>
               <View style={styles.doerStatItem}>
-                <Text style={styles.doerStatValue}>100%</Text>
-                <Text style={styles.doerStatLabel}>Reliable</Text>
+                <Text style={styles.doerStatValue}>Active</Text>
+                <Text style={styles.doerStatLabel}>Status</Text>
               </View>
             </View>
 
@@ -97,7 +101,7 @@ export default function DoerProfileModal({
                 />
                 <Text style={styles.doerInfoLabel}>Transport:</Text>
                 <Text style={styles.doerInfoValue}>
-                  {selectedDoerProfile.vehicle || 'Motorcycle'}
+                  {selectedDoerProfile.vehicle || 'Standard'}
                 </Text>
               </View>
               <View style={styles.doerInfoRow}>
@@ -108,7 +112,7 @@ export default function DoerProfileModal({
                 />
                 <Text style={styles.doerInfoLabel}>Contact:</Text>
                 <Text style={styles.doerInfoValue}>
-                  {selectedDoerProfile.phone || '+63 917 555 0192'}
+                  {selectedDoerProfile.phone || 'Available after assignment'}
                 </Text>
               </View>
               <View style={styles.doerInfoRow}>
@@ -119,7 +123,7 @@ export default function DoerProfileModal({
                 />
                 <Text style={styles.doerInfoLabel}>Joined:</Text>
                 <Text style={styles.doerInfoValue}>
-                  {selectedDoerProfile.joinedDate || 'March 2023'}
+                  {selectedDoerProfile.joinedDate || 'Verified Member'}
                 </Text>
               </View>
             </View>

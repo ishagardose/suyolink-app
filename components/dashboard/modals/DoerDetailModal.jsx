@@ -192,8 +192,9 @@ export default function DoerDetailModal({
                       />
                     </View>
                     <Text style={styles.doerRequesterSubMeta}>
-                      {selectedDoerSuyo.requesterRating || '4.9★'} · Prompt
-                      Payer
+                      {selectedDoerSuyo.requesterRating
+                        ? `${selectedDoerSuyo.requesterRating}★ · Prompt Payer`
+                        : 'Community Requester'}
                     </Text>
                   </View>
 
