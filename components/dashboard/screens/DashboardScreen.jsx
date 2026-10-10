@@ -81,6 +81,7 @@ export default function DashboardScreen() {
   const {
     requests,
     transactions = [],
+    ratings = [],
     workflowError,
     workflowLoading,
     notifications: backendNotifications = [],
@@ -175,7 +176,7 @@ export default function DashboardScreen() {
     setDoerAcceptedSuyos,
     setDoerCancelledSuyos,
     setPostedSuyos,
-  } = useDashboardSuyoLists({ requests, user, now });
+  } = useDashboardSuyoLists({ requests, user, now, ratings });
 
   // The public board contains other accounts' open, unexpired requests.
   const availableSuyosBase = useMemo(() => {

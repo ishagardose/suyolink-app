@@ -135,6 +135,12 @@ export default function RequesterFulfillScreen() {
         activeSuyo?.longitude ??
         (params.longitude ? parseFloat(params.longitude) : 125.8035),
       status: activeSuyo?.status || 'in_progress',
+      providerId:
+        activeSuyo?.providerId ||
+        activeSuyo?.rawRequest?.providerId ||
+        params.providerId ||
+        fetchedDoerProfile?.id ||
+        null,
     };
   }, [activeSuyo, targetId, params, fetchedDoerProfile]);
 
@@ -728,6 +734,7 @@ export default function RequesterFulfillScreen() {
                 category: task.category,
                 location: task.location,
                 doerName: task.doerName,
+                providerId: task.providerId,
                 target: 'provider',
                 targetRole: 'provider',
               },

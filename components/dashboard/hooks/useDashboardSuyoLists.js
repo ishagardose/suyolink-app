@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { getRequestTiming } from '../../../lib/requestTiming';
 import { supabase } from '../../../lib/supabase';
 
-export default function useDashboardSuyoLists({ requests, user, now }) {
+export default function useDashboardSuyoLists({ requests, user, now, ratings = [] }) {
   const [postedSuyos, setPostedSuyos] = useState([]);
   const [acceptedSuyos, setAcceptedSuyos] = useState([]);
   const [completedSuyos, setCompletedSuyos] = useState([]);
@@ -177,6 +177,12 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
             }
           : null;
 
+        const matchedRating = (ratings || []).find(
+          (rt) =>
+            rt.request_id === r.id &&
+            (rt.reviewer_id === user?.id || !rt.reviewer_id),
+        );
+
         return {
           id: r.id,
           title: r.title,
@@ -203,6 +209,8 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
           assignedDoer: doerName,
           doerName: doerName,
           doer: doerObj,
+          ratingScore: matchedRating?.score ?? null,
+          ratingComment: matchedRating?.comment ?? null,
           rawRequest: r,
         };
       });
@@ -252,31 +260,42 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
         details: r.details || '',
         notes: r.notes || '',
         requesterName: r.requesterName || 'Community Member',
+        requesterId: r.requesterId,
         rawRequest: r,
       }));
 
     const myDoerCompleted = requests
       .filter((r) => r.providerId === user?.id && r.status === 'completed')
-      .map((r) => ({
-        id: r.id,
-        title: r.title,
-        category: r.category || 'General',
-        location: r.location || 'Nearby',
-        earnedAmount: (r.offerCentavos || 0) / 100,
-        date: r.createdAt
-          ? new Date(r.createdAt).toLocaleDateString()
-          : 'Completed',
-        requesterName: r.requesterName || 'Requester',
-        icon:
-          r.category === 'Groceries'
-            ? 'cart'
-            : r.category === 'Medicine'
-              ? 'medkit'
-              : r.category === 'Delivery'
-                ? 'bicycle'
-                : 'document-text',
-        rawRequest: r,
-      }));
+      .map((r) => {
+        const matchedRating = (ratings || []).find(
+          (rt) =>
+            rt.request_id === r.id &&
+            (rt.provider_id === user?.id || !rt.provider_id),
+        );
+        return {
+          id: r.id,
+          title: r.title,
+          category: r.category || 'General',
+          location: r.location || 'Nearby',
+          earnedAmount: (r.offerCentavos || 0) / 100,
+          date: r.createdAt
+            ? new Date(r.createdAt).toLocaleDateString()
+            : 'Completed',
+          requesterName: r.requesterName || 'Requester',
+          requesterId: r.requesterId,
+          ratingScore: matchedRating?.score ?? null,
+          ratingComment: matchedRating?.comment ?? null,
+          icon:
+            r.category === 'Groceries'
+              ? 'cart'
+              : r.category === 'Medicine'
+                ? 'medkit'
+                : r.category === 'Delivery'
+                  ? 'bicycle'
+                  : 'document-text',
+          rawRequest: r,
+        };
+      });
 
     const myDoerCancelled = requests
       .filter((r) => r.providerId === user?.id && r.status === 'cancelled')
@@ -297,7 +316,7 @@ export default function useDashboardSuyoLists({ requests, user, now }) {
     setDoerAcceptedSuyos(myAssigned);
     setDoerCompletedSuyos(myDoerCompleted);
     setDoerCancelledSuyos(myDoerCancelled);
-  }, [requests, user?.id, now, providerProfiles]);
+  }, [requests, user?.id, now, providerProfiles, ratings]);
   return {
     acceptedSuyos,
     cancelledSuyos,

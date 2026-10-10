@@ -115,7 +115,7 @@ export default function DoerDetailModal({
                   <Text style={styles.doerDetailPayoutValue}>
                     +
                     {selectedDoerSuyo.reward ||
-                      `₱${selectedDoerSuyo.earnedAmount || 150}`}
+                      `₱${selectedDoerSuyo.earnedAmount || 0}`}
                   </Text>
                 </View>
               </View>
@@ -298,7 +298,7 @@ export default function DoerDetailModal({
                     style={styles.doerInfoGridValue}
                     numberOfLines={2}
                   >
-                    {selectedDoerSuyo.location || 'Tagum City'}
+                    {selectedDoerSuyo.location || 'Nearby'}
                   </Text>
                 </View>
 

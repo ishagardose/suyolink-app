@@ -86,6 +86,11 @@ export default function FulfillTaskScreen() {
         activeSuyo?.longitude ??
         (params.longitude ? parseFloat(params.longitude) : 125.8035),
       status: activeSuyo?.status || 'in_progress',
+      requesterId:
+        activeSuyo?.requesterId ||
+        activeSuyo?.rawRequest?.requesterId ||
+        params.requesterId ||
+        null,
     };
   }, [activeSuyo, targetId, params]);
 
@@ -1103,6 +1108,7 @@ export default function FulfillTaskScreen() {
                     location: task.location,
                     requesterName: task.requesterName,
                     requesterPhone: task.requesterPhone,
+                    requesterId: task.requesterId,
                     target: 'requester',
                     role: 'doer',
                   },

@@ -181,15 +181,60 @@ export default function RateDoerScreen({ forcedTarget }) {
     (r) => r.request_id === taskId && (user?.id ? r.reviewer_id === user.id : true)
   );
 
+  const [directRating, setDirectRating] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchDirectRating() {
+      if (!taskId || !supabase) return;
+      try {
+        let query = supabase.from('ratings').select('*').eq('request_id', taskId);
+        if (user?.id) {
+          query = query.eq('reviewer_id', user.id);
+        }
+        const { data, error } = await query;
+        if (!error && data && data.length > 0 && isMounted) {
+          setDirectRating(data[0]);
+        }
+      } catch (_) {}
+    }
+    fetchDirectRating();
+    return () => {
+      isMounted = false;
+    };
+  }, [taskId, user?.id]);
+
+  const activeRating = directRating || existingRating;
+
   const [rating, setRating] = useState(5);
-  const [selectedTags, setSelectedTags] = useState(() =>
-    isRatingRequester
-      ? ['Clear Instructions', 'Prompt Payment']
-      : ['Punctual Delivery', 'Polite & Professional']
-  );
+  const [selectedTags, setSelectedTags] = useState([]);
   const [comment, setComment] = useState('');
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (activeRating) {
+      if (activeRating.score != null) {
+        setRating(activeRating.score);
+      }
+      if (activeRating.comment != null) {
+        const raw = activeRating.comment.trim();
+        const matched = [];
+        let remaining = raw;
+        for (const opt of availableOptions) {
+          if (remaining.includes(opt.label)) {
+            matched.push(opt.label);
+            remaining = remaining.replace(opt.label, '');
+          }
+        }
+        remaining = remaining.replace(/^[,\s.]+/, '').replace(/[,\s.]+$/, '').trim();
+        if (matched.length > 0) {
+          setSelectedTags(matched);
+        }
+        setComment(remaining);
+      }
+    }
+  }, [activeRating, availableOptions]);
 
   const toggleTag = (tagLabel) => {
     setSelectedTags((prev) =>
@@ -210,7 +255,7 @@ export default function RateDoerScreen({ forcedTarget }) {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const rewardNum = Number(String(taskReward).replace(/[^0-9.]/g, '')) || 150;
+      const rewardNum = Number(String(taskReward).replace(/[^0-9.]/g, '')) || 0;
       const rewardCentavos = Math.round(rewardNum * 100);
       const fullComment =
         selectedTags.length > 0
@@ -227,7 +272,7 @@ export default function RateDoerScreen({ forcedTarget }) {
           ratingScore: rating,
           ratingComment: fullComment,
           category: params.category || activeRequest?.category || 'General',
-          location: params.location || activeRequest?.location || 'Tagum City',
+          location: params.location || activeRequest?.location || 'Nearby',
           completedAt: new Date().toISOString(),
         });
       }
@@ -287,11 +332,11 @@ export default function RateDoerScreen({ forcedTarget }) {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {existingRating && (
+        {activeRating && (
           <View style={styles.alreadyRatedBanner}>
             <Ionicons name="information-circle" size={16} color="#1E4D2B" />
             <Text style={styles.alreadyRatedBannerText}>
-              You have previously rated this task ({existingRating.score}★).
+              You have previously rated this task ({activeRating.score}★).
             </Text>
           </View>
         )}
