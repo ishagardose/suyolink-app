@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getInitials } from '../utils/dashboardHelpers';
 import { DEFAULT_DOER } from '../data/dashboardData';
 import { Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../../lib/supabase';
 
 export default function SuyoContactDetails({
   handleCallDoer,
@@ -14,6 +15,65 @@ export default function SuyoContactDetails({
   styles,
   userProfile,
 }) {
+  const [resolvedDoer, setResolvedDoer] = useState(null);
+
+  useEffect(() => {
+    const pId =
+      selectedSuyo?.doer?.id ||
+      selectedSuyo?.providerId ||
+      selectedSuyo?.rawRequest?.providerId ||
+      selectedSuyo?.rawRequest?.provider_id;
+
+    if (!pId || !supabase) {
+      setResolvedDoer(null);
+      return;
+    }
+
+    let isMounted = true;
+    supabase
+      .rpc('get_suyo_profile', { p_user_id: pId })
+      .then(({ data, error }) => {
+        if (!error && data && isMounted) {
+          setResolvedDoer({
+            id: data.id,
+            name: data.full_name,
+            rating: data.rating
+              ? `${Number(data.rating).toFixed(1)}★`
+              : 'No ratings yet',
+            completedCount: data.completed_count,
+            bio: data.bio,
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    selectedSuyo?.id,
+    selectedSuyo?.providerId,
+    selectedSuyo?.rawRequest?.providerId,
+  ]);
+
+  const doerName =
+    selectedSuyo?.doer?.name ||
+    resolvedDoer?.name ||
+    selectedSuyo?.assignedDoer ||
+    selectedSuyo?.providerName ||
+    DEFAULT_DOER.name;
+
+  const doerRating =
+    selectedSuyo?.doer?.rating ||
+    resolvedDoer?.rating ||
+    selectedSuyo?.providerRating ||
+    DEFAULT_DOER.rating;
+
+  const doerPhone =
+    selectedSuyo?.doer?.phone ||
+    selectedSuyo?.providerPhone ||
+    DEFAULT_DOER.phone;
+
   return selectedSuyoContext === 'accepted' ||
     selectedSuyoContext === 'completed' ? (
     <TouchableOpacity
@@ -21,7 +81,9 @@ export default function SuyoContactDetails({
       activeOpacity={0.75}
       onPress={() => {
         const userId =
-          selectedSuyo.rawRequest?.providerId || selectedSuyo.providerId;
+          selectedSuyo.rawRequest?.providerId ||
+          selectedSuyo.providerId ||
+          resolvedDoer?.id;
         if (!userId) return;
         setSelectedSuyo(null);
         router.push({ pathname: '/profile', params: { userId } });
@@ -31,7 +93,7 @@ export default function SuyoContactDetails({
     >
       <View style={styles.detailDoerAvatar}>
         <Text style={styles.detailDoerAvatarInitials}>
-          {getInitials(selectedSuyo.doer?.name || DEFAULT_DOER.name)}
+          {getInitials(doerName)}
         </Text>
       </View>
       <View style={styles.detailDoerTextCol}>
@@ -42,9 +104,7 @@ export default function SuyoContactDetails({
             gap: 5,
           }}
         >
-          <Text style={styles.detailDoerNameText}>
-            {selectedSuyo.doer?.name || DEFAULT_DOER.name}
-          </Text>
+          <Text style={styles.detailDoerNameText}>{doerName}</Text>
           {selectedSuyoContext !== 'completed' && (
             <Ionicons
               name="checkmark-circle"
@@ -57,21 +117,18 @@ export default function SuyoContactDetails({
           {selectedSuyoContext === 'completed'
             ? 'Fulfilled your Suyo'
             : 'Accepted Courier'}{' '}
-          · {selectedSuyo.doer?.rating || DEFAULT_DOER.rating} ·{' '}
+          · {doerRating} ·{' '}
           {selectedSuyo.doer?.vehicle || DEFAULT_DOER.vehicle}
         </Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={(e) => {
             e?.stopPropagation?.();
-            handleCallDoer(
-              selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
-              selectedSuyo.doer?.name || DEFAULT_DOER.name,
-            );
+            handleCallDoer(doerPhone, doerName);
           }}
         >
           <Text style={styles.detailDoerPhoneText}>
-            📞 {selectedSuyo.doer?.phone || DEFAULT_DOER.phone}
+            📞 {doerPhone || 'Phone unavailable'}
           </Text>
         </TouchableOpacity>
       </View>

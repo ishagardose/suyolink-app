@@ -38,15 +38,15 @@ export default function FulfillTaskScreen() {
   // Dynamic task details with real-world fallbacks
   const task = useMemo(() => {
     return {
-      id: activeSuyo?.id || targetId || 'SYL-102',
-      title: activeSuyo?.title || params.title || 'Drop off documents - Unit 402',
-      category: activeSuyo?.category || params.category || 'Documents',
+      id: activeSuyo?.id || targetId || 'Task',
+      title: activeSuyo?.title || params.title || 'Suyo Task',
+      category: activeSuyo?.category || params.category || 'General',
       location:
         activeSuyo?.exactAddress ||
         activeSuyo?.location ||
         params.location ||
-        'Unit 402, Makati CBD',
-      distanceText: activeSuyo?.distanceText || params.distanceText || '0.8 km away',
+        'Location provided in task',
+      distanceText: activeSuyo?.distanceText || params.distanceText || 'Nearby',
       reward:
         activeSuyo?.reward ||
         (activeSuyo?.offerCentavos
@@ -54,28 +54,29 @@ export default function FulfillTaskScreen() {
           : null) ||
         (activeSuyo?.price ? `₱${activeSuyo.price}` : null) ||
         params.reward ||
-        '₱300',
+        '₱0',
       requesterName:
         activeSuyo?.requesterName ||
         activeSuyo?.creatorName ||
         params.requesterName ||
-        'Atty. Rafael Cruz',
-      requesterLocation: activeSuyo?.location || params.requesterLocation || 'Makati CBD',
+        'Requester',
+      requesterLocation:
+        activeSuyo?.location || params.requesterLocation || 'Nearby',
       requesterPhone:
         activeSuyo?.contactPhone ||
         activeSuyo?.requesterPhone ||
         params.requesterPhone ||
         params.contactPhone ||
-        '0917 842 1983',
+        '',
       details:
         activeSuyo?.details ||
         params.details ||
-        'Delivery of notarized legal documents to Unit 402.',
+        'No special instructions provided.',
       arrivalWindow:
         activeSuyo?.timeBadge ||
         activeSuyo?.deadline ||
         params.arrivalWindow ||
-        '11:00 AM - 11:30 AM',
+        'Standard delivery schedule',
       latitude:
         activeSuyo?.exactLatitude ??
         activeSuyo?.latitude ??

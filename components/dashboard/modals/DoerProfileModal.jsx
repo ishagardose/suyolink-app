@@ -132,7 +132,7 @@ export default function DoerProfileModal({
             <Text style={styles.doerBioText}>
               "
               {selectedDoerProfile.bio ||
-                'Reliable and fast delivery courier in Tagum and Davao area. Careful with groceries and delicate items.'}
+                'Verified community member and courier.'}
               "
             </Text>
 

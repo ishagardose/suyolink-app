@@ -41,18 +41,44 @@ export default function RequesterFulfillScreen() {
     );
   }, [requests, targetId, user?.id]);
 
+  const [fetchedDoerProfile, setFetchedDoerProfile] = useState(null);
+
+  useEffect(() => {
+    const pId =
+      activeSuyo?.providerId ||
+      activeSuyo?.doer?.id ||
+      params.providerId ||
+      params.doerId;
+
+    if (!pId || !supabase) return;
+
+    let isMounted = true;
+    supabase
+      .rpc('get_suyo_profile', { p_user_id: pId })
+      .then(({ data, error }) => {
+        if (!error && data && isMounted) {
+          setFetchedDoerProfile(data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeSuyo?.providerId, params.providerId, params.doerId]);
+
   // Dynamic task details with real-world fallbacks
   const task = useMemo(() => {
     return {
-      id: activeSuyo?.id || targetId || 'SYL-102',
-      title: activeSuyo?.title || params.title || 'Drop off documents - Unit 402',
-      category: activeSuyo?.category || params.category || 'Documents',
+      id: activeSuyo?.id || targetId || 'Task',
+      title: activeSuyo?.title || params.title || 'Suyo Task',
+      category: activeSuyo?.category || params.category || 'General',
       location:
         activeSuyo?.exactAddress ||
         activeSuyo?.location ||
         params.location ||
-        'Unit 402, Makati CBD',
-      distanceText: activeSuyo?.distanceText || params.distanceText || '0.8 km away',
+        'Location provided in task',
+      distanceText: activeSuyo?.distanceText || params.distanceText || 'Nearby',
       reward:
         activeSuyo?.reward ||
         (activeSuyo?.offerCentavos
@@ -60,38 +86,46 @@ export default function RequesterFulfillScreen() {
           : null) ||
         (activeSuyo?.price ? `₱${activeSuyo.price}` : null) ||
         params.reward ||
-        '₱300',
+        '₱0',
       doerName:
+        fetchedDoerProfile?.full_name ||
         activeSuyo?.assignedDoer ||
         activeSuyo?.doer?.name ||
+        activeSuyo?.providerName ||
         activeSuyo?.doerName ||
         params.doerName ||
         'Assigned Courier',
       doerRating: (() => {
-        const raw = activeSuyo?.doer?.rating || activeSuyo?.doerRating || params.doerRating;
+        const raw =
+          fetchedDoerProfile?.rating ||
+          activeSuyo?.doer?.rating ||
+          activeSuyo?.doerRating ||
+          params.doerRating;
         return raw != null && !isNaN(raw) && String(raw).trim() !== ''
           ? Number(String(raw).replace(/[★*]/g, '')).toFixed(1)
           : null;
       })(),
       doerSuyosCount:
-        activeSuyo?.doer?.completedCount ||
-        activeSuyo?.doerSuyosCount ||
-        params.doerSuyosCount ||
-        'Verified Courier',
+        fetchedDoerProfile?.completed_count != null
+          ? `${fetchedDoerProfile.completed_count} completed`
+          : activeSuyo?.doer?.completedCount ||
+            activeSuyo?.doerSuyosCount ||
+            params.doerSuyosCount ||
+            'Verified Courier',
       doerPhone:
         activeSuyo?.doer?.phone ||
         activeSuyo?.doerPhone ||
         params.doerPhone ||
-        'Available in task',
+        '',
       details:
         activeSuyo?.details ||
         params.details ||
-        'Delivery of notarized legal documents to Unit 402.',
+        'No special instructions provided.',
       arrivalWindow:
         activeSuyo?.timeBadge ||
         activeSuyo?.deadline ||
         params.arrivalWindow ||
-        '11:00 AM - 11:30 AM',
+        'Standard delivery schedule',
       latitude:
         activeSuyo?.exactLatitude ??
         activeSuyo?.latitude ??
@@ -102,7 +136,7 @@ export default function RequesterFulfillScreen() {
         (params.longitude ? parseFloat(params.longitude) : 125.8035),
       status: activeSuyo?.status || 'in_progress',
     };
-  }, [activeSuyo, targetId, params]);
+  }, [activeSuyo, targetId, params, fetchedDoerProfile]);
 
   // 4 Progress Steps: Accepted (0) -> En Route (1) -> Working (2) -> Completed (3)
   const STEPS = [

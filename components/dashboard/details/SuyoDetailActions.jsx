@@ -116,13 +116,33 @@ export default function SuyoDetailActions({
             activeOpacity={0.8}
             onPress={() => {
               handleCloseDetailModal();
+              const doerName =
+                selectedSuyo.doer?.name ||
+                selectedSuyo.assignedDoer ||
+                selectedSuyo.providerName ||
+                DEFAULT_DOER.name;
+              const doerPhone =
+                selectedSuyo.doer?.phone ||
+                selectedSuyo.providerPhone ||
+                DEFAULT_DOER.phone;
+              const doerRating =
+                selectedSuyo.doer?.rating ||
+                selectedSuyo.providerRating ||
+                DEFAULT_DOER.rating;
+              const providerId =
+                selectedSuyo.rawRequest?.providerId ||
+                selectedSuyo.providerId ||
+                selectedSuyo.doer?.id ||
+                '';
               router.push({
                 pathname: '/requester-fulfill',
                 params: {
                   id: selectedSuyo.id,
                   title: selectedSuyo.title,
-                  doerName: selectedSuyo.doer?.name || DEFAULT_DOER.name,
-                  doerPhone: selectedSuyo.doer?.phone || DEFAULT_DOER.phone,
+                  doerName,
+                  doerPhone,
+                  doerRating,
+                  providerId,
                 },
               });
             }}
