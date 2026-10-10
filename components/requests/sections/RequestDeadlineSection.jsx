@@ -112,41 +112,6 @@ export default function RequestDeadlineSection({
             );
           })}
         </View>
-
-        {/* Status Description Box */}
-        <View
-          style={[
-            styles.deadlineStatusExplainer,
-            {
-              backgroundColor: resolveColor(
-                selectedStatusConfig.bgColor,
-                'backgroundColor',
-              ),
-              borderColor: resolveColor(
-                selectedStatusConfig.borderColor,
-                'borderColor',
-              ),
-            },
-          ]}
-        >
-          <Ionicons
-            name="information-circle"
-            size={13}
-            color={resolveColor(selectedStatusConfig.color)}
-          />
-          <Text
-            style={[
-              styles.deadlineStatusExplainerText,
-              {
-                color: resolveColor(
-                  selectedStatusConfig.textColor || selectedStatusConfig.color,
-                ),
-              },
-            ]}
-          >
-            {selectedStatusConfig.description}
-          </Text>
-        </View>
       </View>
 
       {/* Separate Date and Time Inputs */}
@@ -270,6 +235,42 @@ export default function RequestDeadlineSection({
             </Text>
           )}
         </View>
+      </View>
+
+      {/* Status Description Box / Warning placed below Date & Time Inputs */}
+      <View
+        style={[
+          styles.deadlineStatusExplainer,
+          {
+            backgroundColor: resolveColor(
+              selectedStatusConfig.bgColor,
+              'backgroundColor',
+            ),
+            borderColor: resolveColor(
+              selectedStatusConfig.borderColor,
+              'borderColor',
+            ),
+            marginTop: 6,
+          },
+        ]}
+      >
+        <Ionicons
+          name="information-circle"
+          size={13}
+          color={resolveColor(selectedStatusConfig.color)}
+        />
+        <Text
+          style={[
+            styles.deadlineStatusExplainerText,
+            {
+              color: resolveColor(
+                selectedStatusConfig.textColor || selectedStatusConfig.color,
+              ),
+            },
+          ]}
+        >
+          {selectedStatusConfig.description}
+        </Text>
       </View>
 
       {draft.deadlineDate && draft.deadlineTime ? (

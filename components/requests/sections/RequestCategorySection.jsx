@@ -98,7 +98,7 @@ export default function RequestCategorySection({
               >
                 <Ionicons
                   name={iconName}
-                  size={16}
+                  size={13}
                   color={
                     isSelected
                       ? resolveColor('#FFFFFF')
