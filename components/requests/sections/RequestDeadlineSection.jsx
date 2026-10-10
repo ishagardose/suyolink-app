@@ -93,7 +93,7 @@ export default function RequestDeadlineSection({
               >
                 <Ionicons
                   name={opt.icon}
-                  size={14}
+                  size={12}
                   color={
                     isSelected
                       ? resolveColor('#FFFFFF')
@@ -131,7 +131,7 @@ export default function RequestDeadlineSection({
         >
           <Ionicons
             name="information-circle"
-            size={15}
+            size={13}
             color={resolveColor(selectedStatusConfig.color)}
           />
           <Text
