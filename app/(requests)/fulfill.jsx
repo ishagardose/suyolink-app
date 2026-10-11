@@ -11,6 +11,7 @@ import {
   Platform,
   Linking,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -159,20 +160,102 @@ export default function FulfillTaskScreen() {
   const channelRef = useRef(null);
   const isChannelReady = useRef(false);
 
-  // Automatically grant location sharing consent on mount for active doer
+  const [isConsentModalVisible, setIsConsentModalVisible] = useState(false);
+  const [isTrackingSharing, setIsTrackingSharing] = useState(false);
+  const [isConsentLoading, setIsConsentLoading] = useState(true);
+  const [isUpdatingConsent, setIsUpdatingConsent] = useState(false);
+  const [consentError, setConsentError] = useState('');
+
+  // Explicit location sharing consent sync with Supabase backend
   useEffect(() => {
     if (!supabase || !task.id || !user?.id) return;
+    let isMounted = true;
+
+    // Check if consent was already granted or revoked in backend
     supabase
-      .rpc('set_tracking_consent', {
-        p_request_id: task.id,
-        p_share: true,
+      .from('tracking_consents')
+      .select('consented_at, revoked_at')
+      .eq('request_id', task.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!isMounted) return;
+        setIsConsentLoading(false);
+        if (!error && data) {
+          if (!data.revoked_at) {
+            setIsTrackingSharing(true);
+            setIsConsentModalVisible(false);
+          } else {
+            setIsTrackingSharing(false);
+            setIsConsentModalVisible(false);
+          }
+        } else {
+          // No prior choice made for this task: prompt explicit confirmation modal
+          setIsTrackingSharing(false);
+          setIsConsentModalVisible(true);
+        }
       })
-      .catch((err) => console.warn('set_tracking_consent err:', err));
+      .catch(() => {
+        if (isMounted) {
+          setIsConsentLoading(false);
+          setIsConsentModalVisible(true);
+        }
+      });
 
     return () => {
-      // Clean up consent on unmount if needed
+      isMounted = false;
     };
   }, [task.id, user?.id]);
+
+  const handleGrantConsent = async () => {
+    setIsUpdatingConsent(true);
+    setConsentError('');
+    try {
+      if (Platform.OS !== 'web') {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          throw new Error('Please allow location access in your phone settings.');
+        }
+      }
+      if (supabase && task.id) {
+        const { error } = await supabase.rpc('set_tracking_consent', {
+          p_request_id: task.id,
+          p_share: true,
+        });
+        if (error) throw error;
+      }
+      setIsTrackingSharing(true);
+      setIsConsentModalVisible(false);
+
+      if (liveDoerLocation) {
+        broadcastLocation(liveDoerLocation, liveDistanceText, true);
+      }
+    } catch (err) {
+      setConsentError(err.message || 'Could not enable live tracking.');
+    } finally {
+      setIsUpdatingConsent(false);
+    }
+  };
+
+  const handleDeclineOrPauseConsent = async () => {
+    setIsUpdatingConsent(true);
+    setConsentError('');
+    try {
+      if (supabase && task.id) {
+        await supabase.rpc('set_tracking_consent', {
+          p_request_id: task.id,
+          p_share: false,
+        });
+      }
+      setIsTrackingSharing(false);
+      setIsConsentModalVisible(false);
+    } catch (err) {
+      console.warn('Decline consent error:', err);
+      setIsTrackingSharing(false);
+      setIsConsentModalVisible(false);
+    } finally {
+      setIsUpdatingConsent(false);
+    }
+  };
 
   // Setup Supabase Realtime duplex channel for live synchronization
   useEffect(() => {
@@ -338,7 +421,9 @@ export default function FulfillTaskScreen() {
     };
   }, [dropoffLocation]);
 
-  const broadcastLocation = async (coords, distText) => {
+  const broadcastLocation = async (coords, distText, force = false) => {
+    if (!isTrackingSharing && !force) return;
+
     if (channelRef.current) {
       try {
         channelRef.current.send({
@@ -366,18 +451,7 @@ export default function FulfillTaskScreen() {
           p_longitude: coords.longitude,
         });
       } catch (err) {
-        // If consent was not yet active or was revoked, establish consent and retry
-        try {
-          await supabase.rpc('set_tracking_consent', {
-            p_request_id: task.id,
-            p_share: true,
-          });
-          await supabase.rpc('update_task_location', {
-            p_request_id: task.id,
-            p_latitude: coords.latitude,
-            p_longitude: coords.longitude,
-          });
-        } catch (_) {}
+        console.warn('update_task_location err:', err);
       }
     }
   };
@@ -763,6 +837,88 @@ export default function FulfillTaskScreen() {
               );
             })}
           </View>
+        </View>
+
+        {/* LIVE LOCATION SHARING STATUS BANNER */}
+        <View
+          style={[
+            styles.trackingStatusBanner,
+            isTrackingSharing
+              ? styles.trackingStatusBannerActive
+              : styles.trackingStatusBannerPaused,
+          ]}
+        >
+          <View style={styles.trackingStatusLeft}>
+            <View
+              style={[
+                styles.trackingStatusIconBox,
+                isTrackingSharing
+                  ? styles.trackingStatusIconBoxActive
+                  : styles.trackingStatusIconBoxPaused,
+              ]}
+            >
+              <Ionicons
+                name={isTrackingSharing ? 'navigate' : 'pause-circle'}
+                size={18}
+                color={isTrackingSharing ? '#1E4D2B' : '#B45309'}
+              />
+            </View>
+            <View style={styles.trackingStatusTextCol}>
+              <View style={styles.trackingStatusTitleRow}>
+                <View
+                  style={[
+                    styles.trackingStatusDot,
+                    isTrackingSharing
+                      ? styles.trackingStatusDotActive
+                      : styles.trackingStatusDotPaused,
+                  ]}
+                />
+                <Text style={styles.trackingStatusTitle}>
+                  {isTrackingSharing
+                    ? 'Live Location Sharing Active'
+                    : 'Location Sharing Paused'}
+                </Text>
+              </View>
+              <Text style={styles.trackingStatusDesc}>
+                {isTrackingSharing
+                  ? 'The requester can see your real-time GPS progress.'
+                  : 'Your GPS position is hidden from the requester.'}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.trackingStatusToggleBtn,
+              isTrackingSharing
+                ? styles.trackingStatusToggleBtnOutline
+                : styles.trackingStatusToggleBtnFilled,
+            ]}
+            onPress={
+              isTrackingSharing
+                ? handleDeclineOrPauseConsent
+                : handleGrantConsent
+            }
+            activeOpacity={0.8}
+            disabled={isUpdatingConsent}
+          >
+            {isUpdatingConsent ? (
+              <ActivityIndicator
+                size="small"
+                color={isTrackingSharing ? '#1E4D2B' : '#FFFFFF'}
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.trackingStatusToggleBtnText,
+                  isTrackingSharing
+                    ? styles.trackingStatusToggleBtnTextOutline
+                    : styles.trackingStatusToggleBtnTextFilled,
+                ]}
+              >
+                {isTrackingSharing ? 'Pause' : 'Share'}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* 3. LIVE ROUTE MAP */}
@@ -1183,6 +1339,65 @@ export default function FulfillTaskScreen() {
             >
               <Text style={styles.skipToDashboardBtnText}>Skip to Dashboard</Text>
             </TouchableOpacity>
+          </View>
+      {/* EXPLICIT LOCATION TRACKING CONSENT MODAL */}
+      <Modal
+        visible={isConsentModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleDeclineOrPauseConsent}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.consentModalCard}>
+            <View style={styles.consentIconCircle}>
+              <Ionicons name="location" size={32} color="#1E4D2B" />
+            </View>
+            <Text style={styles.consentModalTitle}>
+              Share Live Location with Requester?
+            </Text>
+            <Text style={styles.consentModalDescription}>
+              To help {task.requesterName || 'the requester'} track your arrival in real time, SuyoLink shares your GPS location while fulfilling this task.
+            </Text>
+            <View style={styles.consentNoticePill}>
+              <Ionicons name="shield-checkmark" size={15} color="#1E4D2B" />
+              <Text style={styles.consentNoticePillText}>
+                Task-scoped only • Automatically stops when done • Pause anytime
+              </Text>
+            </View>
+
+            {consentError ? (
+              <Text style={styles.consentErrorText}>{consentError}</Text>
+            ) : null}
+
+            <View style={styles.consentBtnRow}>
+              <TouchableOpacity
+                style={styles.consentPrimaryBtn}
+                onPress={handleGrantConsent}
+                activeOpacity={0.88}
+                disabled={isUpdatingConsent}
+              >
+                {isUpdatingConsent ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="navigate" size={17} color="#FFFFFF" />
+                    <Text style={styles.consentPrimaryBtnText}>
+                      Share My Location
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.consentSecondaryBtn}
+                onPress={handleDeclineOrPauseConsent}
+                activeOpacity={0.7}
+                disabled={isUpdatingConsent}
+              >
+                <Text style={styles.consentSecondaryBtnText}>
+                  Keep Private (Don't Share)
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1897,6 +2112,191 @@ const styles = StyleSheet.create({
   },
   skipToDashboardBtnText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#556E60',
+  },
+
+  /* LIVE TRACKING CONSENT BANNER */
+  trackingStatusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  trackingStatusBannerActive: {
+    backgroundColor: '#EDF7EE',
+    borderColor: '#C6E7C9',
+  },
+  trackingStatusBannerPaused: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  trackingStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  trackingStatusIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  trackingStatusIconBoxActive: {
+    backgroundColor: '#DCFCE7',
+  },
+  trackingStatusIconBoxPaused: {
+    backgroundColor: '#FEF3C7',
+  },
+  trackingStatusTextCol: {
+    flex: 1,
+  },
+  trackingStatusTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  trackingStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  trackingStatusDotActive: {
+    backgroundColor: '#16A34A',
+  },
+  trackingStatusDotPaused: {
+    backgroundColor: '#D97706',
+  },
+  trackingStatusTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  trackingStatusDesc: {
+    fontSize: 11.5,
+    color: '#556E60',
+    lineHeight: 15,
+  },
+  trackingStatusToggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trackingStatusToggleBtnOutline: {
+    borderWidth: 1,
+    borderColor: '#1E4D2B',
+    backgroundColor: '#FFFFFF',
+  },
+  trackingStatusToggleBtnFilled: {
+    backgroundColor: '#1E4D2B',
+  },
+  trackingStatusToggleBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  trackingStatusToggleBtnTextOutline: {
+    color: '#1E4D2B',
+  },
+  trackingStatusToggleBtnTextFilled: {
+    color: '#FFFFFF',
+  },
+
+  /* EXPLICIT CONSENT MODAL */
+  consentModalCard: {
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  consentIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EBF5EF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  consentModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#163523',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  consentModalDescription: {
+    fontSize: 13.5,
+    color: '#556E60',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  consentNoticePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F7F2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 18,
+    gap: 6,
+  },
+  consentNoticePillText: {
+    fontSize: 11,
+    color: '#1E4D2B',
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 15,
+  },
+  consentErrorText: {
+    fontSize: 12,
+    color: '#DC2626',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  consentBtnRow: {
+    width: '100%',
+    gap: 10,
+  },
+  consentPrimaryBtn: {
+    backgroundColor: '#1E4D2B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    gap: 8,
+  },
+  consentPrimaryBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  consentSecondaryBtn: {
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  consentSecondaryBtnText: {
+    fontSize: 13.5,
     fontWeight: '600',
     color: '#556E60',
   },

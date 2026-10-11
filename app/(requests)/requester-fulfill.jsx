@@ -166,6 +166,7 @@ export default function RequesterFulfillScreen() {
   const [liveDistanceText, setLiveDistanceText] = useState(task.distanceText);
   const [proofData, setProofData] = useState(null);
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
+  const [isSharingPaused, setIsSharingPaused] = useState(false);
 
   // Live GPS Coordinates of Doer & Destination
   const dropoffLocation = useMemo(
@@ -336,7 +337,10 @@ export default function RequesterFulfillScreen() {
           filter: `request_id=eq.${task.id}`,
         },
         (payload) => {
-          if (payload?.new?.latitude && payload?.new?.longitude) {
+          if (payload?.eventType === 'DELETE') {
+            setIsSharingPaused(true);
+          } else if (payload?.new?.latitude && payload?.new?.longitude) {
+            setIsSharingPaused(false);
             const coords = {
               latitude: payload.new.latitude,
               longitude: payload.new.longitude,
@@ -344,6 +348,20 @@ export default function RequesterFulfillScreen() {
             setDoerLocation(coords);
             const d = distanceKm(coords, dropoffLocation);
             if (d !== null) setLiveDistanceText(formatDistance(d));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tracking_consents',
+          filter: `request_id=eq.${task.id}`,
+        },
+        (payload) => {
+          if (payload?.new) {
+            setIsSharingPaused(!!payload.new.revoked_at);
           }
         }
       )
@@ -590,8 +608,17 @@ export default function RequesterFulfillScreen() {
         <View style={styles.mapSectionCard}>
           <View style={styles.mapHeaderRow}>
             <View style={styles.mapTitleBlock}>
-              <View style={styles.liveIndicatorDot} />
-              <Text style={styles.mapSectionTitle}>Live Doer GPS Route</Text>
+              <View
+                style={[
+                  styles.liveIndicatorDot,
+                  isSharingPaused && { backgroundColor: '#F59E0B' },
+                ]}
+              />
+              <Text style={styles.mapSectionTitle}>
+                {isSharingPaused
+                  ? 'Doer GPS Paused (Last Known)'
+                  : 'Live Doer GPS Route'}
+              </Text>
             </View>
             <View style={styles.distanceBadgePill}>
               <Ionicons name="speedometer-outline" size={13} color="#1E4D2B" />
