@@ -26,6 +26,14 @@ import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 import { uploadProof } from '../../lib/proofUpload';
 
+function formatProximityDistance(fromCoords, toCoords) {
+  if (!hasCoordinates(fromCoords) || !hasCoordinates(toCoords)) return 'Nearby';
+  const d = distanceKm(fromCoords, toCoords);
+  if (d === null) return 'Nearby';
+  if (d < 0.05) return 'At location (Within 50m)';
+  return formatDistance(d);
+}
+
 export default function FulfillTaskScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -159,6 +167,8 @@ export default function FulfillTaskScreen() {
 
   const channelRef = useRef(null);
   const isChannelReady = useRef(false);
+  const isTrackingSharingRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const [isConsentModalVisible, setIsConsentModalVisible] = useState(false);
   const [isTrackingSharing, setIsTrackingSharing] = useState(false);
@@ -169,7 +179,7 @@ export default function FulfillTaskScreen() {
   // Explicit location sharing consent sync with Supabase backend
   useEffect(() => {
     if (!supabase || !task.id || !user?.id) return;
-    let isMounted = true;
+    isMountedRef.current = true;
 
     // Check if consent was already granted or revoked in backend
     supabase
@@ -178,31 +188,34 @@ export default function FulfillTaskScreen() {
       .eq('request_id', task.id)
       .maybeSingle()
       .then(({ data, error }) => {
-        if (!isMounted) return;
+        if (!isMountedRef.current) return;
         setIsConsentLoading(false);
         if (!error && data) {
           if (!data.revoked_at) {
+            isTrackingSharingRef.current = true;
             setIsTrackingSharing(true);
             setIsConsentModalVisible(false);
           } else {
+            isTrackingSharingRef.current = false;
             setIsTrackingSharing(false);
             setIsConsentModalVisible(false);
           }
         } else {
           // No prior choice made for this task: prompt explicit confirmation modal
+          isTrackingSharingRef.current = false;
           setIsTrackingSharing(false);
           setIsConsentModalVisible(true);
         }
       })
       .catch(() => {
-        if (isMounted) {
+        if (isMountedRef.current) {
           setIsConsentLoading(false);
           setIsConsentModalVisible(true);
         }
       });
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
   }, [task.id, user?.id]);
 
@@ -223,11 +236,47 @@ export default function FulfillTaskScreen() {
         });
         if (error) throw error;
       }
+      isTrackingSharingRef.current = true;
       setIsTrackingSharing(true);
       setIsConsentModalVisible(false);
 
-      if (liveDoerLocation) {
-        broadcastLocation(liveDoerLocation, liveDistanceText, true);
+      // 1. Immediately obtain fresh real-world GPS coordinates
+      let currentCoords = liveDoerLocation;
+      try {
+        const freshPos =
+          Platform.OS === 'web'
+            ? await new Promise((res, rej) => {
+                if (typeof navigator !== 'undefined' && navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(res, rej, {
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                  });
+                } else {
+                  rej(new Error('No geolocation'));
+                }
+              })
+            : await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High,
+              });
+
+        if (freshPos?.coords) {
+          currentCoords = {
+            latitude: freshPos.coords.latitude,
+            longitude: freshPos.coords.longitude,
+          };
+          setLiveDoerLocation(currentCoords);
+        }
+      } catch (posErr) {
+        console.warn('GPS initial acquisition note:', posErr);
+      }
+
+      const distText = formatProximityDistance(currentCoords, dropoffLocation);
+      setLiveDistanceText(distText);
+      await broadcastLocation(currentCoords, distText, true);
+
+      // 2. Automatically advance to Step 1 (En Route) if currently at Step 0
+      if (currentStepIndex === 0) {
+        await handleUpdateStep(1);
       }
     } catch (err) {
       setConsentError(err.message || 'Could not enable live tracking.');
@@ -239,6 +288,9 @@ export default function FulfillTaskScreen() {
   const handleDeclineOrPauseConsent = async () => {
     setIsUpdatingConsent(true);
     setConsentError('');
+    isTrackingSharingRef.current = false;
+    setIsTrackingSharing(false);
+    setIsConsentModalVisible(false);
     try {
       if (supabase && task.id) {
         await supabase.rpc('set_tracking_consent', {
@@ -246,12 +298,8 @@ export default function FulfillTaskScreen() {
           p_share: false,
         });
       }
-      setIsTrackingSharing(false);
-      setIsConsentModalVisible(false);
     } catch (err) {
       console.warn('Decline consent error:', err);
-      setIsTrackingSharing(false);
-      setIsConsentModalVisible(false);
     } finally {
       setIsUpdatingConsent(false);
     }
@@ -299,28 +347,28 @@ export default function FulfillTaskScreen() {
     };
   }, [task.id]);
 
-  // Real-time GPS Geolocation Watcher
+  // Real-time GPS Geolocation Watcher with active heartbeat
   useEffect(() => {
+    isMountedRef.current = true;
     let sub = null;
+    let heartbeatTimer = null;
     let webWatchId = null;
-    let isMounted = true;
 
     async function initGPS() {
-      // 1. Web browser environment: use standard W3C navigator.geolocation
+      // 1. Web browser environment
       if (Platform.OS === 'web') {
         if (typeof navigator !== 'undefined' && navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
-              if (isMounted && pos?.coords) {
+              if (isMountedRef.current && pos?.coords) {
                 const coords = {
                   latitude: pos.coords.latitude,
                   longitude: pos.coords.longitude,
                 };
                 setLiveDoerLocation(coords);
-                const d = distanceKm(coords, dropoffLocation);
-                if (d !== null) {
-                  const formatted = formatDistance(d);
-                  setLiveDistanceText(formatted);
+                const formatted = formatProximityDistance(coords, dropoffLocation);
+                setLiveDistanceText(formatted);
+                if (isTrackingSharingRef.current) {
                   broadcastLocation(coords, formatted);
                 }
               }
@@ -331,16 +379,15 @@ export default function FulfillTaskScreen() {
           try {
             webWatchId = navigator.geolocation.watchPosition(
               (pos) => {
-                if (isMounted && pos?.coords) {
+                if (isMountedRef.current && pos?.coords) {
                   const coords = {
                     latitude: pos.coords.latitude,
                     longitude: pos.coords.longitude,
                   };
                   setLiveDoerLocation(coords);
-                  const d = distanceKm(coords, dropoffLocation);
-                  if (d !== null) {
-                    const formatted = formatDistance(d);
-                    setLiveDistanceText(formatted);
+                  const formatted = formatProximityDistance(coords, dropoffLocation);
+                  setLiveDistanceText(formatted);
+                  if (isTrackingSharingRef.current) {
                     broadcastLocation(coords, formatted);
                   }
                 }
@@ -349,6 +396,25 @@ export default function FulfillTaskScreen() {
               { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
             );
           } catch (_) {}
+
+          heartbeatTimer = setInterval(() => {
+            if (!isMountedRef.current || !isTrackingSharingRef.current) return;
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                if (isMountedRef.current && pos?.coords) {
+                  const coords = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                  };
+                  setLiveDoerLocation(coords);
+                  const formatted = formatProximityDistance(coords, dropoffLocation);
+                  setLiveDistanceText(formatted);
+                  broadcastLocation(coords, formatted);
+                }
+              },
+              () => {}
+            );
+          }, 12000);
         }
         return;
       }
@@ -359,20 +425,18 @@ export default function FulfillTaskScreen() {
         if (status !== 'granted') return;
 
         const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+          accuracy: Location.Accuracy.High,
         });
 
-        if (isMounted && current?.coords) {
+        if (isMountedRef.current && current?.coords) {
           const coords = {
             latitude: current.coords.latitude,
             longitude: current.coords.longitude,
           };
           setLiveDoerLocation(coords);
-
-          const d = distanceKm(coords, dropoffLocation);
-          if (d !== null) {
-            const formatted = formatDistance(d);
-            setLiveDistanceText(formatted);
+          const formatted = formatProximityDistance(coords, dropoffLocation);
+          setLiveDistanceText(formatted);
+          if (isTrackingSharingRef.current) {
             broadcastLocation(coords, formatted);
           }
         }
@@ -380,25 +444,44 @@ export default function FulfillTaskScreen() {
         sub = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            distanceInterval: 10,
-            timeInterval: 5000,
+            distanceInterval: 0,
+            timeInterval: 4000,
           },
           (loc) => {
-            if (isMounted && loc?.coords) {
+            if (isMountedRef.current && loc?.coords) {
               const coords = {
                 latitude: loc.coords.latitude,
                 longitude: loc.coords.longitude,
               };
               setLiveDoerLocation(coords);
-              const d = distanceKm(coords, dropoffLocation);
-              if (d !== null) {
-                const formatted = formatDistance(d);
-                setLiveDistanceText(formatted);
+              const formatted = formatProximityDistance(coords, dropoffLocation);
+              setLiveDistanceText(formatted);
+              if (isTrackingSharingRef.current) {
                 broadcastLocation(coords, formatted);
               }
             }
           }
         );
+
+        // Native heartbeat: pull position every 12s so standing still in-room doesn't stall tracking
+        heartbeatTimer = setInterval(async () => {
+          if (!isMountedRef.current || !isTrackingSharingRef.current) return;
+          try {
+            const fresh = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.High,
+            });
+            if (isMountedRef.current && fresh?.coords) {
+              const coords = {
+                latitude: fresh.coords.latitude,
+                longitude: fresh.coords.longitude,
+              };
+              setLiveDoerLocation(coords);
+              const formatted = formatProximityDistance(coords, dropoffLocation);
+              setLiveDistanceText(formatted);
+              broadcastLocation(coords, formatted);
+            }
+          } catch (_) {}
+        }, 12000);
       } catch (err) {
         console.warn('Native GPS watch error:', err);
       }
@@ -407,7 +490,8 @@ export default function FulfillTaskScreen() {
     initGPS();
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (webWatchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
         try {
           navigator.geolocation.clearWatch(webWatchId);
@@ -421,8 +505,8 @@ export default function FulfillTaskScreen() {
     };
   }, [dropoffLocation]);
 
-  const broadcastLocation = async (coords, distText, force = false) => {
-    if (!isTrackingSharing && !force) return;
+  const broadcastLocation = async (coords, distText, force = false, accuracy = null, speed = null) => {
+    if (!isTrackingSharingRef.current && !force) return;
 
     if (channelRef.current) {
       try {
@@ -449,6 +533,8 @@ export default function FulfillTaskScreen() {
           p_request_id: task.id,
           p_latitude: coords.latitude,
           p_longitude: coords.longitude,
+          p_accuracy: accuracy,
+          p_speed: speed,
         });
       } catch (err) {
         console.warn('update_task_location err:', err);
@@ -512,32 +598,65 @@ export default function FulfillTaskScreen() {
     if (refresh) refresh();
   };
 
-  // Markers for TaskMap
-  const mapMarkers = useMemo(
-    () => [
+  // Markers for TaskMap with proximity separation when testing at the exact same location
+  const mapMarkers = useMemo(() => {
+    const isSameSpot =
+      Math.abs(liveDoerLocation.latitude - dropoffLocation.latitude) < 0.00012 &&
+      Math.abs(liveDoerLocation.longitude - dropoffLocation.longitude) < 0.00012;
+
+    const doerPt = isSameSpot
+      ? {
+          latitude: liveDoerLocation.latitude,
+          longitude: liveDoerLocation.longitude - 0.00018,
+        }
+      : liveDoerLocation;
+
+    const dropoffPt = isSameSpot
+      ? {
+          latitude: dropoffLocation.latitude,
+          longitude: dropoffLocation.longitude + 0.00018,
+        }
+      : dropoffLocation;
+
+    return [
       {
         id: 'doer-location',
-        latitude: liveDoerLocation.latitude,
-        longitude: liveDoerLocation.longitude,
+        latitude: doerPt.latitude,
+        longitude: doerPt.longitude,
         title: 'Doer (You)',
         isMe: true,
       },
       {
         id: 'dropoff-location',
-        latitude: dropoffLocation.latitude,
-        longitude: dropoffLocation.longitude,
+        latitude: dropoffPt.latitude,
+        longitude: dropoffPt.longitude,
         title: `Drop-off: ${task.location}`,
         isMe: false,
       },
-    ],
-    [liveDoerLocation, dropoffLocation, task.location]
-  );
+    ];
+  }, [liveDoerLocation, dropoffLocation, task.location]);
 
   const routeCoordinates = useMemo(() => {
     if (
       hasCoordinates(liveDoerLocation) &&
       hasCoordinates(dropoffLocation)
     ) {
+      const isSameSpot =
+        Math.abs(liveDoerLocation.latitude - dropoffLocation.latitude) < 0.00012 &&
+        Math.abs(liveDoerLocation.longitude - dropoffLocation.longitude) < 0.00012;
+
+      if (isSameSpot) {
+        return [
+          {
+            latitude: liveDoerLocation.latitude,
+            longitude: liveDoerLocation.longitude - 0.00018,
+          },
+          {
+            latitude: dropoffLocation.latitude,
+            longitude: dropoffLocation.longitude + 0.00018,
+          },
+        ];
+      }
       return [liveDoerLocation, dropoffLocation];
     }
     return [];
@@ -980,7 +1099,11 @@ export default function FulfillTaskScreen() {
 
           <View style={styles.timelineList}>
             {/* Step 4: Drop-off & Completed */}
-            <View style={styles.timelineItem}>
+            <TouchableOpacity
+              style={styles.timelineItem}
+              activeOpacity={0.8}
+              onPress={() => (currentStepIndex < 3 ? setIsProofModalOpen(true) : null)}
+            >
               <View style={styles.timelineLeftColumn}>
                 <View
                   style={[
@@ -1026,10 +1149,14 @@ export default function FulfillTaskScreen() {
                   {timelineTimes.completed}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Step 3: Documents secured & verified */}
-            <View style={styles.timelineItem}>
+            <TouchableOpacity
+              style={styles.timelineItem}
+              activeOpacity={0.8}
+              onPress={() => handleUpdateStep(2)}
+            >
               <View style={styles.timelineLeftColumn}>
                 <View
                   style={[
@@ -1075,10 +1202,14 @@ export default function FulfillTaskScreen() {
                   {timelineTimes.working}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Step 2: En Route */}
-            <View style={styles.timelineItem}>
+            <TouchableOpacity
+              style={styles.timelineItem}
+              activeOpacity={0.8}
+              onPress={() => handleUpdateStep(1)}
+            >
               <View style={styles.timelineLeftColumn}>
                 <View
                   style={[
@@ -1124,10 +1255,14 @@ export default function FulfillTaskScreen() {
                   {timelineTimes.enRoute}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Step 1: Accepted */}
-            <View style={styles.timelineItem}>
+            <TouchableOpacity
+              style={styles.timelineItem}
+              activeOpacity={0.8}
+              onPress={() => handleUpdateStep(0)}
+            >
               <View style={styles.timelineLeftColumn}>
                 <View
                   style={[
@@ -1156,36 +1291,115 @@ export default function FulfillTaskScreen() {
                   {timelineTimes.accepted}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* 5. BOTTOM ACTION ROW: CANCEL + MARK COMPLETE & UPLOAD PROOF */}
-        <View style={styles.actionRowContainer}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            activeOpacity={0.8}
-            onPress={handleCancelTask}
-          >
-            <Ionicons name="close-circle-outline" size={17} color="#DC2626" />
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.markCompleteButton}
-            activeOpacity={0.88}
-            onPress={() => setIsProofModalOpen(true)}
-          >
-            <Ionicons name="images-outline" size={18} color="#FFFFFF" />
-            <Text
-              style={styles.markCompleteButtonText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              Mark Complete & Upload Proof
+        {/* 5. WORKFLOW STEP ACTION CARD & BUTTONS */}
+        <View style={styles.workflowActionCard}>
+          <View style={styles.workflowActionHeader}>
+            <View style={styles.workflowActionStepIndicator}>
+              <Ionicons
+                name={
+                  currentStepIndex === 0
+                    ? 'bicycle'
+                    : currentStepIndex === 1
+                    ? 'bag-handle'
+                    : currentStepIndex === 2
+                    ? 'camera'
+                    : 'checkmark-circle'
+                }
+                size={16}
+                color="#1E4D2B"
+              />
+              <Text style={styles.workflowActionStepText}>
+                {currentStepIndex === 0
+                  ? 'Step 1: Start Suyo (En Route)'
+                  : currentStepIndex === 1
+                  ? 'Step 2: Arrived at Task / Working'
+                  : currentStepIndex === 2
+                  ? 'Step 3: Complete & Upload Proof'
+                  : 'Suyo Fulfillment Completed'}
+              </Text>
+            </View>
+            <Text style={styles.workflowActionHintText}>
+              {currentStepIndex === 0
+                ? 'Tap below to notify requester you are on the way'
+                : currentStepIndex === 1
+                ? 'Tap when you reach destination / start task handling'
+                : currentStepIndex === 2
+                ? 'Attach delivery proof photo to release payment'
+                : 'Task completed! Escrow will be released upon review'}
             </Text>
-          </TouchableOpacity>
+          </View>
+
+          <View style={styles.actionRowContainer}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              activeOpacity={0.8}
+              onPress={handleCancelTask}
+              accessibilityLabel="Cancel task"
+            >
+              <Ionicons name="close-circle-outline" size={17} color="#DC2626" />
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            {currentStepIndex === 0 && (
+              <TouchableOpacity
+                style={styles.primaryWorkflowButton}
+                activeOpacity={0.88}
+                onPress={() => handleUpdateStep(1)}
+                accessibilityLabel="Start Suyo En Route"
+              >
+                <Ionicons name="bicycle" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryWorkflowButtonText}>
+                  Start Suyo (En Route)
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {currentStepIndex === 1 && (
+              <TouchableOpacity
+                style={styles.primaryWorkflowButton}
+                activeOpacity={0.88}
+                onPress={() => handleUpdateStep(2)}
+                accessibilityLabel="Arrived and Working"
+              >
+                <Ionicons name="bag-handle" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryWorkflowButtonText}>
+                  Arrived / Start Task
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {currentStepIndex === 2 && (
+              <TouchableOpacity
+                style={styles.primaryWorkflowButton}
+                activeOpacity={0.88}
+                onPress={() => setIsProofModalOpen(true)}
+                accessibilityLabel="Complete & Upload Proof"
+              >
+                <Ionicons name="images-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryWorkflowButtonText}>
+                  Complete & Upload Proof
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {currentStepIndex === 3 && (
+              <TouchableOpacity
+                style={[styles.primaryWorkflowButton, { backgroundColor: '#163523' }]}
+                activeOpacity={0.88}
+                onPress={() => setIsProofModalOpen(true)}
+                accessibilityLabel="View submitted proof"
+              >
+                <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryWorkflowButtonText}>
+                  View Proof Photo
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </ScrollView>
 
@@ -1850,7 +2064,70 @@ const styles = StyleSheet.create({
     color: '#718A7C',
   },
 
-  /* 5. BOTTOM ACTION ROW: CANCEL + MARK COMPLETE & UPLOAD PROOF */
+  /* 5. WORKFLOW STEP ACTION CARD & BUTTONS */
+  workflowActionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E2ECE5',
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 4px 12px rgba(22,53,35,0.06)' }
+      : {
+          shadowColor: '#163523',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          elevation: 2,
+        }),
+  },
+  workflowActionHeader: {
+    marginBottom: 14,
+  },
+  workflowActionStepIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  workflowActionStepText: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#163523',
+    letterSpacing: -0.2,
+  },
+  workflowActionHintText: {
+    fontSize: 12,
+    color: '#556E60',
+    lineHeight: 16,
+  },
+  primaryWorkflowButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 50,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: '#1E4D2B',
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 4px 8px rgba(30,77,43,0.22)' }
+      : {
+          shadowColor: '#1E4D2B',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.22,
+          shadowRadius: 8,
+          elevation: 4,
+        }),
+  },
+  primaryWorkflowButtonText: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
+  },
   actionRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',

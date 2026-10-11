@@ -20,6 +20,14 @@ import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 
+function formatProximityDistance(fromCoords, toCoords) {
+  if (!hasCoordinates(fromCoords) || !hasCoordinates(toCoords)) return 'Nearby';
+  const d = distanceKm(fromCoords, toCoords);
+  if (d === null) return 'Nearby';
+  if (d < 0.05) return 'At location (Within 50m)';
+  return formatDistance(d);
+}
+
 export default function RequesterFulfillScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -218,8 +226,7 @@ export default function RequesterFulfillScreen() {
         if (isMounted && !error && data && data.latitude && data.longitude) {
           const coords = { latitude: data.latitude, longitude: data.longitude };
           setDoerLocation(coords);
-          const d = distanceKm(coords, dropoffLocation);
-          if (d !== null) setLiveDistanceText(formatDistance(d));
+          setLiveDistanceText(formatProximityDistance(coords, dropoffLocation));
         }
       });
 
@@ -257,24 +264,34 @@ export default function RequesterFulfillScreen() {
     };
   }, [task.id, dropoffLocation]);
 
-  // Periodic polling fallback every 4 seconds to guarantee tracking updates across devices
+  // Periodic polling fallback every 3 seconds to guarantee tracking updates across devices
   useEffect(() => {
     if (!supabase || !task.id || currentStepIndex === 3) return;
     const interval = setInterval(async () => {
       try {
-        const { data } = await supabase
-          .from('live_locations')
-          .select('latitude, longitude, updated_at')
-          .eq('request_id', task.id)
-          .maybeSingle();
-        if (data?.latitude && data?.longitude) {
-          const coords = { latitude: data.latitude, longitude: data.longitude };
+        const [locRes, reqRes] = await Promise.all([
+          supabase
+            .from('live_locations')
+            .select('latitude, longitude, updated_at, arrived')
+            .eq('request_id', task.id)
+            .maybeSingle(),
+          supabase
+            .from('suyo_requests')
+            .select('status')
+            .eq('id', task.id)
+            .maybeSingle(),
+        ]);
+        if (locRes.data?.latitude && locRes.data?.longitude) {
+          const coords = { latitude: locRes.data.latitude, longitude: locRes.data.longitude };
           setDoerLocation(coords);
-          const d = distanceKm(coords, dropoffLocation);
-          if (d !== null) setLiveDistanceText(formatDistance(d));
+          setLiveDistanceText(formatProximityDistance(coords, dropoffLocation));
+        }
+        if (reqRes.data?.status) {
+          const newStep = getStepFromStatus(reqRes.data.status);
+          setCurrentStepIndex(newStep);
         }
       } catch (_) {}
-    }, 4000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [task.id, dropoffLocation, currentStepIndex]);
 
@@ -309,12 +326,8 @@ export default function RequesterFulfillScreen() {
             longitude: payload.payload.longitude,
           };
           setDoerLocation(newCoords);
-          if (payload.payload.distanceText) {
-            setLiveDistanceText(payload.payload.distanceText);
-          } else {
-            const d = distanceKm(newCoords, dropoffLocation);
-            if (d !== null) setLiveDistanceText(formatDistance(d));
-          }
+          const dist = formatProximityDistance(newCoords, dropoffLocation);
+          setLiveDistanceText(payload.payload.distanceText || dist);
         }
       })
       .on('broadcast', { event: 'proof_submitted' }, (payload) => {
@@ -346,8 +359,7 @@ export default function RequesterFulfillScreen() {
               longitude: payload.new.longitude,
             };
             setDoerLocation(coords);
-            const d = distanceKm(coords, dropoffLocation);
-            if (d !== null) setLiveDistanceText(formatDistance(d));
+            setLiveDistanceText(formatProximityDistance(coords, dropoffLocation));
           }
         }
       )
@@ -429,29 +441,62 @@ export default function RequesterFulfillScreen() {
     };
   }, [task.id, dropoffLocation, refresh]);
 
-  // Map markers: Doer (Moving GPS) & Destination
-  const mapMarkers = useMemo(
-    () => [
+  // Map markers: Doer (Moving GPS) & Destination with micro-separation if in exact same spot
+  const mapMarkers = useMemo(() => {
+    const isSameSpot =
+      Math.abs(doerLocation.latitude - dropoffLocation.latitude) < 0.00012 &&
+      Math.abs(doerLocation.longitude - dropoffLocation.longitude) < 0.00012;
+
+    const doerPt = isSameSpot
+      ? {
+          latitude: doerLocation.latitude,
+          longitude: doerLocation.longitude - 0.00018,
+        }
+      : doerLocation;
+
+    const dropoffPt = isSameSpot
+      ? {
+          latitude: dropoffLocation.latitude,
+          longitude: dropoffLocation.longitude + 0.00018,
+        }
+      : dropoffLocation;
+
+    return [
       {
         id: 'doer-live',
-        latitude: doerLocation.latitude,
-        longitude: doerLocation.longitude,
+        latitude: doerPt.latitude,
+        longitude: doerPt.longitude,
         title: `Doer: ${task.doerName}`,
         isMe: true, // Blue pin for moving Doer
       },
       {
         id: 'dropoff-location',
-        latitude: dropoffLocation.latitude,
-        longitude: dropoffLocation.longitude,
+        latitude: dropoffPt.latitude,
+        longitude: dropoffPt.longitude,
         title: `Destination: ${task.location}`,
         isMe: false, // Green pin for Destination
       },
-    ],
-    [doerLocation, dropoffLocation, task.doerName, task.location]
-  );
+    ];
+  }, [doerLocation, dropoffLocation, task.doerName, task.location]);
 
   const routeCoordinates = useMemo(() => {
     if (hasCoordinates(doerLocation) && hasCoordinates(dropoffLocation)) {
+      const isSameSpot =
+        Math.abs(doerLocation.latitude - dropoffLocation.latitude) < 0.00012 &&
+        Math.abs(doerLocation.longitude - dropoffLocation.longitude) < 0.00012;
+
+      if (isSameSpot) {
+        return [
+          {
+            latitude: doerLocation.latitude,
+            longitude: doerLocation.longitude - 0.00018,
+          },
+          {
+            latitude: dropoffLocation.latitude,
+            longitude: dropoffLocation.longitude + 0.00018,
+          },
+        ];
+      }
       return [doerLocation, dropoffLocation];
     }
     return [];
