@@ -178,7 +178,7 @@ export default function SwipeableNotificationItem({
             <View style={styles.notifCardBottomActionRow}>
               {item.targetScreen ? (
                 <Text style={styles.notifActionLinkText}>
-                  Tap to view request →
+                  Tap for track & trace →
                 </Text>
               ) : (
                 <Text style={styles.notifSwipeHintText}>

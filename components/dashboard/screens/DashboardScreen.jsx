@@ -523,6 +523,8 @@ export default function DashboardScreen() {
     markRead,
     router,
     triggerToast,
+    requests,
+    user,
   });
 
   // Active Suyo floating banner state (matching live task for current user)

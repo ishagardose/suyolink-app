@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../../../context/AuthContext';
 import { useSuyos } from '../../../context/SuyoContext';
 import { useTheme } from '../../../theme/ThemeContext';
 import ThemedText from '../../themed/ThemedText';
 import ThemedButton from '../../themed/ThemedButton';
 export default function Notifications({ showHeading = true, onOpenRequest }) {
-  const { notifications, markRead, workflowError, workflowLoading, refresh } =
-    useSuyos();
+  const { user } = useAuth();
+  const {
+    requests = [],
+    notifications,
+    markRead,
+    workflowError,
+    workflowLoading,
+    refresh,
+  } = useSuyos();
   const { colors } = useTheme();
   const router = useRouter();
   const [error, setError] = useState('');
@@ -69,7 +77,7 @@ export default function Notifications({ showHeading = true, onOpenRequest }) {
               {new Date(item.created_at).toLocaleString()}
             </ThemedText>
             <ThemedButton
-              title={item.request_id ? 'View request' : 'Mark as read'}
+              title={item.request_id ? 'Track & trace' : 'Mark as read'}
               disabled={busy !== null}
               onPress={async () => {
                 setBusy(item.id);
@@ -78,8 +86,13 @@ export default function Notifications({ showHeading = true, onOpenRequest }) {
                   if (!item.read_at) await markRead(item.id);
                   if (item.request_id) {
                     onOpenRequest?.();
+                    const req = (requests || []).find((r) => r.id === item.request_id);
+                    const targetPath =
+                      req && user?.id
+                        ? (req.providerId === user.id ? '/fulfill' : '/requester-fulfill')
+                        : '/requester-fulfill';
                     router.push({
-                      pathname: '/suyo',
+                      pathname: targetPath,
                       params: { id: item.request_id },
                     });
                   }

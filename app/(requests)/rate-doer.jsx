@@ -278,21 +278,81 @@ export default function RateDoerScreen({ forcedTarget }) {
       }
 
       if (supabase && taskId) {
-        try {
-          await supabase.rpc('rate_suyo_user', {
-            p_request_id: taskId,
-            p_score: rating,
-            p_comment: fullComment,
-          });
-        } catch (rpcErr) {
-          console.warn('Rate doer rpc err:', rpcErr);
+        let rpcSuccess = false;
+        if (activeRating) {
+          try {
+            const { error: updErr } = await supabase.rpc('update_suyo_rating', {
+              p_request_id: taskId,
+              p_score: rating,
+              p_comment: fullComment,
+            });
+            if (!updErr) {
+              rpcSuccess = true;
+            }
+          } catch (err) {
+            console.warn('update_suyo_rating error:', err);
+          }
         }
+
+        if (!rpcSuccess) {
+          try {
+            const { error: rateErr } = await supabase.rpc('rate_suyo_user', {
+              p_request_id: taskId,
+              p_score: rating,
+              p_comment: fullComment,
+            });
+            if (!rateErr) {
+              rpcSuccess = true;
+            } else if (
+              rateErr.message?.toLowerCase().includes('duplicate') ||
+              rateErr.message?.toLowerCase().includes('unique') ||
+              rateErr.code === '23505'
+            ) {
+              const { error: updErr } = await supabase.rpc('update_suyo_rating', {
+                p_request_id: taskId,
+                p_score: rating,
+                p_comment: fullComment,
+              });
+              if (!updErr) rpcSuccess = true;
+            } else {
+              console.warn('rate_suyo_user error:', rateErr);
+            }
+          } catch (rpcErr) {
+            console.warn('Rate doer rpc err:', rpcErr);
+          }
+        }
+
+        if (!rpcSuccess && user?.id && targetUserId) {
+          try {
+            await supabase.from('ratings').upsert(
+              {
+                request_id: taskId,
+                reviewer_id: user.id,
+                provider_id: targetUserId,
+                score: rating,
+                comment: fullComment,
+              },
+              { onConflict: 'request_id, reviewer_id' }
+            );
+          } catch (upsertErr) {
+            console.warn('ratings upsert fallback error:', upsertErr);
+          }
+        }
+
+        setDirectRating({
+          request_id: taskId,
+          reviewer_id: user?.id,
+          provider_id: targetUserId,
+          score: rating,
+          comment: fullComment,
+        });
       }
 
       if (refresh) await refresh();
       if (reloadTransactions) reloadTransactions();
-    } catch (_) {}
-    finally {
+    } catch (err) {
+      console.warn('handleSubmit general error:', err);
+    } finally {
       setIsSubmitting(false);
     }
     setIsSuccessModalOpen(true);

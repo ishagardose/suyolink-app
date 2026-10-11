@@ -8,6 +8,8 @@ export default function useDashboardNotifications({
   markRead,
   router,
   triggerToast,
+  requests = [],
+  user,
 }) {
   const notifications = useMemo(
     () => backendNotifications.map((item) => toNotificationCard(item)),
@@ -85,7 +87,12 @@ export default function useDashboardNotifications({
     if (!success) return;
     if (notif.request_id) {
       setIsNotificationsModalOpen(false);
-      router.push({ pathname: '/suyo', params: { id: notif.request_id } });
+      const req = (requests || []).find((r) => r.id === notif.request_id);
+      const targetPath =
+        req && user?.id
+          ? (req.providerId === user.id ? '/fulfill' : '/requester-fulfill')
+          : '/requester-fulfill';
+      router.push({ pathname: targetPath, params: { id: notif.request_id } });
     }
   };
   return {

@@ -43,13 +43,40 @@ export default function useProfileData(targetId, own) {
           if (contacts.error) throw contacts.error;
           if (!profile.data) throw new Error('Profile not found.');
           if (!active) return;
+
+          let reviewsList = profile.data.reviews || [];
+          let userRating = profile.data.rating;
+
+          try {
+            const { data: directRatings, error: ratingsErr } = await supabase
+              .from('ratings')
+              .select('id, score, comment, created_at, reviewer_id, request_id, reviewer:profiles!reviewer_id(full_name)')
+              .eq('provider_id', targetId)
+              .order('created_at', { ascending: false });
+
+            if (!ratingsErr && directRatings && directRatings.length > 0) {
+              const mapped = directRatings.map((rt) => ({
+                id: rt.id,
+                score: Number(rt.score),
+                comment: rt.comment,
+                created_at: rt.created_at,
+                reviewer_id: rt.reviewer_id,
+                request_id: rt.request_id,
+                reviewerName: rt.reviewer?.full_name || 'Community Member',
+              }));
+              reviewsList = mapped;
+              const sum = mapped.reduce((acc, curr) => acc + curr.score, 0);
+              userRating = Number((sum / mapped.length).toFixed(1));
+            }
+          } catch (_) {}
+
           setProfileName(profile.data.full_name);
           setProfileHandle(profile.data.handle || '');
           setProfileBio(profile.data.bio || '');
           setProfilePhone(contacts.data?.phone || '');
-          setReviews(profile.data.reviews || []);
+          setReviews(reviewsList);
           setCompletedCount(profile.data.completed_count);
-          setRating(profile.data.rating);
+          setRating(userRating);
         } catch (e) {
           if (active) setError(e.message || 'Could not load profile details.');
         } finally {
@@ -57,8 +84,35 @@ export default function useProfileData(targetId, own) {
         }
       }
       load();
+
+      let channel = null;
+      if (supabase && targetId) {
+        try {
+          channel = supabase
+            .channel(`profile_ratings_live_${targetId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'ratings',
+                filter: `provider_id=eq.${targetId}`,
+              },
+              () => {
+                if (active) load();
+              }
+            )
+            .subscribe();
+        } catch (_) {}
+      }
+
       return () => {
         active = false;
+        if (channel && supabase) {
+          try {
+            supabase.removeChannel(channel);
+          } catch (_) {}
+        }
       };
     }, [targetId, own]),
   );

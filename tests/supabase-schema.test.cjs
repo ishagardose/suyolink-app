@@ -1117,6 +1117,38 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   await denied(editCall(), 'Anonymous edit denied');
   await denied(boostCall(2000), 'Anonymous boost denied');
 
+  await db.exec('reset role');
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610120001_fix_ratings_and_profiles.sql',
+      ),
+      'utf8',
+    ),
+  );
+  await actor(A);
+  await db.exec(
+    `select public.update_suyo_rating('${v2Req.id}', 5::smallint, 'Updated rating and comment')`,
+  );
+  const updatedRatingRow = await row(
+    `select score, comment from public.ratings where request_id='${v2Req.id}' and reviewer_id='${A}'`,
+  );
+  ok(
+    updatedRatingRow.score === 5 &&
+      updatedRatingRow.comment === 'Updated rating and comment',
+    'Reviewer can update existing rating and comment accurately',
+  );
+  const updatedProfile = (
+    await row(`select public.get_suyo_profile('${B}') as p`)
+  ).p;
+  ok(
+    updatedProfile.reviews.some(
+      (r) => r.comment === 'Updated rating and comment' && r.score === 5,
+    ),
+    'Updated rating and comment reflect accurately in profile',
+  );
+
   await db.close();
   console.log(
     'PASS: migration + ' +
