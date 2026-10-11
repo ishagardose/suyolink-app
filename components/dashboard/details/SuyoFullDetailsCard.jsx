@@ -429,14 +429,13 @@ export default function SuyoFullDetailsCard({
                 <Text style={styles.detailRequestorName} numberOfLines={1}>
                   {requesterName}
                 </Text>
-                <Text style={{ fontSize: 12, color: resolveColor('#658172', 'color'), marginTop: 2 }}>
-                  📞 {displayPhone}
+                <Text style={{ fontSize: 12.5, color: resolveColor('#658172', 'color'), marginTop: 2 }}>
+                  {displayPhone}
                 </Text>
               </View>
             </View>
 
             <View style={styles.fullDetailCallBtn}>
-              <Ionicons name="call" size={13} color="#FFFFFF" />
               <Text style={styles.fullDetailCallBtnText}>Call</Text>
             </View>
           </TouchableOpacity>

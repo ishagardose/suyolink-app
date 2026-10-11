@@ -545,13 +545,7 @@ export default function RequesterFulfillScreen() {
           <Ionicons name="arrow-back" size={22} color="#163523" />
         </TouchableOpacity>
         <Text style={styles.navBarTitle}>Suyo Request Fulfillment</Text>
-        <TouchableOpacity
-          style={styles.headerRightAction}
-          onPress={handleCallDoer}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="call-outline" size={19} color="#1E4D2B" />
-        </TouchableOpacity>
+        <View style={{ width: 36, height: 36 }} />
       </View>
 
       <ScrollView
