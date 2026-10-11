@@ -27,7 +27,8 @@ import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 import { uploadProof } from '../../lib/proofUpload';
 import SuyoFullDetailsCard from '../../components/dashboard/details/SuyoFullDetailsCard';
 import { suyoDetailsStyles } from '../../components/dashboard/styles/suyoDetails.styles';
-import { formatArrivesAt } from '../../lib/requestTiming';
+import { formatArrivesAt, getRequestTiming } from '../../lib/requestTiming';
+import { DEADLINE_STATUS_OPTIONS } from '../../components/requests/data/requestFormConfig';
 
 function formatProximityDistance(fromCoords, toCoords) {
   if (!hasCoordinates(fromCoords) || !hasCoordinates(toCoords)) return 'Nearby';
@@ -106,6 +107,13 @@ export default function FulfillTaskScreen() {
         null,
     };
   }, [activeSuyo, targetId, params]);
+
+  const timing = getRequestTiming(activeSuyo?.rawRequest || activeSuyo || task);
+  const urgencyKey =
+    activeSuyo?.urgency || task?.urgency || (timing.overdue ? 'Urgent' : 'Normal');
+  const urgencyConfig =
+    DEADLINE_STATUS_OPTIONS.find((opt) => opt.key === urgencyKey) ||
+    DEADLINE_STATUS_OPTIONS[3];
 
   // 4 Progress Steps: Accepted (0) -> En Route (1) -> Working (2) -> Completed (3)
   const STEPS = [
@@ -864,8 +872,33 @@ export default function FulfillTaskScreen() {
               <View style={styles.pulsingActiveDot} />
               <Text style={styles.activeSuyoTaskSubtitle}>ACTIVE SUYO TASK</Text>
             </View>
-            <View style={styles.rewardBadge}>
-              <Text style={styles.rewardBadgeText}>{task.reward}</Text>
+            <View style={styles.headerAmountStatusGroup}>
+              <View style={styles.rewardBadge}>
+                <Text style={styles.rewardBadgeText}>{task.reward}</Text>
+              </View>
+              <View
+                style={[
+                  styles.headerUrgencyBadge,
+                  {
+                    backgroundColor: urgencyConfig.bgColor,
+                    borderColor: urgencyConfig.borderColor,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={urgencyConfig.icon}
+                  size={11}
+                  color={urgencyConfig.color}
+                />
+                <Text
+                  style={[
+                    styles.headerUrgencyBadgeText,
+                    { color: urgencyConfig.color },
+                  ]}
+                >
+                  {urgencyConfig.label}
+                </Text>
+              </View>
             </View>
           </View>
           <Text style={styles.taskHeadlineTitle}>{task.title}</Text>
@@ -1202,7 +1235,7 @@ export default function FulfillTaskScreen() {
         </View>
 
         {/* 5. COMPLETE SUYO DETAILS (POSTED BY REQUESTER) */}
-        <SuyoFullDetailsCard selectedSuyo={activeSuyo || task} />
+        <SuyoFullDetailsCard selectedSuyo={activeSuyo || task} isFulfillment={true} />
 
         {/* 6. BOTTOM ACTION ROW: CANCEL + COMPLETED */}
         <View style={styles.actionRowContainer}>
@@ -1544,6 +1577,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  headerAmountStatusGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  headerUrgencyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  headerUrgencyBadgeText: {
+    fontSize: 11.5,
+    fontWeight: '800',
   },
   taskHeadlineTitle: {
     fontSize: 22,

@@ -129,16 +129,14 @@ export default function SuyoFullDetailsModal({
     merged.requesterPhone ||
     merged.phone ||
     '';
-  const displayPhone = rawPhone || 'Available after assignment';
+  const displayPhone = rawPhone || 'Call for further info';
 
   const handleCall = () => {
-    if (!rawPhone) return;
-    Linking.openURL(`tel:${rawPhone}`).catch(() => {});
-  };
-
-  const handleSms = () => {
-    if (!rawPhone) return;
-    Linking.openURL(`sms:${rawPhone}`).catch(() => {});
+    if (rawPhone) {
+      Linking.openURL(`tel:${rawPhone.replace(/\s+/g, '')}`).catch(() => {});
+    } else {
+      Linking.openURL('tel:').catch(() => {});
+    }
   };
 
   // Special instructions
@@ -156,23 +154,8 @@ export default function SuyoFullDetailsModal({
 
   return (
     <View style={styles.fullDetailModalCard}>
-      {/* Top Header with Back Button and Close Button */}
+      {/* Top Header with Close Button */}
       <View style={styles.fullDetailHeaderRow}>
-        <TouchableOpacity
-          style={styles.fullDetailBackBtn}
-          activeOpacity={0.7}
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to previous modal"
-        >
-          <Ionicons
-            name="arrow-back"
-            size={18}
-            color={resolveColor('#163523', 'color')}
-          />
-          <Text style={styles.fullDetailBackBtnText}>Back</Text>
-        </TouchableOpacity>
-
         <Text style={styles.fullDetailHeaderTitle}>Complete Suyo Details</Text>
 
         <TouchableOpacity
@@ -432,7 +415,13 @@ export default function SuyoFullDetailsModal({
             <Text style={styles.fullDetailSectionTitle}>Requester Information</Text>
           </View>
 
-          <View style={styles.fullDetailRequesterCard}>
+          <TouchableOpacity
+            style={styles.fullDetailRequesterCard}
+            activeOpacity={0.8}
+            onPress={handleCall}
+            accessibilityRole="button"
+            accessibilityLabel={`Call requester ${requesterName}`}
+          >
             <View style={styles.fullDetailRequesterLeft}>
               <View style={styles.detailAvatarCircle}>
                 <Text style={styles.detailAvatarInitials}>
@@ -449,32 +438,11 @@ export default function SuyoFullDetailsModal({
               </View>
             </View>
 
-            {rawPhone ? (
-              <View style={styles.fullDetailRequesterActions}>
-                <TouchableOpacity
-                  style={styles.fullDetailCallBtn}
-                  activeOpacity={0.8}
-                  onPress={handleCall}
-                >
-                  <Ionicons name="call" size={13} color="#FFFFFF" />
-                  <Text style={styles.fullDetailCallBtnText}>Call</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.fullDetailSmsBtn}
-                  activeOpacity={0.8}
-                  onPress={handleSms}
-                >
-                  <Ionicons
-                    name="chatbubble-outline"
-                    size={13}
-                    color={resolveColor('#163523', 'color')}
-                  />
-                  <Text style={styles.fullDetailSmsBtnText}>SMS</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
+            <View style={styles.fullDetailCallBtn}>
+              <Ionicons name="call" size={13} color="#FFFFFF" />
+              <Text style={styles.fullDetailCallBtnText}>Call</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* 8. Attached Photos & Reference Documents */}
@@ -533,26 +501,11 @@ export default function SuyoFullDetailsModal({
         </View>
       </ScrollView>
 
-      {/* Bottom Action Footer: Back to previous modal OR Fulfill directly */}
-      <View style={styles.fullDetailFooterRow}>
-        <TouchableOpacity
-          style={styles.fullDetailFooterBackBtn}
-          activeOpacity={0.8}
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to Suyo modal"
-        >
-          <Ionicons
-            name="arrow-back"
-            size={18}
-            color={resolveColor('#334155', 'color')}
-          />
-          <Text style={styles.fullDetailFooterBackText}>Back</Text>
-        </TouchableOpacity>
-
-        {!!handleAccept && (
+      {/* Bottom Action Footer: Fulfill directly */}
+      {!!handleAccept && (
+        <View style={styles.fullDetailFooterRow}>
           <TouchableOpacity
-            style={styles.fullDetailFooterFulfillBtn}
+            style={[styles.fullDetailFooterFulfillBtn, { flex: 1 }]}
             activeOpacity={0.8}
             disabled={acceptBusy}
             onPress={handleAccept}
@@ -564,8 +517,8 @@ export default function SuyoFullDetailsModal({
               {acceptBusy ? 'Accepting...' : 'Fulfill Suyo'}
             </Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Fullscreen Photo Preview Modal if tapped */}
       {previewImage && (

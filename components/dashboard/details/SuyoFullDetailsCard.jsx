@@ -22,6 +22,8 @@ export default function SuyoFullDetailsCard({
   resolveColor = (color) => color,
   styles = suyoDetailsStyles,
   showHeader = true,
+  isFulfillment = false,
+  hideOverviewAndReward = false,
 }) {
   const { loadDetails } = useSuyos();
   const [detailsData, setDetailsData] = useState(null);
@@ -127,16 +129,20 @@ export default function SuyoFullDetailsCard({
     merged.requesterPhone ||
     merged.phone ||
     '';
-  const displayPhone = rawPhone || 'Available after assignment';
+  const displayPhone = rawPhone || 'Call for further info';
 
   const handleCall = () => {
-    if (!rawPhone) return;
-    Linking.openURL(`tel:${rawPhone}`).catch(() => {});
-  };
-
-  const handleSms = () => {
-    if (!rawPhone) return;
-    Linking.openURL(`sms:${rawPhone}`).catch(() => {});
+    if (rawPhone) {
+      Linking.openURL(`tel:${rawPhone.replace(/\s+/g, '')}`).catch(() => {});
+    } else {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.alert) {
+          window.alert(`Calling requester ${requesterName}...`);
+        }
+      } else {
+        Linking.openURL('tel:').catch(() => {});
+      }
+    }
   };
 
   // Special instructions
@@ -152,17 +158,21 @@ export default function SuyoFullDetailsCard({
     merged.rawRequest?.attachments ||
     [];
 
+  const skipHeaderAndReward = isFulfillment || hideOverviewAndReward;
+
   return (
     <View style={cardStyles.container}>
       {/* Tile Header */}
       {showHeader && (
         <View style={cardStyles.cardHeaderRow}>
           <View style={cardStyles.cardHeaderTitleRow}>
-            <Ionicons name="document-text" size={17} color="#1E4D2B" />
+            <Ionicons name="document-text" size={16} color="#1E4D2B" />
             <Text style={cardStyles.cardHeaderTitle}>COMPLETE SUYO DETAILS</Text>
           </View>
           <View style={cardStyles.postedByBadge}>
-            <Text style={cardStyles.postedByBadgeText}>Posted by Requester</Text>
+            <Text style={cardStyles.postedByBadgeText} numberOfLines={1}>
+              Posted by Requester
+            </Text>
           </View>
         </View>
       )}
@@ -181,71 +191,75 @@ export default function SuyoFullDetailsCard({
       )}
 
       <View style={cardStyles.sectionsWrapper}>
-        {/* 1. Header Banner & Task Overview */}
-        <View style={styles.fullDetailSectionCard}>
-          <View style={styles.fullDetailBannerRow}>
-            <View style={styles.fullDetailCategoryBadge}>
-              <Ionicons
-                name={categoryIcon}
-                size={14}
-                color={resolveColor('#166534', 'color')}
-              />
-              <Text style={styles.fullDetailCategoryText}>{category}</Text>
-            </View>
+        {/* 1. Header Banner & Task Overview (Skipped in fulfillment screens to avoid duplicates) */}
+        {!skipHeaderAndReward && (
+          <View style={styles.fullDetailSectionCard}>
+            <View style={styles.fullDetailBannerRow}>
+              <View style={styles.fullDetailCategoryBadge}>
+                <Ionicons
+                  name={categoryIcon}
+                  size={14}
+                  color={resolveColor('#166534', 'color')}
+                />
+                <Text style={styles.fullDetailCategoryText}>{category}</Text>
+              </View>
 
-            <View
-              style={[
-                styles.fullDetailUrgencyBadge,
-                {
-                  backgroundColor: resolveColor(
-                    urgencyConfig.bgColor,
-                    'backgroundColor',
-                  ),
-                },
-              ]}
-            >
-              <Ionicons
-                name={urgencyConfig.icon}
-                size={12}
-                color={resolveColor(urgencyConfig.color, 'color')}
-              />
-              <Text
+              <View
                 style={[
-                  styles.fullDetailUrgencyText,
-                  { color: resolveColor(urgencyConfig.color, 'color') },
+                  styles.fullDetailUrgencyBadge,
+                  {
+                    backgroundColor: resolveColor(
+                      urgencyConfig.bgColor,
+                      'backgroundColor',
+                    ),
+                  },
                 ]}
               >
-                {urgencyConfig.label}
-              </Text>
+                <Ionicons
+                  name={urgencyConfig.icon}
+                  size={12}
+                  color={resolveColor(urgencyConfig.color, 'color')}
+                />
+                <Text
+                  style={[
+                    styles.fullDetailUrgencyText,
+                    { color: resolveColor(urgencyConfig.color, 'color') },
+                  ]}
+                >
+                  {urgencyConfig.label}
+                </Text>
+              </View>
             </View>
-          </View>
 
-          <Text style={styles.fullDetailMainTitle}>{merged.title}</Text>
+            <Text style={styles.fullDetailMainTitle}>{merged.title}</Text>
 
-          <Text style={styles.fullDetailMetaSubText}>
-            {`Posted: ${timing.postedTime || timing.formattedDate} • Ref: #${merged.id?.slice?.(0, 8) || 'suyo'}`}
-          </Text>
-        </View>
-
-        {/* 2. Reward & Escrow Guarantee */}
-        <View style={styles.fullDetailRewardBanner}>
-          <View style={styles.fullDetailRewardLeft}>
-            <Text style={styles.fullDetailRewardLabel}>Doer Offer Reward</Text>
-            <Text style={styles.fullDetailRewardAmountText}>{rewardDisplay}</Text>
-            <Text style={styles.fullDetailEscrowNoticeText}>
-              Payment is held securely in SuyoLink escrow and released immediately upon completion.
+            <Text style={styles.fullDetailMetaSubText}>
+              {`Posted: ${timing.postedTime || timing.formattedDate} • Ref: #${merged.id?.slice?.(0, 8) || 'suyo'}`}
             </Text>
           </View>
+        )}
 
-          <View style={styles.fullDetailEscrowBadge}>
-            <Ionicons
-              name="shield-checkmark"
-              size={16}
-              color={resolveColor('#166534', 'color')}
-            />
-            <Text style={styles.fullDetailEscrowText}>Escrow Secured</Text>
+        {/* 2. Reward & Escrow Guarantee (Skipped in fulfillment screens to avoid duplicates) */}
+        {!skipHeaderAndReward && (
+          <View style={styles.fullDetailRewardBanner}>
+            <View style={styles.fullDetailRewardLeft}>
+              <Text style={styles.fullDetailRewardLabel}>Doer Offer Reward</Text>
+              <Text style={styles.fullDetailRewardAmountText}>{rewardDisplay}</Text>
+              <Text style={styles.fullDetailEscrowNoticeText}>
+                Payment is held securely in SuyoLink escrow and released immediately upon completion.
+              </Text>
+            </View>
+
+            <View style={styles.fullDetailEscrowBadge}>
+              <Ionicons
+                name="shield-checkmark"
+                size={16}
+                color={resolveColor('#166534', 'color')}
+              />
+              <Text style={styles.fullDetailEscrowText}>Escrow Secured</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* 3. Full Task Details & What to Do */}
         <View style={styles.fullDetailSectionCard}>
@@ -387,7 +401,7 @@ export default function SuyoFullDetailsCard({
           </Text>
         </View>
 
-        {/* 7. Requester Information & Direct Contact */}
+        {/* 7. Requester Information & Direct Contact (Cleaned up, no SMS, tap to call) */}
         <View style={styles.fullDetailSectionCard}>
           <View style={styles.fullDetailSectionHeaderRow}>
             <Ionicons
@@ -398,7 +412,13 @@ export default function SuyoFullDetailsCard({
             <Text style={styles.fullDetailSectionTitle}>Requester Information</Text>
           </View>
 
-          <View style={styles.fullDetailRequesterCard}>
+          <TouchableOpacity
+            style={styles.fullDetailRequesterCard}
+            activeOpacity={0.8}
+            onPress={handleCall}
+            accessibilityRole="button"
+            accessibilityLabel={`Call requester ${requesterName}`}
+          >
             <View style={styles.fullDetailRequesterLeft}>
               <View style={styles.detailAvatarCircle}>
                 <Text style={styles.detailAvatarInitials}>
@@ -415,32 +435,11 @@ export default function SuyoFullDetailsCard({
               </View>
             </View>
 
-            {rawPhone ? (
-              <View style={styles.fullDetailRequesterActions}>
-                <TouchableOpacity
-                  style={styles.fullDetailCallBtn}
-                  activeOpacity={0.8}
-                  onPress={handleCall}
-                >
-                  <Ionicons name="call" size={13} color="#FFFFFF" />
-                  <Text style={styles.fullDetailCallBtnText}>Call</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.fullDetailSmsBtn}
-                  activeOpacity={0.8}
-                  onPress={handleSms}
-                >
-                  <Ionicons
-                    name="chatbubble-outline"
-                    size={13}
-                    color={resolveColor('#163523', 'color')}
-                  />
-                  <Text style={styles.fullDetailSmsBtnText}>SMS</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
+            <View style={styles.fullDetailCallBtn}>
+              <Ionicons name="call" size={13} color="#FFFFFF" />
+              <Text style={styles.fullDetailCallBtnText}>Call</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* 8. Attached Photos & Reference Documents */}
@@ -548,7 +547,7 @@ const cardStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 12,
+    paddingBottom: 10,
     marginBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#EEF4F0',
@@ -556,24 +555,27 @@ const cardStyles = StyleSheet.create({
   cardHeaderTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
+    flex: 1,
+    marginRight: 6,
   },
   cardHeaderTitle: {
-    fontSize: 14.5,
-    fontWeight: '900',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#163523',
-    letterSpacing: 0.6,
+    letterSpacing: 0.3,
   },
   postedByBadge: {
     backgroundColor: '#E8F5EE',
-    paddingVertical: 4,
+    paddingVertical: 3.5,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#CDE5D7',
+    flexShrink: 0,
   },
   postedByBadgeText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#166534',
   },
