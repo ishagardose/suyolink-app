@@ -22,14 +22,19 @@ export default function SuyoDetailActions({
   setSelectedSuyo,
   styles,
   triggerToast,
+  onOpenFullDetails,
+  handleAccept: externalHandleAccept,
+  acceptBusy: externalAcceptBusy,
 }) {
   const { mutate } = useSuyos();
   const accepting = useRef(false);
-  const [acceptBusy, setAcceptBusy] = useState(false);
-  const handleAccept = async () => {
+  const [internalAcceptBusy, setInternalAcceptBusy] = useState(false);
+  const acceptBusy = externalAcceptBusy ?? internalAcceptBusy;
+
+  const handleInternalAccept = async () => {
     if (accepting.current || !selectedSuyo?.id) return;
     accepting.current = true;
-    setAcceptBusy(true);
+    setInternalAcceptBusy(true);
     try {
       await mutate('accept_suyo', { p_request_id: selectedSuyo.id });
       const id = selectedSuyo.id;
@@ -43,9 +48,11 @@ export default function SuyoDetailActions({
       );
     } finally {
       accepting.current = false;
-      setAcceptBusy(false);
+      setInternalAcceptBusy(false);
     }
   };
+
+  const handleAccept = externalHandleAccept || handleInternalAccept;
   return (
     <View style={styles.detailActionButtonsRow}>
       {/* POSTED NAV BUTTONS (Edit, Cancel, or Re-post) */}
@@ -281,23 +288,40 @@ export default function SuyoDetailActions({
 
       {/* AVAILABLE / EXPLORE FEED BUTTON (Keep Fulfill for Couriers) */}
       {selectedSuyoContext === 'available' && (
-        <TouchableOpacity
-          style={styles.detailFulfillBtn}
-          activeOpacity={0.8}
-          disabled={acceptBusy}
-          accessibilityRole="button"
-          accessibilityLabel="Fulfill Suyo"
-          onPress={handleAccept}
-        >
-          <Ionicons
-            name="bicycle"
-            size={18}
-            color={resolveColor('#FFFFFF', 'color')}
-          />
-          <Text style={styles.detailFulfillBtnText}>
-            {acceptBusy ? 'Accepting...' : 'Fulfill Suyo'}
-          </Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={styles.detailAllDetailsBtn}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Details"
+            onPress={onOpenFullDetails}
+          >
+            <Ionicons
+              name="document-text-outline"
+              size={17}
+              color={resolveColor('#163523', 'color')}
+            />
+            <Text style={styles.detailAllDetailsBtnText}>Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.detailFulfillBtn}
+            activeOpacity={0.8}
+            disabled={acceptBusy}
+            accessibilityRole="button"
+            accessibilityLabel="Fulfill Suyo"
+            onPress={handleAccept}
+          >
+            <Ionicons
+              name="bicycle"
+              size={18}
+              color={resolveColor('#FFFFFF', 'color')}
+            />
+            <Text style={styles.detailFulfillBtnText}>
+              {acceptBusy ? 'Accepting...' : 'Fulfill Suyo'}
+            </Text>
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );

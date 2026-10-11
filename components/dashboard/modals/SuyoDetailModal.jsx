@@ -1,8 +1,10 @@
 import SuyoContactDetails from '../details/SuyoContactDetails';
 import SuyoRewardBoost from '../details/SuyoRewardBoost';
 import SuyoDetailActions from '../details/SuyoDetailActions';
-import React from 'react';
+import SuyoFullDetailsModal from './SuyoFullDetailsModal';
+import React, { useState, useRef, useEffect } from 'react';
 import { getRequestTiming } from '../../../lib/requestTiming';
+import { useSuyos } from '../../../context/SuyoContext';
 
 import {
   Text,
@@ -39,6 +41,37 @@ export default function SuyoDetailModal({
   triggerToast,
   userProfile,
 }) {
+  const { mutate } = useSuyos();
+  const [isFullDetailsOpen, setIsFullDetailsOpen] = useState(false);
+  const accepting = useRef(false);
+  const [acceptBusy, setAcceptBusy] = useState(false);
+
+  useEffect(() => {
+    setIsFullDetailsOpen(false);
+  }, [selectedSuyo?.id]);
+
+  const handleAccept = async () => {
+    if (accepting.current || !selectedSuyo?.id) return;
+    accepting.current = true;
+    setAcceptBusy(true);
+    try {
+      await mutate('accept_suyo', { p_request_id: selectedSuyo.id });
+      const id = selectedSuyo.id;
+      setSelectedSuyo(null);
+      setOpenedFromFavorites(false);
+      setIsFullDetailsOpen(false);
+      router.push({ pathname: '/fulfill', params: { id } });
+    } catch (err) {
+      triggerToast(
+        err.message || 'Could not accept this task. Please retry.',
+        'alert-circle',
+      );
+    } finally {
+      accepting.current = false;
+      setAcceptBusy(false);
+    }
+  };
+
   return (
     selectedSuyo && (
       <Modal
@@ -46,14 +79,34 @@ export default function SuyoDetailModal({
         animationType="slide"
         transparent={true}
         onRequestClose={() => {
-          if (!busy) handleCloseDetailModal();
+          if (!busy) {
+            if (isFullDetailsOpen) {
+              setIsFullDetailsOpen(false);
+            } else {
+              handleCloseDetailModal();
+            }
+          }
         }}
       >
         <View style={styles.modalBackdrop}>
-          <View
-            style={styles.suyoDetailModalCard}
-            pointerEvents={busy ? 'none' : 'auto'}
-          >
+          {isFullDetailsOpen ? (
+            <SuyoFullDetailsModal
+              selectedSuyo={selectedSuyo}
+              onBack={() => setIsFullDetailsOpen(false)}
+              onClose={() => {
+                setIsFullDetailsOpen(false);
+                handleCloseDetailModal();
+              }}
+              handleAccept={handleAccept}
+              acceptBusy={acceptBusy}
+              resolveColor={resolveColor}
+              styles={styles}
+            />
+          ) : (
+            <View
+              style={styles.suyoDetailModalCard}
+              pointerEvents={busy ? 'none' : 'auto'}
+            >
             {busy ? (
               <Text
                 accessibilityLiveRegion="polite"
@@ -351,8 +404,12 @@ export default function SuyoDetailModal({
               setSelectedSuyo={setSelectedSuyo}
               styles={styles}
               triggerToast={triggerToast}
+              onOpenFullDetails={() => setIsFullDetailsOpen(true)}
+              handleAccept={handleAccept}
+              acceptBusy={acceptBusy}
             />
           </View>
+          )}
         </View>
       </Modal>
     )
