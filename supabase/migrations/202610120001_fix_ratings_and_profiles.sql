@@ -1,13 +1,21 @@
 begin;
 
--- 1. Allow ratings to be updated by their reviewers
+-- 1. Allow ratings to be inserted and updated by authenticated reviewers
+create policy ratings_insert on public.ratings
+for insert
+to authenticated
+with check (
+  reviewer_id = (select auth.uid())
+  and reviewer_id <> provider_id
+);
+
 create policy ratings_update on public.ratings
 for update
 to authenticated
 using (reviewer_id = (select auth.uid()))
 with check (reviewer_id = (select auth.uid()));
 
--- 2. Update rate_suyo_user to allow ratings for completed, awaiting_confirmation, or in_progress tasks
+-- 2. Update rate_suyo_user to allow ratings for completed, awaiting_confirmation, in_progress, or assigned tasks
 -- and auto-complete the task when reviewed by requester
 create or replace function public.rate_suyo_user(
   p_request_id uuid,
@@ -31,7 +39,7 @@ begin
   select * into r from public.suyo_requests where id = p_request_id for update;
   if
     not found
-    or r.status not in ('completed', 'awaiting_confirmation', 'in_progress')
+    or r.status not in ('completed', 'awaiting_confirmation', 'in_progress', 'assigned')
     or (
       auth.uid() is distinct from r.requester_id
       and auth.uid() is distinct from r.provider_id
@@ -41,7 +49,7 @@ begin
   end if;
 
   -- If the requester is rating, mark the task completed if not already completed
-  if auth.uid() = r.requester_id and r.status in ('awaiting_confirmation', 'in_progress') then
+  if auth.uid() = r.requester_id and r.status in ('awaiting_confirmation', 'in_progress', 'assigned') then
     update public.suyo_requests
     set status = 'completed', completed_at = coalesce(completed_at, now())
     where id = r.id
@@ -80,6 +88,11 @@ begin
   insert into public.ratings
     (request_id, reviewer_id, provider_id, score, comment)
   values (r.id, auth.uid(), recipient, p_score, btrim(coalesce(p_comment, '')))
+  on conflict (request_id, reviewer_id)
+  do update set
+    score = excluded.score,
+    comment = excluded.comment,
+    created_at = now()
   returning *
   into result;
 

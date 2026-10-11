@@ -80,11 +80,39 @@ export default function RateDoerScreen({ forcedTarget }) {
     }
   }, [taskId, loadDetails]);
 
-  const activeRequest = (taskId ? detailsById[taskId] : null) ||
+  const [dbTaskFallback, setDbTaskFallback] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!taskId || !supabase) return;
+    async function fetchTaskInfo() {
+      try {
+        const { data, error } = await supabase
+          .from('suyo_requests')
+          .select('id, requester_id, provider_id, title, category, status, offer_centavos, location, details')
+          .eq('id', taskId)
+          .single();
+        if (!error && data && isMounted) {
+          setDbTaskFallback(data);
+        }
+      } catch (_) {}
+    }
+    fetchTaskInfo();
+    return () => {
+      isMounted = false;
+    };
+  }, [taskId]);
+
+  const activeRequest =
+    (taskId ? detailsById[taskId] : null) ||
     (requests || []).find((r) => r.id === taskId);
 
-  const isUserRequester = activeRequest?.requesterId && user?.id ? activeRequest.requesterId === user.id : false;
-  const isUserProvider = activeRequest?.providerId && user?.id ? activeRequest.providerId === user.id : false;
+  const isUserRequester =
+    (activeRequest?.requesterId && user?.id ? activeRequest.requesterId === user.id : false) ||
+    (dbTaskFallback?.requester_id && user?.id ? dbTaskFallback.requester_id === user.id : false);
+  const isUserProvider =
+    (activeRequest?.providerId && user?.id ? activeRequest.providerId === user.id : false) ||
+    (dbTaskFallback?.provider_id && user?.id ? dbTaskFallback.provider_id === user.id : false);
 
   const isRatingRequester =
     forcedTarget === 'requester' ||
@@ -95,8 +123,8 @@ export default function RateDoerScreen({ forcedTarget }) {
     isUserProvider;
 
   const targetUserId = isRatingRequester
-    ? (activeRequest?.requesterId || params.requesterId || null)
-    : (activeRequest?.providerId || params.providerId || params.doerId || null);
+    ? (activeRequest?.requesterId || params.requesterId || dbTaskFallback?.requester_id || null)
+    : (activeRequest?.providerId || params.providerId || params.doerId || dbTaskFallback?.provider_id || null);
 
   const [targetProfile, setTargetProfile] = useState(null);
 
@@ -110,6 +138,16 @@ export default function RateDoerScreen({ forcedTarget }) {
         });
         if (!error && data && isMounted) {
           setTargetProfile(data);
+        } else if (isMounted) {
+          // Direct fallback to profiles table
+          const { data: pData } = await supabase
+            .from('profiles')
+            .select('id, full_name, handle, bio')
+            .eq('id', targetUserId)
+            .single();
+          if (pData && isMounted) {
+            setTargetProfile(pData);
+          }
         }
       } catch (err) {
         console.warn('Error fetching target profile for rating:', err);
@@ -619,11 +657,31 @@ export default function RateDoerScreen({ forcedTarget }) {
               style={styles.successDoneButton}
               onPress={() => {
                 setIsSuccessModalOpen(false);
-                router.replace('/dashboard');
+                router.push({
+                  pathname: '/account',
+                  params: {
+                    userId: targetUserId || undefined,
+                    name: subjectName,
+                    isOtherUser: 'true',
+                  },
+                });
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.successDoneButtonText}>Back to Dashboard</Text>
+              <Text style={styles.successDoneButtonText}>
+                {isRatingRequester ? 'View Requester Profile' : 'View Doer Profile'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.skipToDashboardBtn, { marginTop: 10, paddingVertical: 10 }]}
+              onPress={() => {
+                setIsSuccessModalOpen(false);
+                router.replace('/dashboard');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipToDashboardBtnText}>Back to Dashboard</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1058,5 +1116,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  skipToDashboardBtn: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skipToDashboardBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#556E60',
   },
 });

@@ -50,11 +50,29 @@ export default function useProfileData(targetId, own) {
           try {
             const { data: directRatings, error: ratingsErr } = await supabase
               .from('ratings')
-              .select('id, score, comment, created_at, reviewer_id, request_id, reviewer:profiles!reviewer_id(full_name)')
+              .select('id, score, comment, created_at, reviewer_id, request_id')
               .eq('provider_id', targetId)
               .order('created_at', { ascending: false });
 
-            if (!ratingsErr && directRatings && directRatings.length > 0) {
+            if (!ratingsErr && Array.isArray(directRatings) && directRatings.length > 0) {
+              const reviewerIds = [
+                ...new Set(directRatings.map((r) => r.reviewer_id).filter(Boolean)),
+              ];
+              let namesMap = {};
+              if (reviewerIds.length > 0) {
+                try {
+                  const { data: revProfiles } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', reviewerIds);
+                  if (revProfiles) {
+                    namesMap = Object.fromEntries(
+                      revProfiles.map((p) => [p.id, p.full_name]),
+                    );
+                  }
+                } catch (_) {}
+              }
+
               const mapped = directRatings.map((rt) => ({
                 id: rt.id,
                 score: Number(rt.score),
@@ -62,7 +80,7 @@ export default function useProfileData(targetId, own) {
                 created_at: rt.created_at,
                 reviewer_id: rt.reviewer_id,
                 request_id: rt.request_id,
-                reviewerName: rt.reviewer?.full_name || 'Community Member',
+                reviewerName: namesMap[rt.reviewer_id] || 'Community Member',
               }));
               reviewsList = mapped;
               const sum = mapped.reduce((acc, curr) => acc + curr.score, 0);

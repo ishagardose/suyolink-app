@@ -43,21 +43,62 @@ export default function FulfillTaskScreen() {
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { requests = [], refresh, mutate, recordTransaction, reloadTransactions } = useSuyos();
+  const {
+    requests = [],
+    detailsById = {},
+    loadDetails,
+    refresh,
+    mutate,
+    recordTransaction,
+    reloadTransactions,
+  } = useSuyos();
 
   // Find active task from context or route params
   const targetId = params.id || params.requestId;
-  const activeSuyo = (requests || []).find((r) => r.id === targetId);
+
+  useEffect(() => {
+    if (targetId && typeof loadDetails === 'function') {
+      loadDetails(targetId);
+    }
+  }, [targetId, loadDetails]);
+
+  const [dbTask, setDbTask] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!targetId || !supabase) return;
+    async function loadTaskInfo() {
+      try {
+        const { data, error } = await supabase
+          .from('suyo_requests')
+          .select('id, requester_id, provider_id, title, category, status, offer_centavos, location, details')
+          .eq('id', targetId)
+          .single();
+        if (!error && data && active) {
+          setDbTask(data);
+        }
+      } catch (_) {}
+    }
+    loadTaskInfo();
+    return () => {
+      active = false;
+    };
+  }, [targetId]);
+
+  const activeSuyo =
+    (targetId ? detailsById[targetId] : null) ||
+    (requests || []).find((r) => r.id === targetId);
 
   // Dynamic task details with real-world fallbacks
   const task = useMemo(() => {
     return {
-      id: activeSuyo?.id || targetId || 'Task',
-      title: activeSuyo?.title || params.title || 'Suyo Task',
-      category: activeSuyo?.category || params.category || 'General',
+      id: activeSuyo?.id || dbTask?.id || targetId || 'Task',
+      title: activeSuyo?.title || dbTask?.title || params.title || 'Suyo Task',
+      category: activeSuyo?.category || dbTask?.category || params.category || 'General',
       location:
         activeSuyo?.exactAddress ||
         activeSuyo?.location ||
+        dbTask?.location ||
         params.location ||
         'Location provided in task',
       distanceText: activeSuyo?.distanceText || params.distanceText || 'Nearby',
@@ -65,6 +106,9 @@ export default function FulfillTaskScreen() {
         activeSuyo?.reward ||
         (activeSuyo?.offerCentavos
           ? `₱${(activeSuyo.offerCentavos / 100).toFixed(0)}`
+          : null) ||
+        (dbTask?.offer_centavos
+          ? `₱${(dbTask.offer_centavos / 100).toFixed(0)}`
           : null) ||
         (activeSuyo?.price ? `₱${activeSuyo.price}` : null) ||
         params.reward ||
@@ -75,7 +119,7 @@ export default function FulfillTaskScreen() {
         params.requesterName ||
         'Requester',
       requesterLocation:
-        activeSuyo?.location || params.requesterLocation || 'Nearby',
+        activeSuyo?.location || dbTask?.location || params.requesterLocation || 'Nearby',
       requesterPhone:
         activeSuyo?.contactPhone ||
         activeSuyo?.requesterPhone ||
@@ -84,6 +128,7 @@ export default function FulfillTaskScreen() {
         '',
       details:
         activeSuyo?.details ||
+        dbTask?.details ||
         params.details ||
         'No special instructions provided.',
       arrivalWindow:
@@ -99,14 +144,22 @@ export default function FulfillTaskScreen() {
         activeSuyo?.exactLongitude ??
         activeSuyo?.longitude ??
         (params.longitude ? parseFloat(params.longitude) : 125.8035),
-      status: activeSuyo?.status || 'in_progress',
+      status: activeSuyo?.status || dbTask?.status || 'in_progress',
       requesterId:
         activeSuyo?.requesterId ||
         activeSuyo?.rawRequest?.requesterId ||
+        dbTask?.requester_id ||
         params.requesterId ||
         null,
+      providerId:
+        activeSuyo?.providerId ||
+        activeSuyo?.rawRequest?.providerId ||
+        dbTask?.provider_id ||
+        params.providerId ||
+        user?.id ||
+        null,
     };
-  }, [activeSuyo, targetId, params]);
+  }, [activeSuyo, dbTask, targetId, params, user?.id]);
 
   const timing = getRequestTiming(activeSuyo?.rawRequest || activeSuyo || task);
   const urgencyKey =
