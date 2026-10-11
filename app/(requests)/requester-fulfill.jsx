@@ -513,17 +513,6 @@ export default function RequesterFulfillScreen() {
     return [];
   }, [doerLocation, dropoffLocation]);
 
-  const handleCallDoer = () => {
-    const cleanPhone = task.doerPhone.replace(/\s+/g, '');
-    if (Platform.OS !== 'web') {
-      Linking.openURL(`tel:${cleanPhone}`);
-    } else {
-      if (typeof window !== 'undefined' && window.alert) {
-        window.alert(`Calling assigned doer ${task.doerName} at ${task.doerPhone}`);
-      }
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
@@ -1064,14 +1053,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#163523',
     letterSpacing: -0.2,
-  },
-  headerRightAction: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EBF5EF',
   },
 
   scrollContainer: {
