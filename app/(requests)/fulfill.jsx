@@ -1340,6 +1340,9 @@ export default function FulfillTaskScreen() {
               <Text style={styles.skipToDashboardBtnText}>Skip to Dashboard</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
       {/* EXPLICIT LOCATION TRACKING CONSENT MODAL */}
       <Modal
         visible={isConsentModalVisible}
