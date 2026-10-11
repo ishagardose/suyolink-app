@@ -14,6 +14,7 @@ import { useSuyos } from '../../../context/SuyoContext';
 import { getRequestTiming } from '../../../lib/requestTiming';
 import { CATEGORY_ICONS, DEADLINE_STATUS_OPTIONS } from '../../requests/data/requestFormConfig';
 import { privatePinAddress } from '../../../lib/philippineAreas';
+import { suyoDetailsStyles } from '../styles/suyoDetails.styles';
 
 export default function SuyoFullDetailsModal({
   selectedSuyo,
@@ -21,8 +22,8 @@ export default function SuyoFullDetailsModal({
   onClose,
   handleAccept,
   acceptBusy,
-  resolveColor,
-  styles,
+  resolveColor = (color) => color,
+  styles = suyoDetailsStyles,
 }) {
   const { loadDetails } = useSuyos();
   const [detailsData, setDetailsData] = useState(null);
@@ -549,19 +550,21 @@ export default function SuyoFullDetailsModal({
           <Text style={styles.fullDetailFooterBackText}>Back</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.fullDetailFooterFulfillBtn}
-          activeOpacity={0.8}
-          disabled={acceptBusy}
-          onPress={handleAccept}
-          accessibilityRole="button"
-          accessibilityLabel="Fulfill Suyo"
-        >
-          <Ionicons name="bicycle" size={18} color="#FFFFFF" />
-          <Text style={styles.fullDetailFooterFulfillText}>
-            {acceptBusy ? 'Accepting...' : 'Fulfill Suyo'}
-          </Text>
-        </TouchableOpacity>
+        {!!handleAccept && (
+          <TouchableOpacity
+            style={styles.fullDetailFooterFulfillBtn}
+            activeOpacity={0.8}
+            disabled={acceptBusy}
+            onPress={handleAccept}
+            accessibilityRole="button"
+            accessibilityLabel="Fulfill Suyo"
+          >
+            <Ionicons name="bicycle" size={18} color="#FFFFFF" />
+            <Text style={styles.fullDetailFooterFulfillText}>
+              {acceptBusy ? 'Accepting...' : 'Fulfill Suyo'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Fullscreen Photo Preview Modal if tapped */}

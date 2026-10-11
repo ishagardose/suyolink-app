@@ -25,6 +25,9 @@ import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 import { uploadProof } from '../../lib/proofUpload';
+import SuyoFullDetailsModal from '../../components/dashboard/modals/SuyoFullDetailsModal';
+import { suyoDetailsStyles } from '../../components/dashboard/styles/suyoDetails.styles';
+import { formatArrivesAt } from '../../lib/requestTiming';
 
 function formatProximityDistance(fromCoords, toCoords) {
   if (!hasCoordinates(fromCoords) || !hasCoordinates(toCoords)) return 'Nearby';
@@ -128,6 +131,7 @@ export default function FulfillTaskScreen() {
   const [proofNotes, setProofNotes] = useState('');
   const [isProofModalOpen, setIsProofModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [liveDistanceText, setLiveDistanceText] = useState(task.distanceText);
 
   // Real GPS live location
@@ -870,28 +874,11 @@ export default function FulfillTaskScreen() {
           {/* Under Title: Target Time / Arrival window and Requester name */}
           <View style={styles.headerArrivalRequesterBlock}>
             <Text style={styles.headerEstimatedArrivalTime}>
-              {task.arrivalWindow?.includes(' - ')
-                ? `Arrives Between ${task.arrivalWindow}`
-                : `Target Time: ${task.arrivalWindow}`}
+              {formatArrivesAt(task.arrivalWindow || activeSuyo?.deadline || task.deadline)}
             </Text>
             <Text style={styles.headerRequesterNameText}>
               Requester: {task.requesterName}
             </Text>
-          </View>
-
-          <View style={styles.taskMetaRow}>
-            <View style={styles.metaPill}>
-              <Ionicons name="pricetag-outline" size={12} color="#1E4D2B" />
-              <Text style={styles.metaPillText}>{task.category}</Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Ionicons name="location-outline" size={12} color="#1E4D2B" />
-              <Text style={styles.metaPillText}>{task.location}</Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Ionicons name="navigate-outline" size={12} color="#1E4D2B" />
-              <Text style={styles.metaPillText}>{liveDistanceText}</Text>
-            </View>
           </View>
         </View>
 
@@ -958,87 +945,7 @@ export default function FulfillTaskScreen() {
           </View>
         </View>
 
-        {/* LIVE LOCATION SHARING STATUS BANNER */}
-        <View
-          style={[
-            styles.trackingStatusBanner,
-            isTrackingSharing
-              ? styles.trackingStatusBannerActive
-              : styles.trackingStatusBannerPaused,
-          ]}
-        >
-          <View style={styles.trackingStatusLeft}>
-            <View
-              style={[
-                styles.trackingStatusIconBox,
-                isTrackingSharing
-                  ? styles.trackingStatusIconBoxActive
-                  : styles.trackingStatusIconBoxPaused,
-              ]}
-            >
-              <Ionicons
-                name={isTrackingSharing ? 'navigate' : 'pause-circle'}
-                size={18}
-                color={isTrackingSharing ? '#1E4D2B' : '#B45309'}
-              />
-            </View>
-            <View style={styles.trackingStatusTextCol}>
-              <View style={styles.trackingStatusTitleRow}>
-                <View
-                  style={[
-                    styles.trackingStatusDot,
-                    isTrackingSharing
-                      ? styles.trackingStatusDotActive
-                      : styles.trackingStatusDotPaused,
-                  ]}
-                />
-                <Text style={styles.trackingStatusTitle}>
-                  {isTrackingSharing
-                    ? 'Live Location Sharing Active'
-                    : 'Location Sharing Paused'}
-                </Text>
-              </View>
-              <Text style={styles.trackingStatusDesc}>
-                {isTrackingSharing
-                  ? 'The requester can see your real-time GPS progress.'
-                  : 'Your GPS position is hidden from the requester.'}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.trackingStatusToggleBtn,
-              isTrackingSharing
-                ? styles.trackingStatusToggleBtnOutline
-                : styles.trackingStatusToggleBtnFilled,
-            ]}
-            onPress={
-              isTrackingSharing
-                ? handleDeclineOrPauseConsent
-                : handleGrantConsent
-            }
-            activeOpacity={0.8}
-            disabled={isUpdatingConsent}
-          >
-            {isUpdatingConsent ? (
-              <ActivityIndicator
-                size="small"
-                color={isTrackingSharing ? '#1E4D2B' : '#FFFFFF'}
-              />
-            ) : (
-              <Text
-                style={[
-                  styles.trackingStatusToggleBtnText,
-                  isTrackingSharing
-                    ? styles.trackingStatusToggleBtnTextOutline
-                    : styles.trackingStatusToggleBtnTextFilled,
-                ]}
-              >
-                {isTrackingSharing ? 'Pause' : 'Share'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+
 
         {/* 3. LIVE ROUTE MAP */}
         <View style={styles.mapSectionCard}>
@@ -1344,6 +1251,17 @@ export default function FulfillTaskScreen() {
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.detailsButton}
+              activeOpacity={0.8}
+              onPress={() => setIsDetailsModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Details"
+            >
+              <Ionicons name="document-text-outline" size={17} color="#163523" />
+              <Text style={styles.detailsButtonText}>Details</Text>
+            </TouchableOpacity>
+
             {currentStepIndex === 0 && (
               <TouchableOpacity
                 style={styles.primaryWorkflowButton}
@@ -1554,6 +1472,23 @@ export default function FulfillTaskScreen() {
               <Text style={styles.skipToDashboardBtnText}>Skip to Dashboard</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* FULL SUYO DETAILS MODAL */}
+      <Modal
+        visible={isDetailsModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsDetailsModalOpen(false)}
+      >
+        <View style={styles.detailsModalBackdrop}>
+          <SuyoFullDetailsModal
+            selectedSuyo={activeSuyo || task}
+            onBack={() => setIsDetailsModalOpen(false)}
+            onClose={() => setIsDetailsModalOpen(false)}
+            styles={suyoDetailsStyles}
+          />
         </View>
       </Modal>
 
@@ -2152,6 +2087,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#DC2626',
+  },
+  detailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 50,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: '#E8F5EE',
+    borderWidth: 1.5,
+    borderColor: '#CDE5D7',
+    flexShrink: 0,
+  },
+  detailsButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#163523',
+  },
+  detailsModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   markCompleteButton: {
     flex: 1,

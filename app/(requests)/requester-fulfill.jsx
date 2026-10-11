@@ -16,9 +16,11 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import TaskMap from '../../components/maps/TaskMap';
 import { useAuth } from '../../context/AuthContext';
-import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
+import SuyoFullDetailsModal from '../../components/dashboard/modals/SuyoFullDetailsModal';
+import { suyoDetailsStyles } from '../../components/dashboard/styles/suyoDetails.styles';
+import { formatArrivesAt } from '../../lib/requestTiming';
 
 function formatProximityDistance(fromCoords, toCoords) {
   if (!hasCoordinates(fromCoords) || !hasCoordinates(toCoords)) return 'Nearby';
@@ -175,6 +177,7 @@ export default function RequesterFulfillScreen() {
   const [proofData, setProofData] = useState(null);
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
   const [isSharingPaused, setIsSharingPaused] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Live GPS Coordinates of Doer & Destination
   const dropoffLocation = useMemo(
@@ -564,29 +567,14 @@ export default function RequesterFulfillScreen() {
           </View>
           <Text style={styles.taskHeadlineTitle}>{task.title}</Text>
 
-          {/* Under Title: Arrives Between and Assigned Doer */}
+          {/* Under Title: Arrives At and Assigned Doer */}
           <View style={styles.headerArrivalRequesterBlock}>
             <Text style={styles.headerEstimatedArrivalTime}>
-              Arrives Between {task.arrivalWindow}
+              {formatArrivesAt(task.arrivalWindow || activeSuyo?.deadline || task.deadline)}
             </Text>
             <Text style={styles.headerRequesterNameText}>
               Assigned Doer: {task.doerName}
             </Text>
-          </View>
-
-          <View style={styles.taskMetaRow}>
-            <View style={styles.metaPill}>
-              <Ionicons name="pricetag-outline" size={12} color="#1E4D2B" />
-              <Text style={styles.metaPillText}>{task.category}</Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Ionicons name="location-outline" size={12} color="#1E4D2B" />
-              <Text style={styles.metaPillText}>{task.location}</Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Ionicons name="navigate-outline" size={12} color="#1E4D2B" />
-              <Text style={styles.metaPillText}>{liveDistanceText}</Text>
-            </View>
           </View>
         </View>
 
@@ -913,11 +901,23 @@ export default function RequesterFulfillScreen() {
           </View>
         </View>
 
-        {/* 5. REQUESTER BUTTON: "Mark as Received & Rate the Doer" */}
-        <TouchableOpacity
-          style={styles.markReceivedButton}
-          activeOpacity={0.88}
-          onPress={async () => {
+        {/* 5. REQUESTER BUTTONS: Details + Mark as Received & Rate the Doer */}
+        <View style={styles.requesterActionsRow}>
+          <TouchableOpacity
+            style={styles.requesterDetailsButton}
+            activeOpacity={0.8}
+            onPress={() => setIsDetailsModalOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Details"
+          >
+            <Ionicons name="document-text-outline" size={18} color="#163523" />
+            <Text style={styles.requesterDetailsButtonText}>Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.markReceivedButton}
+            activeOpacity={0.88}
+            onPress={async () => {
             try {
               if (supabase && task.id) {
                 let pId = proofData?.proofId;
@@ -968,6 +968,7 @@ export default function RequesterFulfillScreen() {
             Mark as Received & Rate the Doer
           </Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* PROOF PHOTO PREVIEW MODAL */}
@@ -1008,6 +1009,23 @@ export default function RequesterFulfillScreen() {
               <Text style={styles.closePreviewBtnText}>Close Preview</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* FULL SUYO DETAILS MODAL */}
+      <Modal
+        visible={isDetailsModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsDetailsModalOpen(false)}
+      >
+        <View style={styles.detailsModalBackdrop}>
+          <SuyoFullDetailsModal
+            selectedSuyo={activeSuyo || task}
+            onBack={() => setIsDetailsModalOpen(false)}
+            onClose={() => setIsDetailsModalOpen(false)}
+            styles={suyoDetailsStyles}
+          />
         </View>
       </Modal>
     </SafeAreaView>
@@ -1477,7 +1495,33 @@ const styles = StyleSheet.create({
   },
 
   /* 5. BUTTON: MARK AS RECEIVED & RATE THE DOER */
+  requesterActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 24,
+    width: '100%',
+  },
+  requesterDetailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 52,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: '#E8F5EE',
+    borderWidth: 1.5,
+    borderColor: '#CDE5D7',
+    flexShrink: 0,
+  },
+  requesterDetailsButtonText: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#163523',
+  },
   markReceivedButton: {
+    flex: 1,
     backgroundColor: '#1E4D2B',
     borderRadius: 16,
     height: 52,
@@ -1494,13 +1538,19 @@ const styles = StyleSheet.create({
           shadowRadius: 8,
           elevation: 4,
         }),
-    marginBottom: 24,
   },
   markReceivedButtonText: {
     fontSize: 15.5,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
+  },
+  detailsModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
 
   /* PROOF PREVIEW MODAL */
