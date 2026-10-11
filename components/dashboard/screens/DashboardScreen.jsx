@@ -31,7 +31,7 @@ import { SIDEBAR_WIDTH, USE_NATIVE_DRIVER } from '../utils/dashboardLayout';
 import { getTodayFormatted } from '../utils/dashboardHelpers';
 import { getRequestTiming } from '../../../lib/requestTiming';
 import useProfileData from '../../account/useProfileData';
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -48,7 +48,7 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { useAuth } from '../../../context/AuthContext';
@@ -97,6 +97,17 @@ export default function DashboardScreen() {
     isLoading,
   } = useSuyos();
   const { position, hasSavedLocation, locate } = useDeviceLocation();
+
+  // Screen focus refresh to ensure completed/cancelled tasks update immediately
+  useFocusEffect(
+    useCallback(() => {
+      if (typeof refresh === 'function') {
+        refresh();
+      }
+    }, [refresh]),
+  );
+
+  const [dismissedActiveIds, setDismissedActiveIds] = useState([]);
 
   // Sidebar & Modal animation state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -538,6 +549,9 @@ export default function DashboardScreen() {
         r.requesterId === user?.id || r.providerId === user?.id;
       if (!isParticipant) return false;
 
+      // Exclude if locally dismissed by user
+      if (dismissedActiveIds.includes(r.id)) return false;
+
       // Must be strictly active in progress or assigned
       if (!['assigned', 'in_progress'].includes(r.status)) return false;
       if (r.status === 'completed' || r.status === 'cancelled') return false;
@@ -548,13 +562,15 @@ export default function DashboardScreen() {
       if (cancelledSuyos.some((c) => c.id === r.id)) return false;
       if (doerCancelledSuyos.some((c) => c.id === r.id)) return false;
 
-      // Exclude if already rated by user (handshake agreement complete)
-      const hasRated = (ratings || []).some(
-        (rt) =>
-          rt.request_id === r.id &&
-          (rt.reviewer_id === user?.id || !rt.reviewer_id),
-      );
+      // Exclude if already rated (handshake agreement complete)
+      const hasRated = (ratings || []).some((rt) => rt.request_id === r.id);
       if (hasRated) return false;
+
+      // Exclude if payout/transaction has already settled for this request
+      const hasTransaction = (transactions || []).some(
+        (t) => t.request_id === r.id || t.requestId === r.id,
+      );
+      if (hasTransaction) return false;
 
       return true;
     });
@@ -583,6 +599,8 @@ export default function DashboardScreen() {
     cancelledSuyos,
     doerCancelledSuyos,
     ratings,
+    transactions,
+    dismissedActiveIds,
   ]);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
@@ -775,6 +793,11 @@ export default function DashboardScreen() {
         activeSuyo={activeSuyo}
         bottomInset={bottomInset}
         hasActiveSuyo={hasActiveSuyo}
+        onDismiss={() => {
+          if (activeSuyo?.id) {
+            setDismissedActiveIds((prev) => [...prev, activeSuyo.id]);
+          }
+        }}
         resolveColor={resolveColor}
         router={router}
         styles={styles}
