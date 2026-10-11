@@ -1,6 +1,7 @@
 begin;
 
 -- 1. Allow ratings to be inserted and updated by authenticated reviewers
+drop policy if exists ratings_insert on public.ratings;
 create policy ratings_insert on public.ratings
 for insert
 to authenticated
@@ -9,6 +10,7 @@ with check (
   and reviewer_id <> provider_id
 );
 
+drop policy if exists ratings_update on public.ratings;
 create policy ratings_update on public.ratings
 for update
 to authenticated

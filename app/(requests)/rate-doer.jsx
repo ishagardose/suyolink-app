@@ -407,6 +407,26 @@ export default function RateDoerScreen({ forcedTarget }) {
           }
         }
 
+        // If requester is rating the doer, auto-accept any pending proof to transition task to completed
+        if (!isRatingRequester && taskId) {
+          try {
+            const { data: proofs } = await supabase
+              .from('proofs')
+              .select('id, status')
+              .eq('request_id', taskId)
+              .eq('status', 'submitted')
+              .limit(1);
+            if (proofs && proofs.length > 0) {
+              await supabase.rpc('review_suyo_proof', {
+                p_proof_id: proofs[0].id,
+                p_accept: true,
+              });
+            }
+          } catch (pErr) {
+            console.warn('Auto review_suyo_proof attempt:', pErr);
+          }
+        }
+
         if (!rpcSuccess) {
           try {
             const { error: rateErr } = await supabase.rpc('rate_suyo_user', {
@@ -435,10 +455,11 @@ export default function RateDoerScreen({ forcedTarget }) {
           }
         }
 
+        let dbSaved = rpcSuccess;
         const isTargetUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(effectiveTargetId));
         if (!rpcSuccess && user?.id && isTargetUuid) {
           try {
-            await supabase.from('ratings').upsert(
+            const { error: upsertErr } = await supabase.from('ratings').upsert(
               {
                 request_id: taskId,
                 reviewer_id: user.id,
@@ -448,6 +469,11 @@ export default function RateDoerScreen({ forcedTarget }) {
               },
               { onConflict: 'request_id, reviewer_id' }
             );
+            if (!upsertErr) {
+              dbSaved = true;
+            } else {
+              console.warn('ratings upsert fallback error:', upsertErr);
+            }
           } catch (upsertErr) {
             console.warn('ratings upsert fallback error:', upsertErr);
           }
