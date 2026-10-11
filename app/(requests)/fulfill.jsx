@@ -25,7 +25,7 @@ import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 import { uploadProof } from '../../lib/proofUpload';
-import SuyoFullDetailsModal from '../../components/dashboard/modals/SuyoFullDetailsModal';
+import SuyoFullDetailsCard from '../../components/dashboard/details/SuyoFullDetailsCard';
 import { suyoDetailsStyles } from '../../components/dashboard/styles/suyoDetails.styles';
 import { formatArrivesAt } from '../../lib/requestTiming';
 
@@ -131,7 +131,6 @@ export default function FulfillTaskScreen() {
   const [proofNotes, setProofNotes] = useState('');
   const [isProofModalOpen, setIsProofModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [liveDistanceText, setLiveDistanceText] = useState(task.distanceText);
 
   // Real GPS live location
@@ -1202,122 +1201,38 @@ export default function FulfillTaskScreen() {
           </View>
         </View>
 
-        {/* 5. WORKFLOW STEP ACTION CARD & BUTTONS */}
-        <View style={styles.workflowActionCard}>
-          <View style={styles.workflowActionHeader}>
-            <View style={styles.workflowActionStepIndicator}>
-              <Ionicons
-                name={
-                  currentStepIndex === 0
-                    ? 'bicycle'
-                    : currentStepIndex === 1
-                    ? 'bag-handle'
-                    : currentStepIndex === 2
-                    ? 'camera'
-                    : 'checkmark-circle'
-                }
-                size={16}
-                color="#1E4D2B"
-              />
-              <Text style={styles.workflowActionStepText}>
-                {currentStepIndex === 0
-                  ? 'Step 1: Start Suyo (En Route)'
-                  : currentStepIndex === 1
-                  ? 'Step 2: Arrived at Task / Working'
-                  : currentStepIndex === 2
-                  ? 'Step 3: Complete & Upload Proof'
-                  : 'Suyo Fulfillment Completed'}
-              </Text>
-            </View>
-            <Text style={styles.workflowActionHintText}>
-              {currentStepIndex === 0
-                ? 'Tap below to notify requester you are on the way'
-                : currentStepIndex === 1
-                ? 'Tap when you reach destination / start task handling'
-                : currentStepIndex === 2
-                ? 'Attach delivery proof photo to release payment'
-                : 'Task completed! Escrow will be released upon review'}
+        {/* 5. COMPLETE SUYO DETAILS (POSTED BY REQUESTER) */}
+        <SuyoFullDetailsCard selectedSuyo={activeSuyo || task} />
+
+        {/* 6. BOTTOM ACTION ROW: CANCEL + COMPLETED */}
+        <View style={styles.actionRowContainer}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            activeOpacity={0.8}
+            onPress={handleCancelTask}
+            accessibilityLabel="Cancel task"
+          >
+            <Ionicons name="close-circle-outline" size={17} color="#DC2626" />
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.markCompleteButton}
+            activeOpacity={0.88}
+            onPress={() => setIsProofModalOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Completed"
+          >
+            <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+            <Text
+              style={styles.markCompleteButtonText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
+              Completed
             </Text>
-          </View>
-
-          <View style={styles.actionRowContainer}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              activeOpacity={0.8}
-              onPress={handleCancelTask}
-              accessibilityLabel="Cancel task"
-            >
-              <Ionicons name="close-circle-outline" size={17} color="#DC2626" />
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.detailsButton}
-              activeOpacity={0.8}
-              onPress={() => setIsDetailsModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Details"
-            >
-              <Ionicons name="document-text-outline" size={17} color="#163523" />
-              <Text style={styles.detailsButtonText}>Details</Text>
-            </TouchableOpacity>
-
-            {currentStepIndex === 0 && (
-              <TouchableOpacity
-                style={styles.primaryWorkflowButton}
-                activeOpacity={0.88}
-                onPress={() => handleUpdateStep(1)}
-                accessibilityLabel="Start Suyo En Route"
-              >
-                <Ionicons name="bicycle" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryWorkflowButtonText}>
-                  Start Suyo (En Route)
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {currentStepIndex === 1 && (
-              <TouchableOpacity
-                style={styles.primaryWorkflowButton}
-                activeOpacity={0.88}
-                onPress={() => handleUpdateStep(2)}
-                accessibilityLabel="Arrived and Working"
-              >
-                <Ionicons name="bag-handle" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryWorkflowButtonText}>
-                  Arrived / Start Task
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {currentStepIndex === 2 && (
-              <TouchableOpacity
-                style={styles.primaryWorkflowButton}
-                activeOpacity={0.88}
-                onPress={() => setIsProofModalOpen(true)}
-                accessibilityLabel="Complete & Upload Proof"
-              >
-                <Ionicons name="images-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryWorkflowButtonText}>
-                  Complete & Upload Proof
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {currentStepIndex === 3 && (
-              <TouchableOpacity
-                style={[styles.primaryWorkflowButton, { backgroundColor: '#163523' }]}
-                activeOpacity={0.88}
-                onPress={() => setIsProofModalOpen(true)}
-                accessibilityLabel="View submitted proof"
-              >
-                <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryWorkflowButtonText}>
-                  View Proof Photo
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -1472,23 +1387,6 @@ export default function FulfillTaskScreen() {
               <Text style={styles.skipToDashboardBtnText}>Skip to Dashboard</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-
-      {/* FULL SUYO DETAILS MODAL */}
-      <Modal
-        visible={isDetailsModalOpen}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsDetailsModalOpen(false)}
-      >
-        <View style={styles.detailsModalBackdrop}>
-          <SuyoFullDetailsModal
-            selectedSuyo={activeSuyo || task}
-            onBack={() => setIsDetailsModalOpen(false)}
-            onClose={() => setIsDetailsModalOpen(false)}
-            styles={suyoDetailsStyles}
-          />
         </View>
       </Modal>
 
@@ -2088,31 +1986,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#DC2626',
   },
-  detailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 50,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: '#E8F5EE',
-    borderWidth: 1.5,
-    borderColor: '#CDE5D7',
-    flexShrink: 0,
-  },
-  detailsButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#163523',
-  },
-  detailsModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
   markCompleteButton: {
     flex: 1,
     flexDirection: 'row',
@@ -2354,101 +2227,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#556E60',
-  },
-
-  /* LIVE TRACKING CONSENT BANNER */
-  trackingStatusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-  trackingStatusBannerActive: {
-    backgroundColor: '#EDF7EE',
-    borderColor: '#C6E7C9',
-  },
-  trackingStatusBannerPaused: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-  },
-  trackingStatusLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 10,
-  },
-  trackingStatusIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  trackingStatusIconBoxActive: {
-    backgroundColor: '#DCFCE7',
-  },
-  trackingStatusIconBoxPaused: {
-    backgroundColor: '#FEF3C7',
-  },
-  trackingStatusTextCol: {
-    flex: 1,
-  },
-  trackingStatusTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  trackingStatusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  trackingStatusDotActive: {
-    backgroundColor: '#16A34A',
-  },
-  trackingStatusDotPaused: {
-    backgroundColor: '#D97706',
-  },
-  trackingStatusTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#163523',
-  },
-  trackingStatusDesc: {
-    fontSize: 11.5,
-    color: '#556E60',
-    lineHeight: 15,
-  },
-  trackingStatusToggleBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trackingStatusToggleBtnOutline: {
-    borderWidth: 1,
-    borderColor: '#1E4D2B',
-    backgroundColor: '#FFFFFF',
-  },
-  trackingStatusToggleBtnFilled: {
-    backgroundColor: '#1E4D2B',
-  },
-  trackingStatusToggleBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  trackingStatusToggleBtnTextOutline: {
-    color: '#1E4D2B',
-  },
-  trackingStatusToggleBtnTextFilled: {
-    color: '#FFFFFF',
   },
 
   /* EXPLICIT CONSENT MODAL */

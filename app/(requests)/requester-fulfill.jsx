@@ -19,7 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
-import SuyoFullDetailsModal from '../../components/dashboard/modals/SuyoFullDetailsModal';
+import SuyoFullDetailsCard from '../../components/dashboard/details/SuyoFullDetailsCard';
 import { suyoDetailsStyles } from '../../components/dashboard/styles/suyoDetails.styles';
 import { formatArrivesAt } from '../../lib/requestTiming';
 
@@ -178,7 +178,6 @@ export default function RequesterFulfillScreen() {
   const [proofData, setProofData] = useState(null);
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
   const [isSharingPaused, setIsSharingPaused] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Live GPS Coordinates of Doer & Destination
   const dropoffLocation = useMemo(
@@ -902,23 +901,14 @@ export default function RequesterFulfillScreen() {
           </View>
         </View>
 
-        {/* 5. REQUESTER BUTTONS: Details + Mark as Received & Rate the Doer */}
-        <View style={styles.requesterActionsRow}>
-          <TouchableOpacity
-            style={styles.requesterDetailsButton}
-            activeOpacity={0.8}
-            onPress={() => setIsDetailsModalOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Details"
-          >
-            <Ionicons name="document-text-outline" size={18} color="#163523" />
-            <Text style={styles.requesterDetailsButtonText}>Details</Text>
-          </TouchableOpacity>
+        {/* 5. COMPLETE SUYO DETAILS (POSTED BY REQUESTER) */}
+        <SuyoFullDetailsCard selectedSuyo={activeSuyo || task} />
 
-          <TouchableOpacity
-            style={styles.markReceivedButton}
-            activeOpacity={0.88}
-            onPress={async () => {
+        {/* 6. REQUESTER ACTION: MARK AS RECEIVED & RATE THE DOER */}
+        <TouchableOpacity
+          style={styles.markReceivedButton}
+          activeOpacity={0.88}
+          onPress={async () => {
             try {
               if (supabase && task.id) {
                 let pId = proofData?.proofId;
@@ -963,13 +953,14 @@ export default function RequesterFulfillScreen() {
               },
             });
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Mark as Received & Rate the Doer"
         >
           <Ionicons name="star" size={20} color="#FFFFFF" />
           <Text style={styles.markReceivedButtonText}>
             Mark as Received & Rate the Doer
           </Text>
         </TouchableOpacity>
-        </View>
       </ScrollView>
 
       {/* PROOF PHOTO PREVIEW MODAL */}
@@ -1010,23 +1001,6 @@ export default function RequesterFulfillScreen() {
               <Text style={styles.closePreviewBtnText}>Close Preview</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-
-      {/* FULL SUYO DETAILS MODAL */}
-      <Modal
-        visible={isDetailsModalOpen}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsDetailsModalOpen(false)}
-      >
-        <View style={styles.detailsModalBackdrop}>
-          <SuyoFullDetailsModal
-            selectedSuyo={activeSuyo || task}
-            onBack={() => setIsDetailsModalOpen(false)}
-            onClose={() => setIsDetailsModalOpen(false)}
-            styles={suyoDetailsStyles}
-          />
         </View>
       </Modal>
     </SafeAreaView>
@@ -1496,33 +1470,7 @@ const styles = StyleSheet.create({
   },
 
   /* 5. BUTTON: MARK AS RECEIVED & RATE THE DOER */
-  requesterActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 24,
-    width: '100%',
-  },
-  requesterDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 52,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    backgroundColor: '#E8F5EE',
-    borderWidth: 1.5,
-    borderColor: '#CDE5D7',
-    flexShrink: 0,
-  },
-  requesterDetailsButtonText: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: '#163523',
-  },
   markReceivedButton: {
-    flex: 1,
     backgroundColor: '#1E4D2B',
     borderRadius: 16,
     height: 52,
@@ -1530,12 +1478,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    width: '100%',
+    marginBottom: 24,
     ...(Platform.OS === 'web'
-      ? { boxShadow: '0 4px 8px rgba(30,77,43,0.22)' }
+      ? { boxShadow: '0 4px 10px rgba(30,77,43,0.25)' }
       : {
           shadowColor: '#1E4D2B',
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.22,
+          shadowOpacity: 0.25,
           shadowRadius: 8,
           elevation: 4,
         }),
@@ -1545,13 +1495,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
-  },
-  detailsModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
   },
 
   /* PROOF PREVIEW MODAL */
