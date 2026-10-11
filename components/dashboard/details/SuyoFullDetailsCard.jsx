@@ -169,11 +169,6 @@ export default function SuyoFullDetailsCard({
             <Ionicons name="document-text" size={16} color="#1E4D2B" />
             <Text style={cardStyles.cardHeaderTitle}>COMPLETE SUYO DETAILS</Text>
           </View>
-          <View style={cardStyles.postedByBadge}>
-            <Text style={cardStyles.postedByBadgeText} numberOfLines={1}>
-              Posted by Requester
-            </Text>
-          </View>
         </View>
       )}
 
@@ -555,28 +550,12 @@ const cardStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flex: 1,
-    marginRight: 6,
   },
   cardHeaderTitle: {
     fontSize: 13,
     fontWeight: '800',
     color: '#163523',
     letterSpacing: 0.3,
-  },
-  postedByBadge: {
-    backgroundColor: '#E8F5EE',
-    paddingVertical: 3.5,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#CDE5D7',
-    flexShrink: 0,
-  },
-  postedByBadgeText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#166534',
   },
   syncingRow: {
     flexDirection: 'row',
