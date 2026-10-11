@@ -77,7 +77,16 @@ export default function Notifications({ showHeading = true, onOpenRequest }) {
               {new Date(item.created_at).toLocaleString()}
             </ThemedText>
             <ThemedButton
-              title={item.request_id ? 'Track & trace' : 'Mark as read'}
+              title={
+                item.request_id
+                  ? item.kind === 'completed' ||
+                    item.title?.toLowerCase().includes('completed') ||
+                    item.body?.toLowerCase().includes('completed') ||
+                    (requests || []).find((r) => r.id === item.request_id)?.status === 'completed'
+                    ? 'View details'
+                    : 'Track & trace'
+                  : 'Mark as read'
+              }
               disabled={busy !== null}
               onPress={async () => {
                 setBusy(item.id);
@@ -87,8 +96,14 @@ export default function Notifications({ showHeading = true, onOpenRequest }) {
                   if (item.request_id) {
                     onOpenRequest?.();
                     const req = (requests || []).find((r) => r.id === item.request_id);
-                    const targetPath =
-                      req && user?.id
+                    const isCompleted =
+                      req?.status === 'completed' ||
+                      item.kind === 'completed' ||
+                      item.body?.toLowerCase().includes('completed') ||
+                      item.title?.toLowerCase().includes('completed');
+                    const targetPath = isCompleted
+                      ? '/suyo'
+                      : req && user?.id
                         ? (req.providerId === user.id ? '/fulfill' : '/requester-fulfill')
                         : '/requester-fulfill';
                     router.push({

@@ -425,6 +425,16 @@ export default function RateDoerScreen({ forcedTarget }) {
           } catch (pErr) {
             console.warn('Auto review_suyo_proof attempt:', pErr);
           }
+          try {
+            await supabase.rpc('mark_suyo_received', { p_request_id: taskId });
+          } catch (_) {
+            try {
+              await supabase.rpc('change_suyo_status', {
+                p_request_id: taskId,
+                p_status: 'completed',
+              });
+            } catch (_) {}
+          }
         }
 
         if (!rpcSuccess) {

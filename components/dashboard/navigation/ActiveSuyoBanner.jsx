@@ -11,9 +11,19 @@ export default function ActiveSuyoBanner({
   router,
   styles,
 }) {
+  const isTrulyActive =
+    hasActiveSuyo &&
+    activeSuyo &&
+    activeSuyo.status !== 'completed' &&
+    activeSuyo.status !== 'Completed' &&
+    activeSuyo.raw?.status !== 'completed' &&
+    activeSuyo.status !== 'Cancelled' &&
+    activeSuyo.raw?.status !== 'cancelled';
+
+  if (!isTrulyActive) return null;
+
   return (
-    hasActiveSuyo && (
-      <View
+    <View
         style={[
           styles.floatingActiveModalWrapper,
           { bottom: 62 + bottomInset },
@@ -90,6 +100,5 @@ export default function ActiveSuyoBanner({
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    )
   );
 }

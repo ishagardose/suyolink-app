@@ -949,6 +949,18 @@ export default function RequesterFulfillScreen() {
                     console.warn('review_suyo_proof error:', err);
                   }
                 }
+                try {
+                  await supabase.rpc('mark_suyo_received', {
+                    p_request_id: task.id,
+                  });
+                } catch (recErr) {
+                  try {
+                    await supabase.rpc('change_suyo_status', {
+                      p_request_id: task.id,
+                      p_status: 'completed',
+                    });
+                  } catch (_) {}
+                }
               }
               if (refresh) refresh();
             } catch (e) {

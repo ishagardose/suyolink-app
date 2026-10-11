@@ -1223,6 +1223,52 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
     'Doer profile displays review published by requester',
   );
 
+  // 16. Test mark_suyo_received and completed status transition
+  await db.exec('reset role');
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610120002_complete_task_on_rating_and_received.sql',
+      ),
+      'utf8',
+    ),
+  );
+
+  await actor(A);
+  const markReceivedTask = await row(
+    `select * from public.create_suyo_request_v2('Mark received test task','Details','Groceries',20000,now()+interval '1 day','Tagum','Address','Notes','09123456789',7.1,125.6,'mark-received-001')`,
+  );
+  await actor(B);
+  await db.exec(`select public.accept_suyo('${markReceivedTask.id}')`);
+  await db.exec(
+    `select public.change_suyo_status('${markReceivedTask.id}', 'in_progress')`,
+  );
+
+  // Only requester can mark received
+  await denied(
+    `select public.mark_suyo_received('${markReceivedTask.id}')`,
+    'Doer cannot mark suyo as received',
+  );
+
+  // Requester marks received -> auto completed and transaction created
+  await actor(A);
+  const completedReceived = await row(
+    `select * from public.mark_suyo_received('${markReceivedTask.id}')`,
+  );
+  ok(
+    completedReceived.status === 'completed' && completedReceived.completed_at !== null,
+    'Requester marking suyo as received transitions task to completed',
+  );
+
+  const txRow = await row(
+    `select count(*)::int as count from public.transactions where request_id='${markReceivedTask.id}'`,
+  );
+  ok(
+    txRow.count === 1,
+    'Transaction ledger record is generated upon marking as received',
+  );
+
   await db.close();
   console.log(
     'PASS: migration + ' +

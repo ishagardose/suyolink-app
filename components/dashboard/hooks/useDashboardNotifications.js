@@ -88,6 +88,18 @@ export default function useDashboardNotifications({
     if (notif.request_id) {
       setIsNotificationsModalOpen(false);
       const req = (requests || []).find((r) => r.id === notif.request_id);
+      const isCompleted =
+        req?.status === 'completed' ||
+        notif.kind === 'completed' ||
+        notif.title?.toLowerCase().includes('completed') ||
+        notif.body?.toLowerCase().includes('completed');
+
+      if (isCompleted) {
+        // A completed suyo directs to its complete details screen, not tracking or fulfillment
+        router.push({ pathname: '/suyo', params: { id: notif.request_id } });
+        return;
+      }
+
       const targetPath =
         req && user?.id
           ? (req.providerId === user.id ? '/fulfill' : '/requester-fulfill')

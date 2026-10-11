@@ -533,11 +533,31 @@ export default function DashboardScreen() {
 
   // Active Suyo floating banner state (matching live task for current user)
   const activeSuyo = useMemo(() => {
-    const live = (requests || []).find(
-      (r) =>
-        (r.requesterId === user?.id || r.providerId === user?.id) &&
-        ['assigned', 'in_progress'].includes(r.status),
-    );
+    const live = (requests || []).find((r) => {
+      const isParticipant =
+        r.requesterId === user?.id || r.providerId === user?.id;
+      if (!isParticipant) return false;
+
+      // Must be strictly active in progress or assigned
+      if (!['assigned', 'in_progress'].includes(r.status)) return false;
+      if (r.status === 'completed' || r.status === 'cancelled') return false;
+
+      // Exclude if already tracked in completed or cancelled lists
+      if (completedSuyos.some((c) => c.id === r.id)) return false;
+      if (doerCompletedSuyos.some((c) => c.id === r.id)) return false;
+      if (cancelledSuyos.some((c) => c.id === r.id)) return false;
+      if (doerCancelledSuyos.some((c) => c.id === r.id)) return false;
+
+      // Exclude if already rated by user (handshake agreement complete)
+      const hasRated = (ratings || []).some(
+        (rt) =>
+          rt.request_id === r.id &&
+          (rt.reviewer_id === user?.id || !rt.reviewer_id),
+      );
+      if (hasRated) return false;
+
+      return true;
+    });
     if (!live) return null;
     const isDoer = live.providerId === user?.id;
     return {
@@ -555,7 +575,15 @@ export default function DashboardScreen() {
       isDoer,
       raw: live,
     };
-  }, [requests, user?.id]);
+  }, [
+    requests,
+    user?.id,
+    completedSuyos,
+    doerCompletedSuyos,
+    cancelledSuyos,
+    doerCancelledSuyos,
+    ratings,
+  ]);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   const hasActiveSuyo = Boolean(activeSuyo);
