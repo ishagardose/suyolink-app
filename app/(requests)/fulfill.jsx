@@ -93,6 +93,12 @@ export default function FulfillTaskScreen() {
   const task = useMemo(() => {
     return {
       id: activeSuyo?.id || dbTask?.id || targetId || 'Task',
+      requesterId:
+        activeSuyo?.requesterId ||
+        activeSuyo?.rawRequest?.requesterId ||
+        dbTask?.requester_id ||
+        params.requesterId ||
+        null,
       title: activeSuyo?.title || dbTask?.title || params.title || 'Suyo Task',
       category: activeSuyo?.category || dbTask?.category || params.category || 'General',
       location:

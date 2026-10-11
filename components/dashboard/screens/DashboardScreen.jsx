@@ -70,7 +70,11 @@ export default function DashboardScreen() {
     return () => clearInterval(timer);
   }, []);
   const { user, logout, updateProfile } = useAuth();
-  const profileData = useProfileData(user?.id, true);
+  const profileData = useProfileData(
+    user?.id,
+    true,
+    user?.name || user?.user_metadata?.full_name || '',
+  );
   const { colors, isDark } = useTheme();
   const styles = useMemo(
     () => createDashboardStyles(colors, isDark),

@@ -14,6 +14,7 @@ export default function useProfileSummary({ reviews = [], completedCount, rating
       author: review.reviewerName || 'Community member',
       score: Number(review.score || 5),
       comment: (review.comment || '').trim(),
+      tags: Array.isArray(review.tags) ? review.tags : [],
       created_at: review.created_at || new Date().toISOString(),
     })),
   };

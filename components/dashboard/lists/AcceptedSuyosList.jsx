@@ -178,6 +178,7 @@ export default function AcceptedSuyosList({
                           distanceText: suyo.distanceText,
                           reward: suyo.reward,
                           requesterName: suyo.requesterName,
+                          requesterId: suyo.requesterId,
                           requesterPhone: suyo.requesterPhone,
                           details: suyo.details,
                         },

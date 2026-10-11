@@ -14,6 +14,8 @@ import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COMMUNITY_RATINGS_STORAGE_KEY } from '../../components/account/useProfileData';
 import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
 
@@ -126,15 +128,45 @@ export default function RateDoerScreen({ forcedTarget }) {
     ? (activeRequest?.requesterId || params.requesterId || dbTaskFallback?.requester_id || null)
     : (activeRequest?.providerId || params.providerId || params.doerId || dbTaskFallback?.provider_id || null);
 
+  const [resolvedTargetId, setResolvedTargetId] = useState(targetUserId);
+
+  useEffect(() => {
+    if (targetUserId) {
+      setResolvedTargetId(targetUserId);
+    } else if (subjectName && supabase) {
+      let isMounted = true;
+      async function findUser() {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .ilike('full_name', subjectName.trim())
+            .limit(1)
+            .maybeSingle();
+          if (data?.id && isMounted) {
+            setResolvedTargetId(data.id);
+          }
+        } catch (_) {}
+      }
+      findUser();
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [targetUserId, subjectName]);
+
   const [targetProfile, setTargetProfile] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchTargetProfile() {
-      if (!targetUserId || !supabase) return;
+      const idToFetch = resolvedTargetId || targetUserId;
+      if (!idToFetch || !supabase) return;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(idToFetch));
+      if (!isUuid) return;
       try {
         const { data, error } = await supabase.rpc('get_suyo_profile', {
-          p_user_id: targetUserId,
+          p_user_id: idToFetch,
         });
         if (!error && data && isMounted) {
           setTargetProfile(data);
@@ -143,7 +175,7 @@ export default function RateDoerScreen({ forcedTarget }) {
           const { data: pData } = await supabase
             .from('profiles')
             .select('id, full_name, handle, bio')
-            .eq('id', targetUserId)
+            .eq('id', idToFetch)
             .single();
           if (pData && isMounted) {
             setTargetProfile(pData);
@@ -157,7 +189,7 @@ export default function RateDoerScreen({ forcedTarget }) {
     return () => {
       isMounted = false;
     };
-  }, [targetUserId]);
+  }, [resolvedTargetId, targetUserId]);
 
   // Listen to Supabase Realtime for rating events or updates
   useEffect(() => {
@@ -300,6 +332,49 @@ export default function RateDoerScreen({ forcedTarget }) {
           ? `${selectedTags.join(', ')}. ${comment}`.trim()
           : comment;
 
+      const effectiveTargetId = resolvedTargetId || targetUserId || null;
+
+      const reviewItem = {
+        id: `rating_${taskId || Date.now()}_${user?.id || Date.now()}`,
+        request_id: taskId || null,
+        reviewer_id: user?.id || null,
+        provider_id: effectiveTargetId,
+        recipient_id: effectiveTargetId,
+        recipientName: subjectName || '',
+        targetRole: isRatingRequester ? 'requester' : 'doer',
+        reviewerName:
+          user?.user_metadata?.full_name || user?.name || 'Community Member',
+        score: rating,
+        comment: fullComment,
+        tags: selectedTags,
+        created_at: new Date().toISOString(),
+      };
+
+      try {
+        const rawLocal = await AsyncStorage.getItem(
+          COMMUNITY_RATINGS_STORAGE_KEY,
+        );
+        const list = rawLocal ? JSON.parse(rawLocal) : [];
+        const filtered = Array.isArray(list)
+          ? list.filter(
+              (r) =>
+                !(
+                  r.request_id === taskId &&
+                  r.reviewer_id === user?.id &&
+                  (r.recipient_id === effectiveTargetId ||
+                    r.recipientName === subjectName)
+                ),
+            )
+          : [];
+        filtered.unshift(reviewItem);
+        await AsyncStorage.setItem(
+          COMMUNITY_RATINGS_STORAGE_KEY,
+          JSON.stringify(filtered),
+        );
+      } catch (storageErr) {
+        console.warn('Local rating cache save warning:', storageErr);
+      }
+
       if (recordTransaction && taskId) {
         recordTransaction({
           requestId: taskId,
@@ -360,13 +435,14 @@ export default function RateDoerScreen({ forcedTarget }) {
           }
         }
 
-        if (!rpcSuccess && user?.id && targetUserId) {
+        const isTargetUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(effectiveTargetId));
+        if (!rpcSuccess && user?.id && isTargetUuid) {
           try {
             await supabase.from('ratings').upsert(
               {
                 request_id: taskId,
                 reviewer_id: user.id,
-                provider_id: targetUserId,
+                provider_id: effectiveTargetId,
                 score: rating,
                 comment: fullComment,
               },
@@ -377,13 +453,24 @@ export default function RateDoerScreen({ forcedTarget }) {
           }
         }
 
-        setDirectRating({
-          request_id: taskId,
-          reviewer_id: user?.id,
-          provider_id: targetUserId,
-          score: rating,
-          comment: fullComment,
-        });
+        try {
+          if (effectiveTargetId) {
+            const ch = supabase.channel(`profile_ratings_live_${effectiveTargetId}`);
+            ch.send({
+              type: 'broadcast',
+              event: 'new_rating',
+              payload: reviewItem,
+            });
+          }
+          const feedCh = supabase.channel('community_ratings_feed');
+          feedCh.send({
+            type: 'broadcast',
+            event: 'new_rating',
+            payload: reviewItem,
+          });
+        } catch (_) {}
+
+        setDirectRating(reviewItem);
       }
 
       if (refresh) await refresh();
@@ -446,7 +533,7 @@ export default function RateDoerScreen({ forcedTarget }) {
             router.push({
               pathname: '/account',
               params: {
-                userId: targetUserId || undefined,
+                userId: (resolvedTargetId || targetUserId) || undefined,
                 name: subjectName,
                 isOtherUser: 'true',
               },
@@ -660,7 +747,7 @@ export default function RateDoerScreen({ forcedTarget }) {
                 router.push({
                   pathname: '/account',
                   params: {
-                    userId: targetUserId || undefined,
+                    userId: (resolvedTargetId || targetUserId) || undefined,
                     name: subjectName,
                     isOtherUser: 'true',
                   },

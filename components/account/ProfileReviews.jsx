@@ -72,6 +72,47 @@ export default function ProfileReviews({
                 </View>
               </View>
 
+              {Array.isArray(item.tags) && item.tags.length > 0 ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}
+                >
+                  {item.tags.map((tag, tIdx) => (
+                    <View
+                      key={tIdx}
+                      style={{
+                        backgroundColor: colors.surfaceAlt || '#E8F5E9',
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Ionicons
+                        name="pricetag-outline"
+                        size={10}
+                        color={colors.primary || '#1E4D2B'}
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '600',
+                          color: colors.primary || '#1E4D2B',
+                        }}
+                      >
+                        {tag}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
               <Text style={styles.feedbackCommentText}>
                 {item.comment || `Rated ${item.score} out of 5 stars.`}
               </Text>

@@ -7,10 +7,14 @@ export default function useAccountProfile(params) {
   const { user, updateProfile, isProfileReady } = useAuth();
   const userId = Array.isArray(params.userId)
     ? params.userId[0]
-    : params.userId;
+    : params.userId || params.targetId || params.otherUserId || null;
   const own = userId ? userId === user?.id : params.isOtherUser !== 'true';
   const targetId = userId || (own ? user?.id : null);
   const isOtherUser = !own;
+
+  const targetName = own
+    ? user?.name || user?.user_metadata?.full_name || ''
+    : params.name || params.userName || params.requesterName || params.doerName || '';
 
   const {
     profileName,
@@ -27,10 +31,10 @@ export default function useAccountProfile(params) {
     loading,
     error,
     setError,
-  } = useProfileData(targetId, own);
+  } = useProfileData(targetId, own, targetName);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
-  useEffect(() => setSaved(false), [targetId, own]);
+  useEffect(() => setSaved(false), [targetId, own, targetName]);
   // Edit Profile Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tempProfile, setTempProfile] = useState({
@@ -41,10 +45,12 @@ export default function useAccountProfile(params) {
   });
 
   const displayName =
-    profileName || (loading ? 'Loading profile...' : 'Profile unavailable');
-  const displayHandle = profileHandle;
+    profileName ||
+    params.name ||
+    (loading ? 'Loading profile...' : 'Profile unavailable');
+  const displayHandle = profileHandle || params.handle || '';
   const displayPhone = own ? profilePhone : '';
-  const displayBio = profileBio;
+  const displayBio = profileBio || params.bio || '';
   const { completedSuyosCount, dynamicFeedbacks, displayRating } =
     useProfileSummary({ reviews, completedCount, rating });
 
