@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import TaskMap from '../../components/maps/TaskMap';
 import { useAuth } from '../../context/AuthContext';
+import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
 import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 import SuyoFullDetailsModal from '../../components/dashboard/modals/SuyoFullDetailsModal';
