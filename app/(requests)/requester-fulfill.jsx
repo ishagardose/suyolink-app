@@ -18,7 +18,7 @@ import TaskMap from '../../components/maps/TaskMap';
 import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
-import { distanceKm, formatDistance } from '../../lib/geo';
+import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
 
 export default function RequesterFulfillScreen() {
   const router = useRouter();
@@ -153,7 +153,7 @@ export default function RequesterFulfillScreen() {
   ];
 
   const getStepFromStatus = (st) => {
-    if (st === 'completed') return 3;
+    if (st === 'completed' || st === 'awaiting_confirmation') return 3;
     if (st === 'working') return 2;
     if (st === 'in_progress' || st === 'en_route') return 1;
     return 0; // 'assigned' or 'accepted'
@@ -202,12 +202,89 @@ export default function RequesterFulfillScreen() {
     };
   });
 
+  // Initial fetch of doer's live location and submitted proofs on mount
+  useEffect(() => {
+    if (!supabase || !task.id) return;
+    let isMounted = true;
+
+    // Fetch latest live location from DB
+    supabase
+      .from('live_locations')
+      .select('latitude, longitude, updated_at, arrived')
+      .eq('request_id', task.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (isMounted && !error && data && data.latitude && data.longitude) {
+          const coords = { latitude: data.latitude, longitude: data.longitude };
+          setDoerLocation(coords);
+          const d = distanceKm(coords, dropoffLocation);
+          if (d !== null) setLiveDistanceText(formatDistance(d));
+        }
+      });
+
+    // Check for existing proofs
+    supabase
+      .from('proofs')
+      .select('id, storage_path, note, status, created_at')
+      .eq('request_id', task.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (isMounted && data && data.storage_path) {
+          let uri = null;
+          try {
+            const { data: signData } = await supabase.storage
+              .from('suyo-proofs')
+              .createSignedUrl(data.storage_path, 3600);
+            if (signData?.signedUrl) uri = signData.signedUrl;
+          } catch (_) {}
+          setProofData({
+            taskId: task.id,
+            proofId: data.id,
+            storagePath: data.storage_path,
+            proofImageUri: uri,
+            notes: data.note,
+            status: data.status,
+          });
+          setCurrentStepIndex(3);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [task.id, dropoffLocation]);
+
+  // Periodic polling fallback every 4 seconds to guarantee tracking updates across devices
+  useEffect(() => {
+    if (!supabase || !task.id || currentStepIndex === 3) return;
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('live_locations')
+          .select('latitude, longitude, updated_at')
+          .eq('request_id', task.id)
+          .maybeSingle();
+        if (data?.latitude && data?.longitude) {
+          const coords = { latitude: data.latitude, longitude: data.longitude };
+          setDoerLocation(coords);
+          const d = distanceKm(coords, dropoffLocation);
+          if (d !== null) setLiveDistanceText(formatDistance(d));
+        }
+      } catch (_) {}
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [task.id, dropoffLocation, currentStepIndex]);
+
   // Supabase Real-Time duplex channel subscriber
   useEffect(() => {
     if (!supabase || !task.id) return;
 
     const channelName = `suyo_live_tracking_${task.id}`;
-    const channel = supabase.channel(channelName);
+    const channel = supabase.channel(channelName, {
+      config: { broadcast: { ack: true } },
+    });
 
     channel
       .on('broadcast', { event: 'step_change' }, (payload) => {
@@ -247,9 +324,29 @@ export default function RequesterFulfillScreen() {
       })
       .subscribe();
 
-    // Also listen to database row updates on suyo_requests
+    // Database real-time listener for live_locations and suyo_requests
     const dbSub = supabase
       .channel(`suyo_db_${task.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_locations',
+          filter: `request_id=eq.${task.id}`,
+        },
+        (payload) => {
+          if (payload?.new?.latitude && payload?.new?.longitude) {
+            const coords = {
+              latitude: payload.new.latitude,
+              longitude: payload.new.longitude,
+            };
+            setDoerLocation(coords);
+            const d = distanceKm(coords, dropoffLocation);
+            if (d !== null) setLiveDistanceText(formatDistance(d));
+          }
+        }
+      )
       .on(
         'postgres_changes',
         {
@@ -261,17 +358,56 @@ export default function RequesterFulfillScreen() {
         (payload) => {
           if (payload?.new?.status) {
             const st = payload.new.status;
-            if (st === 'completed') setCurrentStepIndex(3);
-            else if (st === 'in_progress') setCurrentStepIndex(1);
+            const newStep = getStepFromStatus(st);
+            setCurrentStepIndex(newStep);
+            const nowStr = `Today, ${new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}`;
+            setTimelineTimes((prev) => ({
+              ...prev,
+              [newStep === 1 ? 'enRoute' : newStep === 2 ? 'working' : 'completed']: nowStr,
+            }));
           }
           if (refresh) refresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'proofs',
+          filter: `request_id=eq.${task.id}`,
+        },
+        async (payload) => {
+          if (payload?.new) {
+            let uri = null;
+            if (payload.new.storage_path) {
+              try {
+                const { data: signData } = await supabase.storage
+                  .from('suyo-proofs')
+                  .createSignedUrl(payload.new.storage_path, 3600);
+                if (signData?.signedUrl) uri = signData.signedUrl;
+              } catch (_) {}
+            }
+            setProofData({
+              taskId: task.id,
+              proofId: payload.new.id,
+              storagePath: payload.new.storage_path,
+              proofImageUri: uri,
+              notes: payload.new.note,
+              status: payload.new.status,
+            });
+            setCurrentStepIndex(3);
+          }
         }
       )
       .subscribe();
 
     return () => {
-      channel.unsubscribe();
-      dbSub.unsubscribe();
+      supabase.removeChannel(channel);
+      supabase.removeChannel(dbSub);
     };
   }, [task.id, dropoffLocation, refresh]);
 
@@ -283,18 +419,25 @@ export default function RequesterFulfillScreen() {
         latitude: doerLocation.latitude,
         longitude: doerLocation.longitude,
         title: `Doer: ${task.doerName}`,
-        isMe: false,
+        isMe: true, // Blue pin for moving Doer
       },
       {
         id: 'dropoff-location',
         latitude: dropoffLocation.latitude,
         longitude: dropoffLocation.longitude,
         title: `Destination: ${task.location}`,
-        isMe: true,
+        isMe: false, // Green pin for Destination
       },
     ],
     [doerLocation, dropoffLocation, task.doerName, task.location]
   );
+
+  const routeCoordinates = useMemo(() => {
+    if (hasCoordinates(doerLocation) && hasCoordinates(dropoffLocation)) {
+      return [doerLocation, dropoffLocation];
+    }
+    return [];
+  }, [doerLocation, dropoffLocation]);
 
   const handleCallDoer = () => {
     const cleanPhone = task.doerPhone.replace(/\s+/g, '');
@@ -461,8 +604,7 @@ export default function RequesterFulfillScreen() {
             <TaskMap
               center={dropoffLocation}
               markers={mapMarkers}
-              pickup={doerLocation}
-              dropoff={dropoffLocation}
+              routeCoordinates={routeCoordinates}
               interactive={true}
               height={220}
               style={styles.mapCanvas}
@@ -706,19 +848,27 @@ export default function RequesterFulfillScreen() {
           onPress={async () => {
             try {
               if (supabase && task.id) {
-                const nowIso = new Date().toISOString();
-                try {
-                  await supabase.rpc('change_suyo_status', {
-                    p_request_id: task.id,
-                    p_status: 'completed',
-                  });
-                } catch {
+                let pId = proofData?.proofId;
+                if (!pId) {
+                  const { data: pRow } = await supabase
+                    .from('proofs')
+                    .select('id')
+                    .eq('request_id', task.id)
+                    .eq('status', 'submitted')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                  if (pRow?.id) pId = pRow.id;
+                }
+                if (pId) {
                   try {
-                    await supabase
-                      .from('suyo_requests')
-                      .update({ status: 'completed', completed_at: nowIso })
-                      .eq('id', task.id);
-                  } catch (_) {}
+                    await supabase.rpc('review_suyo_proof', {
+                      p_proof_id: pId,
+                      p_accept: true,
+                    });
+                  } catch (err) {
+                    console.warn('review_suyo_proof error:', err);
+                  }
                 }
               }
               if (refresh) refresh();

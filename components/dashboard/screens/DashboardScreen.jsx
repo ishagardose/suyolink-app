@@ -546,6 +546,7 @@ export default function DashboardScreen() {
           : 'Doer assigned',
       detail: `Suyo: ${live.title}`,
       progress: live.status === 'in_progress' ? '75%' : '40%',
+      isDoer,
       raw: live,
     };
   }, [requests, user?.id]);

@@ -26,7 +26,7 @@ export default function ActiveSuyoBanner({
           activeOpacity={0.92}
           onPress={() =>
             router.push({
-              pathname: '/requester-fulfill',
+              pathname: activeSuyo?.isDoer ? '/fulfill' : '/requester-fulfill',
               params: { id: activeSuyo.id },
             })
           }

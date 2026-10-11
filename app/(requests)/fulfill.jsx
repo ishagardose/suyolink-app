@@ -22,7 +22,8 @@ import * as Location from 'expo-location';
 import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
 import { supabase } from '../../lib/supabase';
-import { distanceKm, formatDistance } from '../../lib/geo';
+import { distanceKm, formatDistance, hasCoordinates } from '../../lib/geo';
+import { uploadProof } from '../../lib/proofUpload';
 
 export default function FulfillTaskScreen() {
   const router = useRouter();
@@ -156,13 +157,33 @@ export default function FulfillTaskScreen() {
   });
 
   const channelRef = useRef(null);
+  const isChannelReady = useRef(false);
+
+  // Automatically grant location sharing consent on mount for active doer
+  useEffect(() => {
+    if (!supabase || !task.id || !user?.id) return;
+    supabase
+      .rpc('set_tracking_consent', {
+        p_request_id: task.id,
+        p_share: true,
+      })
+      .catch((err) => console.warn('set_tracking_consent err:', err));
+
+    return () => {
+      // Clean up consent on unmount if needed
+    };
+  }, [task.id, user?.id]);
 
   // Setup Supabase Realtime duplex channel for live synchronization
   useEffect(() => {
     if (!supabase || !task.id) return;
 
     const channelName = `suyo_live_tracking_${task.id}`;
-    const channel = supabase.channel(channelName);
+    const channel = supabase.channel(channelName, {
+      config: {
+        broadcast: { ack: true },
+      },
+    });
     channelRef.current = channel;
 
     channel
@@ -182,11 +203,16 @@ export default function FulfillTaskScreen() {
           }
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isChannelReady.current = true;
+        }
+      });
 
     return () => {
-      channel.unsubscribe();
+      isChannelReady.current = false;
       channelRef.current = null;
+      supabase.removeChannel(channel);
     };
   }, [task.id]);
 
@@ -339,7 +365,20 @@ export default function FulfillTaskScreen() {
           p_latitude: coords.latitude,
           p_longitude: coords.longitude,
         });
-      } catch (_) {}
+      } catch (err) {
+        // If consent was not yet active or was revoked, establish consent and retry
+        try {
+          await supabase.rpc('set_tracking_consent', {
+            p_request_id: task.id,
+            p_share: true,
+          });
+          await supabase.rpc('update_task_location', {
+            p_request_id: task.id,
+            p_latitude: coords.latitude,
+            p_longitude: coords.longitude,
+          });
+        } catch (_) {}
+      }
     }
   };
 
@@ -384,22 +423,15 @@ export default function FulfillTaskScreen() {
 
     // Update in Supabase
     if (supabase && task.id) {
-      const nowIso = new Date().toISOString();
       try {
-        await supabase.rpc('change_suyo_status', {
-          p_request_id: task.id,
-          p_status: dbStatus,
-        });
-      } catch {
-        try {
-          await supabase
-            .from('suyo_requests')
-            .update({
-              status: dbStatus,
-              ...(dbStatus === 'completed' ? { completed_at: nowIso } : {}),
-            })
-            .eq('id', task.id);
-        } catch (_) {}
+        if (task.status === 'assigned' && (newIndex === 1 || newIndex === 2)) {
+          await supabase.rpc('change_suyo_status', {
+            p_request_id: task.id,
+            p_status: 'in_progress',
+          });
+        }
+      } catch (err) {
+        console.warn('change_suyo_status err:', err);
       }
     }
 
@@ -426,6 +458,16 @@ export default function FulfillTaskScreen() {
     ],
     [liveDoerLocation, dropoffLocation, task.location]
   );
+
+  const routeCoordinates = useMemo(() => {
+    if (
+      hasCoordinates(liveDoerLocation) &&
+      hasCoordinates(dropoffLocation)
+    ) {
+      return [liveDoerLocation, dropoffLocation];
+    }
+    return [];
+  }, [liveDoerLocation, dropoffLocation]);
 
   const handlePickProof = async () => {
     try {
@@ -484,6 +526,19 @@ export default function FulfillTaskScreen() {
     }
 
     if (reloadTransactions) reloadTransactions();
+
+    if (proofImageUri && supabase && user?.id && task.id) {
+      try {
+        const storagePath = await uploadProof({ uri: proofImageUri }, task.id, user.id);
+        await supabase.rpc('submit_suyo_proof', {
+          p_request_id: task.id,
+          p_storage_path: storagePath,
+          p_note: proofNotes || '',
+        });
+      } catch (e) {
+        console.warn('submit_suyo_proof fallback error:', e);
+      }
+    }
 
     if (channelRef.current) {
       channelRef.current.send({
@@ -728,8 +783,7 @@ export default function FulfillTaskScreen() {
             <TaskMap
               center={dropoffLocation}
               markers={mapMarkers}
-              pickup={liveDoerLocation}
-              dropoff={dropoffLocation}
+              routeCoordinates={routeCoordinates}
               interactive={true}
               height={220}
               style={styles.mapCanvas}
