@@ -14,12 +14,12 @@ const definitions = {
     borderWidth: 1,
     borderColor: '#DFECE5',
   },
-  filterPillActive: { backgroundColor: '#1E4D2B', borderColor: '#1E4D2B' },
+  filterPillActive: { backgroundColor: '#163925', borderColor: '#163925' },
   filterPillText: { color: '#334155', fontSize: 11.5, fontWeight: '700' },
   filterPillTextActive: { color: '#FFFFFF' },
   safeContainer: {
     flex: 1,
-    backgroundColor: '#1E4D2B',
+    backgroundColor: '#163925',
   },
   headerBar: {
     flexDirection: 'row',
@@ -27,7 +27,7 @@ const definitions = {
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#1E4D2B',
+    backgroundColor: '#163925',
   },
   backButton: {
     padding: 6,
@@ -44,18 +44,18 @@ const definitions = {
   },
   contentScroll: {
     flex: 1,
-    backgroundColor: '#1E4D2B',
+    backgroundColor: '#163925',
   },
   contentContainer: {
     padding: 16,
-    backgroundColor: '#1E4D2B',
+    backgroundColor: '#163925',
   },
   walletHeroCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#1E4D2B',
+    shadowColor: '#163925',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -85,7 +85,7 @@ const definitions = {
   walletHeroSuper: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#1E4D2B',
+    color: '#163925',
     letterSpacing: 0.8,
   },
   walletVerifiedPill: {
@@ -414,7 +414,7 @@ const definitions = {
   walletCountChipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#1E4D2B',
+    color: '#163925',
   },
   walletUnifiedTile: {
     backgroundColor: '#FFFFFF',
@@ -422,7 +422,7 @@ const definitions = {
     padding: 16,
     marginTop: 14,
     marginBottom: 24,
-    shadowColor: '#1E4D2B',
+    shadowColor: '#163925',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -507,7 +507,7 @@ const definitions = {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 14,
-    shadowColor: '#1E4D2B',
+    shadowColor: '#163925',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,

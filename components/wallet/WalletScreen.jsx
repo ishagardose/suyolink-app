@@ -261,7 +261,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
                 <Ionicons
                   name="wallet"
                   size={17}
-                  color={resolveColor('#1E4D2B', 'color')}
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
               <Text style={styles.walletHeroSuper}>SUYOLINK WALLET</Text>
@@ -334,7 +334,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
                 <Ionicons
                   name="swap-horizontal"
                   size={16}
-                  color={resolveColor('#1E4D2B', 'color')}
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
               <View>
@@ -360,7 +360,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
 
           {transactionsLoading && dynamicList.length === 0 ? (
             <View style={styles.walletEmptyInsideTile}>
-              <ActivityIndicator color={resolveColor('#1E4D2B', 'color')} />
+              <ActivityIndicator color={resolveColor('#163925', 'color')} />
             </View>
           ) : transactionsError && dynamicList.length === 0 ? (
             <View style={styles.walletEmptyInsideTile}>
@@ -387,7 +387,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
                 <Ionicons
                   name="wallet-outline"
                   size={32}
-                  color={resolveColor('#1E4D2B', 'color')}
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
               <Text style={styles.walletEmptyTitle}>
