@@ -278,6 +278,7 @@ export default function useDashboardSuyoLists({ requests, user, now, ratings = [
           category: r.category || 'General',
           location: r.location || 'Nearby',
           earnedAmount: (r.offerCentavos || 0) / 100,
+          status: 'completed',
           date: r.createdAt
             ? new Date(r.createdAt).toLocaleDateString()
             : 'Completed',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getInitials } from '../utils/dashboardHelpers';
 import {
   Text,
@@ -10,6 +10,14 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSuyos } from '../../../context/SuyoContext';
+import { useTheme } from '../../../theme/ThemeContext';
+import { STATUS_LABELS } from '../../../data/suyoRequests';
+import ThemedText from '../../themed/ThemedText';
+import ThemedButton from '../../themed/ThemedButton';
+import SuyoSummary from '../../suyo/SuyoSummary';
+import PrivateTaskDetails from '../../suyo/PrivateTaskDetails';
+import ProofImage from '../../requests/ProofImage';
 
 export default function DoerDetailModal({
   resolveColor,
@@ -19,16 +27,337 @@ export default function DoerDetailModal({
   styles,
   userProfile,
 }) {
-  return (
-    selectedDoerSuyo && (
+  const { colors } = useTheme();
+  const { loadDetails, ratings = [], events = [], proofs = [] } = useSuyos();
+  const [detailsData, setDetailsData] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (selectedDoerSuyo?.id) {
+      loadDetails(selectedDoerSuyo.id)
+        .then((data) => {
+          if (isMounted && data) setDetailsData(data);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDoerSuyo?.id, loadDetails]);
+
+  if (!selectedDoerSuyo) return null;
+
+  const isCompleted =
+    selectedDoerSuyo.status === 'Completed' ||
+    selectedDoerSuyo.status === 'completed' ||
+    selectedDoerSuyo.rawRequest?.status === 'completed';
+
+  if (isCompleted) {
+    const fullDetails = {
+      ...(selectedDoerSuyo?.rawRequest || {}),
+      ...(selectedDoerSuyo || {}),
+      ...(detailsData || {}),
+      id: selectedDoerSuyo.id,
+      status: 'completed',
+      category: detailsData?.category || selectedDoerSuyo.category || 'General',
+      title: detailsData?.title || selectedDoerSuyo.title,
+      details:
+        detailsData?.details ||
+        selectedDoerSuyo.details ||
+        selectedDoerSuyo?.rawRequest?.details ||
+        '',
+      notes:
+        detailsData?.notes ||
+        selectedDoerSuyo.notes ||
+        selectedDoerSuyo?.rawRequest?.notes ||
+        '',
+      location:
+        detailsData?.location ||
+        selectedDoerSuyo.location ||
+        selectedDoerSuyo?.rawRequest?.location ||
+        'Nearby',
+      requesterName:
+        detailsData?.requesterName ||
+        selectedDoerSuyo.requesterName ||
+        'Requester',
+      requesterId:
+        detailsData?.requesterId ||
+        selectedDoerSuyo.requesterId ||
+        selectedDoerSuyo?.rawRequest?.requesterId,
+      offerCentavos:
+        detailsData?.offerCentavos ??
+        selectedDoerSuyo?.rawRequest?.offerCentavos ??
+        (selectedDoerSuyo?.earnedAmount ? selectedDoerSuyo.earnedAmount * 100 : 0),
+      exactAddress:
+        detailsData?.exactAddress ||
+        selectedDoerSuyo.exactAddress ||
+        selectedDoerSuyo?.rawRequest?.exactAddress,
+      contactPhone:
+        detailsData?.contactPhone ||
+        selectedDoerSuyo.contactPhone ||
+        selectedDoerSuyo.requesterPhone ||
+        selectedDoerSuyo?.rawRequest?.contactPhone,
+      deadline:
+        detailsData?.deadline ||
+        selectedDoerSuyo.deadline ||
+        selectedDoerSuyo?.rawRequest?.deadline ||
+        new Date().toISOString(),
+      latitude:
+        detailsData?.latitude ??
+        selectedDoerSuyo?.latitude ??
+        selectedDoerSuyo?.rawRequest?.latitude,
+      longitude:
+        detailsData?.longitude ??
+        selectedDoerSuyo?.longitude ??
+        selectedDoerSuyo?.rawRequest?.longitude,
+    };
+
+    const matchedRating =
+      (ratings || []).find((rt) => rt.request_id === selectedDoerSuyo.id) ||
+      (selectedDoerSuyo.ratingScore != null
+        ? {
+            score: selectedDoerSuyo.ratingScore,
+            comment: selectedDoerSuyo.ratingComment,
+          }
+        : null);
+
+    const taskProofs = (proofs || []).filter(
+      (p) => p.request_id === selectedDoerSuyo.id,
+    );
+
+    const taskEvents = (events || []).filter(
+      (e) => e.request_id === selectedDoerSuyo.id,
+    );
+
+    return (
       <Modal
         visible={!!selectedDoerSuyo}
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         onRequestClose={() => setSelectedDoerSuyo(null)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.doerDetailModalCard}>
+          <View
+            style={[
+              styles.doerDetailModalCard,
+              {
+                maxHeight: '88%',
+                width: '92%',
+                maxWidth: 520,
+                padding: 20,
+                borderRadius: 24,
+                backgroundColor: colors?.surface || '#FFFFFF',
+              },
+            ]}
+          >
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: '#E2ECE5',
+                marginBottom: 14,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View
+                  style={[
+                    styles.doerDetailCategoryCircle,
+                    { backgroundColor: '#E8F5EE' },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark-done"
+                    size={18}
+                    color={resolveColor('#059669', 'color')}
+                  />
+                </View>
+                <View style={{ gap: 2 }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '800',
+                      color: resolveColor('#163523', 'color'),
+                    }}
+                  >
+                    Suyo details
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: resolveColor('#059669', 'color'),
+                      fontWeight: '600',
+                    }}
+                  >
+                    Completed Task · Verified
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setSelectedDoerSuyo(null)}
+                style={styles.doerDetailCloseBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name="close"
+                  size={18}
+                  color={resolveColor('#163523', 'color')}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ gap: 14, paddingBottom: 16 }}
+            >
+              {/* 1. SuyoSummary Tile with inside action buttons */}
+              <SuyoSummary details={fullDetails}>
+                <ThemedButton
+                  title="Requester profile"
+                  variant="secondary"
+                  onPress={() => {
+                    setSelectedDoerSuyo(null);
+                    router.push({
+                      pathname: '/profile',
+                      params: { userId: fullDetails.requesterId },
+                    });
+                  }}
+                />
+                {fullDetails.latitude != null ? (
+                  <ThemedButton
+                    title="View task location"
+                    variant="secondary"
+                    onPress={() => {
+                      setSelectedDoerSuyo(null);
+                      router.push({
+                        pathname: '/map',
+                        params: { requestId: fullDetails.id },
+                      });
+                    }}
+                  />
+                ) : null}
+              </SuyoSummary>
+
+              {/* 2. Private Task Details Tile */}
+              <PrivateTaskDetails details={fullDetails} />
+
+              {/* 3. Completion Proofs (if submitted) */}
+              {taskProofs.map((proof) => (
+                <View
+                  key={proof.id}
+                  style={{
+                    padding: 14,
+                    gap: 12,
+                    backgroundColor: colors?.card || '#FFFFFF',
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: colors?.border || '#E2ECE5',
+                  }}
+                >
+                  <ThemedText style={{ fontWeight: '700' }}>
+                    Proof · {proof.status}
+                  </ThemedText>
+                  <ProofImage path={proof.storage_path} />
+                  {proof.note ? <ThemedText>{proof.note}</ThemedText> : null}
+                </View>
+              ))}
+
+              {/* 4. Rating & Review Tile */}
+              <View
+                style={{
+                  padding: 16,
+                  gap: 8,
+                  backgroundColor: colors?.card || '#FFFFFF',
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors?.border || '#E2ECE5',
+                }}
+              >
+                <ThemedText style={{ fontWeight: '700', fontSize: 16 }}>
+                  Rating & Review
+                </ThemedText>
+                {matchedRating ? (
+                  <>
+                    <ThemedText
+                      style={{
+                        fontWeight: '700',
+                        color: colors?.link || '#059669',
+                      }}
+                    >
+                      ★ {matchedRating.score} / 5
+                    </ThemedText>
+                    {matchedRating.comment ? (
+                      <ThemedText tone="textMuted">
+                        {matchedRating.comment}
+                      </ThemedText>
+                    ) : (
+                      <ThemedText tone="textMuted">
+                        Task completed and rated by requester.
+                      </ThemedText>
+                    )}
+                  </>
+                ) : (
+                  <ThemedText tone="textMuted">
+                    Task completed. Awaiting review from requester.
+                  </ThemedText>
+                )}
+              </View>
+
+              {/* 5. Task History Tile */}
+              <View
+                style={{
+                  padding: 16,
+                  gap: 10,
+                  backgroundColor: colors?.card || '#FFFFFF',
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors?.border || '#E2ECE5',
+                }}
+              >
+                <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>
+                  Task history
+                </ThemedText>
+                {taskEvents.length > 0 ? (
+                  taskEvents.map((event) => (
+                    <ThemedText key={event.id}>
+                      {STATUS_LABELS[event.to_status] || event.to_status} ·{' '}
+                      {new Date(event.created_at).toLocaleString()}
+                    </ThemedText>
+                  ))
+                ) : (
+                  <>
+                    <ThemedText>
+                      Open · {fullDetails.date || 'Task created'}
+                    </ThemedText>
+                    <ThemedText>
+                      Assigned · You accepted this task
+                    </ThemedText>
+                    <ThemedText>
+                      Completed · Suyo finished & received
+                    </ThemedText>
+                  </>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal
+      visible={!!selectedDoerSuyo}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => setSelectedDoerSuyo(null)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.doerDetailModalCard}>
             {/* Header */}
             <View style={styles.doerDetailHeader}>
               <View style={styles.doerDetailHeaderLeft}>
