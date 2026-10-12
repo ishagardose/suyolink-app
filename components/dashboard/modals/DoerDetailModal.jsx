@@ -825,6 +825,5 @@ export default function DoerDetailModal({
           </View>
         </View>
       </Modal>
-    )
   );
 }
