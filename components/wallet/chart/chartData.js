@@ -120,6 +120,27 @@ export function calculateWalletChartData(
     const peakWeekVal =
       peakIdx >= 0 ? `₱${weekTotals[peakIdx].toFixed(2)}` : '₱0.00';
 
+    // Calculate previous month total for dynamic growth comparison
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    let prevMonthTotal = 0;
+    (transactions || []).forEach((t) => {
+      const dateStr = t.completedAt || t.created_at || t.createdAt;
+      const d = dateStr ? new Date(dateStr) : null;
+      if (!d || isNaN(d.getTime())) return;
+      if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
+        prevMonthTotal += (Number(t.rewardCentavos) || 0) / 100;
+      }
+    });
+
+    let growthStr = '0.0%';
+    if (prevMonthTotal > 0) {
+      const diff = ((total - prevMonthTotal) / prevMonthTotal) * 100;
+      growthStr = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+    } else if (total > 0) {
+      growthStr = '+100%';
+    }
+
     return {
       title: 'Monthly Income Trend',
       subtitle: `Weekly breakdown for ${currentMonthName} ${currentYear}`,
@@ -128,7 +149,7 @@ export function calculateWalletChartData(
         totalSuyos > 0
           ? `Total ${currentMonthName} Income (${totalSuyos} ${totalSuyos === 1 ? 'Suyo' : 'Suyos'})`
           : `No earnings recorded in ${currentMonthName} yet`,
-      growth: total > 0 ? '+ Active' : '0.0%',
+      growth: growthStr,
       pts,
       pathD,
       areaD,
@@ -220,6 +241,26 @@ export function calculateWalletChartData(
     const peakQVal =
       peakIdx >= 0 ? `₱${quarterTotals[peakIdx].toFixed(2)}` : '₱0.00';
 
+    // Calculate previous year total for dynamic yearly growth comparison
+    const prevYear = currentYear - 1;
+    let prevYearTotal = 0;
+    (transactions || []).forEach((t) => {
+      const dateStr = t.completedAt || t.created_at || t.createdAt;
+      const d = dateStr ? new Date(dateStr) : null;
+      if (!d || isNaN(d.getTime())) return;
+      if (d.getFullYear() === prevYear) {
+        prevYearTotal += (Number(t.rewardCentavos) || 0) / 100;
+      }
+    });
+
+    let growthStr = '0.0%';
+    if (prevYearTotal > 0) {
+      const diff = ((total - prevYearTotal) / prevYearTotal) * 100;
+      growthStr = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+    } else if (total > 0) {
+      growthStr = '+100%';
+    }
+
     return {
       title: 'Yearly Income Trend',
       subtitle: `Quarterly breakdown for ${currentYear}`,
@@ -228,7 +269,7 @@ export function calculateWalletChartData(
         totalSuyos > 0
           ? `Total ${currentYear} Annual Income (${totalSuyos} ${totalSuyos === 1 ? 'Suyo' : 'Suyos'})`
           : `No earnings recorded in ${currentYear} yet`,
-      growth: total > 0 ? '+ Active' : '0.0%',
+      growth: growthStr,
       pts,
       pathD,
       areaD,
