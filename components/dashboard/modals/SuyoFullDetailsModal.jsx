@@ -466,6 +466,18 @@ export default function SuyoFullDetailsModal({
               <Text style={styles.fullDetailCallBtnText}>Call</Text>
             </View>
           </TouchableOpacity>
+
+          {/* Cancellation Guidance Notice (1 sentence) */}
+          <View style={styles.requesterCancelNoticeBox}>
+            <Ionicons
+              name="information-circle-outline"
+              size={15}
+              color={resolveColor('#166534', 'color')}
+            />
+            <Text style={styles.requesterCancelNoticeText}>
+              To cancel this suyo, the requester must contact the doer directly using the requester information.
+            </Text>
+          </View>
         </View>
 
         {/* 8. Attached Photos & Reference Documents */}

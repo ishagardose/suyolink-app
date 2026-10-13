@@ -458,6 +458,18 @@ export default function SuyoFullDetailsCard({
               <Text style={styles.fullDetailCallBtnText}>Call</Text>
             </View>
           </TouchableOpacity>
+
+          {/* Cancellation Guidance Notice (1 sentence) */}
+          <View style={styles.requesterCancelNoticeBox || localStyles.requesterCancelNoticeBox}>
+            <Ionicons
+              name="information-circle-outline"
+              size={15}
+              color={resolveColor('#166534', 'color')}
+            />
+            <Text style={styles.requesterCancelNoticeText || localStyles.requesterCancelNoticeText}>
+              To cancel this suyo, the requester must contact the doer directly using the requester information.
+            </Text>
+          </View>
         </View>
 
         {/* 8. Attached Photos & Reference Documents */}
@@ -608,5 +620,24 @@ const cardStyles = StyleSheet.create({
   previewLargeImage: {
     width: '100%',
     height: '80%',
+  },
+  requesterCancelNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 10,
+  },
+  requesterCancelNoticeText: {
+    fontSize: 12,
+    color: '#166534',
+    flex: 1,
+    lineHeight: 17,
+    fontWeight: '500',
   },
 });
