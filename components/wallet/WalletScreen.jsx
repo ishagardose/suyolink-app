@@ -37,25 +37,71 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
     transactionsLoading,
     transactionsError,
     reloadTransactions,
+    completedSuyos = [],
+    doerCompletedSuyos = [],
+    requests = [],
   } = useSuyos();
   const { user } = useAuth();
-  const [activityFilter, setActivityFilter] = useState('earned'); // 'earned' | 'spent' | 'all'
 
-  const providerTransactions = useMemo(
-    () => (transactions || []).filter((t) => t.role === 'provider'),
-    [transactions],
-  );
+  // Authoritative provider (earnings) transactions from backend + completed doer suyos
+  const allProviderTransactions = useMemo(() => {
+    const list = [...(transactions || []).filter((t) => t.role === 'provider')];
+    (doerCompletedSuyos || []).forEach((ds) => {
+      if (!list.some((t) => t.requestId === ds.id)) {
+        list.push({
+          requestId: ds.id,
+          title: ds.title,
+          role: 'provider',
+          otherUserId: ds.requesterId,
+          otherUserName: ds.requesterName || 'Requester',
+          rewardCentavos: Math.round((Number(ds.reward) || 0) * 100),
+          currency: 'PHP',
+          completedAt: ds.completedAt || ds.updatedAt || ds.createdAt,
+          category: ds.category || 'General',
+          location: ds.barangay
+            ? `${ds.barangay}${ds.city ? `, ${ds.city}` : ''}`
+            : (ds.location || 'Local Suyo'),
+        });
+      }
+    });
+    return list;
+  }, [transactions, doerCompletedSuyos]);
 
-  const spentTransactions = useMemo(
-    () => (transactions || []).filter((t) => t.role === 'requester'),
-    [transactions],
-  );
+  // Authoritative requester (spent) transactions from backend + completed posted suyos
+  const allSpentTransactions = useMemo(() => {
+    const list = [...(transactions || []).filter((t) => t.role === 'requester')];
+    (completedSuyos || []).forEach((cs) => {
+      if (!list.some((t) => t.requestId === cs.id)) {
+        list.push({
+          requestId: cs.id,
+          title: cs.title,
+          role: 'requester',
+          otherUserId: cs.providerId,
+          otherUserName: cs.providerName || 'Doer',
+          rewardCentavos: Math.round((Number(cs.reward) || 0) * 100),
+          currency: 'PHP',
+          completedAt: cs.completedAt || cs.updatedAt || cs.createdAt,
+          category: cs.category || 'General',
+          location: cs.barangay
+            ? `${cs.barangay}${cs.city ? `, ${cs.city}` : ''}`
+            : (cs.location || 'Local Suyo'),
+        });
+      }
+    });
+    return list;
+  }, [transactions, completedSuyos]);
 
-  const unavailable = transactionsLoading || !!transactionsError;
-
-  // Normalized dynamic list from live user transactions
+  // Normalized dynamic list from live user transactions and behaviour
   const dynamicList = useMemo(() => {
-    return (transactions || []).map((t, idx) => {
+    const all = [...allProviderTransactions, ...allSpentTransactions];
+    // Sort descending by completion timestamp
+    all.sort((a, b) => {
+      const da = new Date(a.completedAt || 0).getTime();
+      const db = new Date(b.completedAt || 0).getTime();
+      return db - da;
+    });
+
+    return all.map((t, idx) => {
       const isProvider = t.role === 'provider';
       const d = t.completedAt ? new Date(t.completedAt) : null;
       const isToday =
@@ -69,51 +115,59 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
             : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           : 'Recently';
 
+      // Look up matching live request details from backend
+      const req = (requests || []).find((r) => r.id === t.requestId);
+      const category = req?.category || t.category || 'General';
+      const location = req?.barangay
+        ? `${req.barangay}${req.city ? `, ${req.city}` : ''}`
+        : (req?.location || t.location || 'Direct Handshake');
+
       return {
         id: t.requestId ? `${t.requestId}_${t.role || 'tx'}` : `TX-${idx}`,
         requestId: t.requestId,
         role: t.role || 'provider',
         title:
+          req?.title ||
           t.title ||
           (isProvider ? 'Completed Suyo Task' : 'Requested Suyo Errand'),
-        category: t.category || 'General',
+        category,
         icon:
-          t.category === 'Groceries'
+          category === 'Groceries'
             ? 'cart'
-            : t.category === 'Medicine'
+            : category === 'Medicine'
               ? 'medkit'
-              : t.category === 'Delivery'
+              : category === 'Delivery'
                 ? 'bicycle'
                 : 'document-text',
         date: dateStr,
         isToday: Boolean(isToday),
-        requesterName: t.otherUserName || (isProvider ? 'Requester' : 'Doer'),
-        location: 'Payment outside app',
-        earnedAmount: (t.rewardCentavos || 0) / 100,
-        status: 'Task completed',
+        requesterName:
+          req?.requesterName ||
+          t.otherUserName ||
+          (isProvider ? 'Requester' : 'Doer'),
+        location,
+        earnedAmount: (Number(t.rewardCentavos) || 0) / 100,
+        status: req?.status === 'completed' ? 'Completed' : 'Task completed',
       };
     });
-  }, [transactions]);
+  }, [allProviderTransactions, allSpentTransactions, requests]);
 
-  const displayedList = useMemo(() => {
-    if (activityFilter === 'earned') {
-      return dynamicList.filter((item) => item.role === 'provider');
-    }
-    if (activityFilter === 'spent') {
-      return dynamicList.filter((item) => item.role === 'requester');
-    }
-    return dynamicList;
-  }, [dynamicList, activityFilter]);
+  const displayedList = dynamicList;
 
-  const todayEarnedList = dynamicList.filter(
-    (s) => s.role === 'provider' && s.isToday,
-  );
+  const todayEarnedList = allProviderTransactions.filter((s) => {
+    const d = s.completedAt ? new Date(s.completedAt) : null;
+    return (
+      d &&
+      !isNaN(d.getTime()) &&
+      d.toDateString() === new Date().toDateString()
+    );
+  });
   const todayEarningsSum = todayEarnedList.reduce(
-    (sum, s) => sum + (Number(s.earnedAmount) || 0),
+    (sum, s) => sum + (Number(s.rewardCentavos) || 0) / 100,
     0,
   );
   const todaySuyosCount = todayEarnedList.length;
-  const overallSuyosCount = providerTransactions.length;
+  const overallSuyosCount = allProviderTransactions.length;
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -121,7 +175,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
   const todayDateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${currentYear}`;
 
   const monthlySuyosCount = useMemo(() => {
-    return providerTransactions.filter((t) => {
+    return allProviderTransactions.filter((t) => {
       const dateStr = t.completedAt || t.created_at || t.createdAt;
       const d = dateStr ? new Date(dateStr) : null;
       return (
@@ -131,7 +185,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
         d.getMonth() === currentMonth
       );
     }).length;
-  }, [providerTransactions, currentYear, currentMonth]);
+  }, [allProviderTransactions, currentYear, currentMonth]);
 
   const Container = embedded ? View : SafeAreaView;
   const Content = embedded ? View : ScrollView;
@@ -207,7 +261,7 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
                 <Ionicons
                   name="wallet"
                   size={17}
-                  color={resolveColor('#1E4D2B', 'color')}
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
               <Text style={styles.walletHeroSuper}>SUYOLINK WALLET</Text>
@@ -228,28 +282,28 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
             Today's Earnings - {todayDateFormatted}
           </Text>
           <Text style={styles.walletBalanceAmount}>
-            {unavailable ? '—' : `₱${todayEarningsSum.toFixed(2)}`}
+            ₱{todayEarningsSum.toFixed(2)}
           </Text>
 
           {/* 3 Fitted Summary Metric Tiles */}
           <View style={styles.walletSummaryRow}>
             <View style={styles.walletSummaryItem}>
               <Text style={styles.walletSummaryCount}>
-                {unavailable ? '—' : todaySuyosCount} Suyos
+                {todaySuyosCount} Suyos
               </Text>
               <Text style={styles.walletSummaryLabel}>Today's Suyos</Text>
             </View>
             <View style={styles.walletSummaryDivider} />
             <View style={styles.walletSummaryItem}>
               <Text style={styles.walletSummaryCount}>
-                {unavailable ? '—' : monthlySuyosCount} Suyos
+                {monthlySuyosCount} Suyos
               </Text>
               <Text style={styles.walletSummaryLabel}>Monthly Suyos</Text>
             </View>
             <View style={styles.walletSummaryDivider} />
             <View style={styles.walletSummaryItem}>
               <Text style={styles.walletSummaryCount}>
-                {unavailable ? '—' : overallSuyosCount} Suyos
+                {overallSuyosCount} Suyos
               </Text>
               <Text style={styles.walletSummaryLabel}>Overall Completed</Text>
             </View>
@@ -258,168 +312,89 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
           {/* Informative Note: Direct Settlement Outside App */}
           <View style={styles.walletPaymentNoticeRow}>
             <Ionicons
-              name="call"
+              name="checkmark-circle-outline"
               size={13}
               color={resolveColor('#059669', 'color')}
             />
             <Text style={styles.walletPaymentNoticeText}>
-              Agreed rewards for confirmed completed tasks. Payments are
-              arranged outside SuyoLink; this is not a cash balance or payment
-              receipt.
+              Authoritative rewards recorded for confirmed completed tasks.
+              Settled directly between requester and doer.
             </Text>
           </View>
         </View>
 
-        {/* Literal Modern Graphical Line Graph - Full Width Standalone Tile */}
-        {!unavailable ? (
-          <WalletIncomeLineGraph transactions={providerTransactions} />
-        ) : null}
+        {/* Literal Modern Graphical Line Graph & Statistics Table - Full Width Standalone Tile */}
+        <WalletIncomeLineGraph transactions={allProviderTransactions} />
 
-        {/* 2. Section Header with Link to History */}
-        <View style={styles.walletSectionHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.walletSectionTitle}>
-              Completed task rewards
-            </Text>
-            <Text style={styles.walletSectionSub}>
-              Tracked rewards and records from what you completed in the app
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.viewHistoryButton}
-            onPress={() => router.push('/transactions')}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.viewHistoryButtonText}>Full History</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={13}
-              color={resolveColor('#059669', 'color')}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Filter Pills: Earned / Spent / All */}
-        <View style={styles.filterPillsRow}>
-          <TouchableOpacity
-            style={[
-              styles.filterPill,
-              activityFilter === 'earned' && styles.filterPillActive,
-            ]}
-            onPress={() => setActivityFilter('earned')}
-            activeOpacity={0.75}
-          >
-            <Ionicons
-              name="arrow-down-circle"
-              size={13}
-              color={
-                activityFilter === 'earned'
-                  ? resolveColor('#FFFFFF', 'color')
-                  : resolveColor('#15803D', 'color')
-              }
-            />
-            <Text
-              style={[
-                styles.filterPillText,
-                activityFilter === 'earned' && styles.filterPillTextActive,
-              ]}
-            >
-              Earned ({providerTransactions.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterPill,
-              activityFilter === 'spent' && styles.filterPillActive,
-            ]}
-            onPress={() => setActivityFilter('spent')}
-            activeOpacity={0.75}
-          >
-            <Ionicons
-              name="arrow-up-circle"
-              size={13}
-              color={
-                activityFilter === 'spent'
-                  ? resolveColor('#FFFFFF', 'color')
-                  : resolveColor('#DC2626', 'color')
-              }
-            />
-            <Text
-              style={[
-                styles.filterPillText,
-                activityFilter === 'spent' && styles.filterPillTextActive,
-              ]}
-            >
-              Spent ({spentTransactions.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterPill,
-              activityFilter === 'all' && styles.filterPillActive,
-            ]}
-            onPress={() => setActivityFilter('all')}
-            activeOpacity={0.75}
-          >
-            <Text
-              style={[
-                styles.filterPillText,
-                activityFilter === 'all' && styles.filterPillTextActive,
-              ]}
-            >
-              All ({dynamicList.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 3. The Clean List of Dynamic Transactions */}
-        <View style={styles.walletListWrapper}>
-          {unavailable ? (
-            <View style={styles.walletEmptyCard}>
-              {transactionsLoading ? (
-                <ActivityIndicator color={colors.link} />
-              ) : (
-                <>
-                  <Text style={styles.walletEmptyTitle}>
-                    Could not load wallet
-                  </Text>
-                  <Text
-                    accessibilityRole="alert"
-                    style={styles.walletEmptySub}
-                  >
-                    {transactionsError}
-                  </Text>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    style={styles.emptyActionBtn}
-                    onPress={reloadTransactions}
-                  >
-                    <Text style={styles.emptyActionBtnText}>Retry wallet</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+        {/* 2. Unified Transactions Tile (Earnings & Spending in One Tile) */}
+        <View style={styles.walletUnifiedTile}>
+          <View style={styles.walletTileHeader}>
+            <View style={styles.walletTileTitleRow}>
+              <View style={styles.walletTileIconBox}>
+                <Ionicons
+                  name="swap-horizontal"
+                  size={16}
+                  color={resolveColor('#163925', 'color')}
+                />
+              </View>
+              <View>
+                <Text style={styles.walletTileTitle}>Transactions</Text>
+                <Text style={styles.walletTileSub}>
+                  Earnings & errand spending ({dynamicList.length})
+                </Text>
+              </View>
             </View>
-          ) : displayedList.length === 0 ? (
-            <View style={styles.walletEmptyCard}>
+            <TouchableOpacity
+              onPress={() => router.push('/transactions')}
+              style={styles.walletTileHistoryLink}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.walletTileHistoryText}>Full History</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={12}
+                color={resolveColor('#059669', 'color')}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {transactionsLoading && dynamicList.length === 0 ? (
+            <View style={styles.walletEmptyInsideTile}>
+              <ActivityIndicator color={resolveColor('#163925', 'color')} />
+            </View>
+          ) : transactionsError && dynamicList.length === 0 ? (
+            <View style={styles.walletEmptyInsideTile}>
+              <Text style={styles.walletEmptyTitle}>
+                Could not load wallet
+              </Text>
+              <Text
+                accessibilityRole="alert"
+                style={styles.walletEmptySub}
+              >
+                {transactionsError}
+              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.emptyActionBtn}
+                onPress={reloadTransactions}
+              >
+                <Text style={styles.emptyActionBtnText}>Retry wallet</Text>
+              </TouchableOpacity>
+            </View>
+          ) : dynamicList.length === 0 ? (
+            <View style={styles.walletEmptyInsideTile}>
               <View style={styles.walletEmptyIconCircle}>
                 <Ionicons
                   name="wallet-outline"
                   size={32}
-                  color={resolveColor('#1E4D2B', 'color')}
+                  color={resolveColor('#163925', 'color')}
                 />
               </View>
               <Text style={styles.walletEmptyTitle}>
-                {activityFilter === 'earned'
-                  ? 'No suyo earnings yet'
-                  : activityFilter === 'spent'
-                    ? 'No spending records yet'
-                    : 'No transaction activity yet'}
+                No suyo earnings yet
               </Text>
               <Text style={styles.walletEmptySub}>
-                Rewards appear here after the requester confirms task
-                completion.
+                Your earnings from completed suyos and spending from posted requests will appear here.
               </Text>
               <TouchableOpacity
                 style={styles.emptyActionBtn}
@@ -437,136 +412,133 @@ export default function WalletScreen({ embedded = false, onBack } = {}) {
               </TouchableOpacity>
             </View>
           ) : (
-            displayedList.map((item) => (
-              <View
-                key={item.id}
-                style={styles.walletItemCard}
-              >
-                <View style={styles.walletItemLeft}>
+            <View style={styles.walletTileList}>
+              {dynamicList.map((item, index) => {
+                const isEarning = item.role === 'provider';
+                const isLast = index === dynamicList.length - 1;
+                return (
                   <View
+                    key={item.id}
                     style={[
-                      styles.walletCategoryIconCircle,
-                      item.category === 'Groceries'
-                        ? {
-                            backgroundColor: resolveColor(
-                              '#DCFCE7',
-                              'backgroundColor',
-                            ),
-                          }
-                        : item.category === 'Medicine'
-                          ? {
-                              backgroundColor: resolveColor(
-                                '#F3E8FF',
-                                'backgroundColor',
-                              ),
-                            }
-                          : item.category === 'Documents'
-                            ? {
-                                backgroundColor: resolveColor(
-                                  '#E0F2FE',
-                                  'backgroundColor',
-                                ),
-                              }
-                            : item.category === 'Queuing & Bills'
-                              ? {
-                                  backgroundColor: resolveColor(
-                                    '#FEF3C7',
-                                    'backgroundColor',
-                                  ),
-                                }
-                              : {
-                                  backgroundColor: resolveColor(
-                                    '#EAF4EF',
-                                    'backgroundColor',
-                                  ),
-                                },
+                      styles.walletTileRow,
+                      !isLast && styles.walletTileRowBorder,
                     ]}
                   >
-                    <Ionicons
-                      name={item.icon || 'receipt'}
-                      size={18}
-                      color={
-                        item.category === 'Groceries'
-                          ? resolveColor('#15803D', 'color')
-                          : item.category === 'Medicine'
-                            ? resolveColor('#7E22CE', 'color')
-                            : item.category === 'Documents'
-                              ? resolveColor('#0369A1', 'color')
-                              : item.category === 'Queuing & Bills'
-                                ? resolveColor('#B45309', 'color')
-                                : resolveColor('#1E4D2B', 'color')
-                      }
-                    />
-                  </View>
-
-                  <View style={styles.walletItemInfoCol}>
-                    <Text
-                      style={styles.walletItemTitle}
-                      numberOfLines={1}
-                    >
-                      {item.title}
-                    </Text>
-
-                    <View style={styles.walletItemMetaRow}>
-                      <Ionicons
-                        name="person-circle-outline"
-                        size={13}
-                        color={resolveColor('#557261', 'color')}
-                      />
-                      <Text style={styles.walletItemRequesterText}>
-                        {item.role === 'provider' ? 'From:' : 'To:'}{' '}
-                        <Text
-                          style={{
-                            fontWeight: '700',
-                            color: resolveColor('#163523', 'color'),
-                          }}
-                        >
-                          {item.requesterName}
-                        </Text>
-                      </Text>
-                    </View>
-
-                    <View style={styles.walletItemDateRow}>
-                      <Ionicons
-                        name="time-outline"
-                        size={12}
-                        color={resolveColor('#8CA395', 'color')}
-                      />
-                      <Text style={styles.walletItemDateText}>{item.date}</Text>
-                      <Text style={styles.walletItemDot}>•</Text>
-                      <Ionicons
-                        name="location-outline"
-                        size={12}
-                        color={resolveColor('#8CA395', 'color')}
-                      />
-                      <Text
-                        style={styles.walletItemLocationText}
-                        numberOfLines={1}
+                    <View style={styles.walletItemLeft}>
+                      <View
+                        style={[
+                          styles.walletCategoryIconCircle,
+                          {
+                            backgroundColor: isEarning
+                              ? resolveColor('#EAF4EF', 'backgroundColor')
+                              : resolveColor('#FEE2E2', 'backgroundColor'),
+                          },
+                        ]}
                       >
-                        {item.location}
+                        <Ionicons
+                          name={isEarning ? 'arrow-down-circle' : 'arrow-up-circle'}
+                          size={20}
+                          color={
+                            isEarning
+                              ? resolveColor('#15803D', 'color')
+                              : resolveColor('#DC2626', 'color')
+                          }
+                        />
+                      </View>
+
+                      <View style={styles.walletItemInfoCol}>
+                        <Text
+                          style={styles.walletItemTitle}
+                          numberOfLines={1}
+                        >
+                          {item.title}
+                        </Text>
+
+                        <View style={styles.walletItemMetaRow}>
+                          <Ionicons
+                            name="person-circle-outline"
+                            size={13}
+                            color={resolveColor('#557261', 'color')}
+                          />
+                          <Text style={styles.walletItemRequesterText}>
+                            {isEarning ? 'From:' : 'To:'}{' '}
+                            <Text
+                              style={{
+                                fontWeight: '700',
+                                color: resolveColor('#163523', 'color'),
+                              }}
+                            >
+                              {item.requesterName}
+                            </Text>
+                          </Text>
+                        </View>
+
+                        <View style={styles.walletItemDateRow}>
+                          <Ionicons
+                            name="time-outline"
+                            size={12}
+                            color={resolveColor('#8CA395', 'color')}
+                          />
+                          <Text style={styles.walletItemDateText}>{item.date}</Text>
+                          <Text style={styles.walletItemDot}>•</Text>
+                          <Ionicons
+                            name="location-outline"
+                            size={12}
+                            color={resolveColor('#8CA395', 'color')}
+                          />
+                          <Text
+                            style={styles.walletItemLocationText}
+                            numberOfLines={1}
+                          >
+                            {item.location}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.walletItemRight}>
+                      <Text
+                        style={[
+                          styles.walletEarnedAmountText,
+                          !isEarning && { color: resolveColor('#DC2626', 'color') },
+                        ]}
+                      >
+                        {isEarning ? '+' : '−'}₱
+                        {Number(item.earnedAmount).toFixed(2)}
                       </Text>
+                      <View
+                        style={[
+                          styles.walletStatusChip,
+                          !isEarning && {
+                            backgroundColor: resolveColor('#FEE2E2', 'backgroundColor'),
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={isEarning ? 'checkmark-circle' : 'arrow-up'}
+                          size={10}
+                          color={
+                            isEarning
+                              ? resolveColor('#15803D', 'color')
+                              : resolveColor('#DC2626', 'color')
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.walletStatusChipText,
+                            !isEarning && {
+                              color: resolveColor('#DC2626', 'color'),
+                            },
+                          ]}
+                        >
+                          {isEarning ? 'Earned' : 'Spent'}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-
-                <View style={styles.walletItemRight}>
-                  <Text style={styles.walletEarnedAmountText}>
-                    {item.role === 'provider' ? '+' : '−'}₱
-                    {Number(item.earnedAmount).toFixed(2)}
-                  </Text>
-                  <View style={styles.walletStatusChip}>
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={10}
-                      color={resolveColor('#15803D', 'color')}
-                    />
-                    <Text style={styles.walletStatusChipText}>
-                      {item.status}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))
+                );
+              })}
+            </View>
           )}
         </View>
       </Content>

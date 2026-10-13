@@ -128,12 +128,14 @@ export default function SuyoScreen() {
           alignSelf: 'center',
         }}
       >
-        <ThemedButton
-          title="Refresh task"
-          variant="secondary"
-          disabled={busy}
-          onPress={() => act(refresh)}
-        />
+        {request?.status !== 'completed' ? (
+          <ThemedButton
+            title="Refresh task"
+            variant="secondary"
+            disabled={busy}
+            onPress={() => act(refresh)}
+          />
+        ) : null}
         {loadError || workflowError || error ? (
           <ThemedText
             accessibilityRole="alert"
@@ -150,43 +152,57 @@ export default function SuyoScreen() {
           </ThemedText>
         ) : (
           <>
-            <SuyoSummary details={request} />
-            <ThemedButton
-              title="Requester profile"
-              variant="secondary"
-              onPress={() =>
-                router.push({
-                  pathname: '/profile',
-                  params: { userId: request.requesterId },
-                })
-              }
-            />
+            <SuyoSummary details={request}>
+              <ThemedButton
+                title="Requester profile"
+                variant="secondary"
+                onPress={() =>
+                  router.push({
+                    pathname: '/profile',
+                    params: { userId: request.requesterId },
+                  })
+                }
+              />
+              {request.latitude != null &&
+              !(
+                (own || assigned) &&
+                request.providerId &&
+                ['assigned', 'in_progress'].includes(request.status)
+              ) ? (
+                <ThemedButton
+                  title="View task location"
+                  variant="secondary"
+                  onPress={() =>
+                    router.push({ pathname: '/map', params: { requestId: id } })
+                  }
+                />
+              ) : null}
+            </SuyoSummary>
             <PrivateTaskDetails details={request} />
             <LiveTrackingCard
               request={request}
               userId={user?.id}
             />
             {request.providerId ? (
-              <ThemedText>
-                Provider rating:{' '}
-                {providerRatings.length
-                  ? `${(providerRatings.reduce((total, item) => total + item.score, 0) / providerRatings.length).toFixed(1)} / 5 (${providerRatings.length} reviews)`
-                  : 'No ratings yet'}
-              </ThemedText>
-            ) : null}
-            {request.latitude != null &&
-            !(
-              (own || assigned) &&
-              request.providerId &&
-              ['assigned', 'in_progress'].includes(request.status)
-            ) ? (
-              <ThemedButton
-                title="View task location"
-                variant="secondary"
-                onPress={() =>
-                  router.push({ pathname: '/map', params: { requestId: id } })
-                }
-              />
+              <View
+                style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  gap: 6,
+                }}
+              >
+                <ThemedText style={{ fontWeight: '700' }}>
+                  Provider rating
+                </ThemedText>
+                <ThemedText tone="textMuted">
+                  {providerRatings.length
+                    ? `${(providerRatings.reduce((total, item) => total + item.score, 0) / providerRatings.length).toFixed(1)} / 5 (${providerRatings.length} reviews)`
+                    : 'No ratings yet'}
+                </ThemedText>
+              </View>
             ) : null}
             {request.status === 'open' && !eligible ? (
               <ThemedText tone="danger">
@@ -194,13 +210,24 @@ export default function SuyoScreen() {
               </ThemedText>
             ) : null}
             {eligible && !own ? (
-              <ThemedButton
-                title="Accept task"
-                disabled={busy}
-                onPress={() =>
-                  act(() => mutate('accept_suyo', { p_request_id: id }))
-                }
-              />
+              <View
+                style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  gap: 10,
+                }}
+              >
+                <ThemedButton
+                  title="Accept task"
+                  disabled={busy}
+                  onPress={() =>
+                    act(() => mutate('accept_suyo', { p_request_id: id }))
+                  }
+                />
+              </View>
             ) : null}
             <ApplicationsPanel
               request={request}
@@ -249,7 +276,16 @@ export default function SuyoScreen() {
               }
             />
             {assigned && request.status === 'in_progress' ? (
-              <>
+              <View
+                style={{
+                  padding: 16,
+                  gap: 12,
+                  backgroundColor: colors.card,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
                 <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>
                   Completion proof
                 </ThemedText>
@@ -295,7 +331,7 @@ export default function SuyoScreen() {
                   },
                   !asset,
                 )}
-              </>
+              </View>
             ) : null}
             {requestProofs.map((proof) => (
               <View
@@ -376,14 +412,37 @@ export default function SuyoScreen() {
             ))}
             {request.status === 'completed' ? (
               rating ? (
-                <>
-                  <ThemedText style={{ fontWeight: '700' }}>
-                    Rating: {rating.score} / 5
+                <View
+                  style={{
+                    padding: 16,
+                    gap: 8,
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <ThemedText style={{ fontWeight: '700', fontSize: 16 }}>
+                    Rating & Review
                   </ThemedText>
-                  <ThemedText>{rating.comment}</ThemedText>
-                </>
+                  <ThemedText style={{ fontWeight: '700', color: colors.link }}>
+                    ★ {rating.score} / 5
+                  </ThemedText>
+                  {rating.comment ? (
+                    <ThemedText tone="textMuted">{rating.comment}</ThemedText>
+                  ) : null}
+                </View>
               ) : own || assigned ? (
-                <>
+                <View
+                  style={{
+                    padding: 16,
+                    gap: 12,
+                    backgroundColor: colors.card,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
                   <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>
                     Rate your experience
                   </ThemedText>
@@ -418,11 +477,20 @@ export default function SuyoScreen() {
                       }),
                     !score,
                   )}
-                </>
+                </View>
               ) : null
             ) : null}
             {own || assigned ? (
-              <>
+              <View
+                style={{
+                  padding: 16,
+                  gap: 10,
+                  backgroundColor: colors.card,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
                 <ThemedText style={{ fontSize: 18, fontWeight: '700' }}>
                   Task history
                 </ThemedText>
@@ -434,7 +502,7 @@ export default function SuyoScreen() {
                       {new Date(event.created_at).toLocaleString()}
                     </ThemedText>
                   ))}
-              </>
+              </View>
             ) : null}
             {busy ? (
               <ThemedText accessibilityRole="status">Saving…</ThemedText>

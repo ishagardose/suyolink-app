@@ -8,7 +8,7 @@ import useRequestStatusLabel from '../../hooks/useRequestStatusLabel';
 import ThemedText from '../themed/ThemedText';
 import { urgencyFor } from '../../lib/urgency';
 
-export default function SuyoSummary({ details }) {
+export default function SuyoSummary({ details, children }) {
   const { colors } = useTheme();
   const { position } = useDeviceLocation();
   const statusLabel = useRequestStatusLabel(details);
@@ -83,6 +83,7 @@ export default function SuyoSummary({ details }) {
           Posted by: {details.requesterName}
         </ThemedText>
       </View>
+      {children ? <View style={styles.actionsContainer}>{children}</View> : null}
     </View>
   );
 }
@@ -93,6 +94,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     gap: 12,
+  },
+  actionsContainer: {
+    gap: 10,
+    marginTop: 4,
   },
   headerRow: {
     flexDirection: 'row',

@@ -55,7 +55,6 @@ test('wallet uses confirmed backend rewards in both entry points and shows spend
   await page.goto('/wallet');
   await expect(page.getByText('+₱123.45', { exact: true })).toBeVisible();
   await expect(page.getByText('Verified User', { exact: true })).toHaveCount(0);
-  await page.getByText('Spent (1)', { exact: true }).click();
   await expect(page.getByText('−₱40.00', { exact: true })).toBeVisible();
   await page.goto('/dashboard');
   await page.getByRole('button', { name: 'Open sidebar', exact: true }).click();

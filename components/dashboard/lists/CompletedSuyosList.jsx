@@ -76,12 +76,18 @@ export default function CompletedSuyosList({
                   +₱{Number(item.earnedAmount).toFixed(2)}
                 </Text>
                 <View style={styles.doerCompletedRatingBadge}>
-                  <Ionicons
-                    name="star"
-                    size={10}
-                    color={resolveColor('#F59E0B', 'color')}
-                  />
-                  <Text style={styles.doerCompletedRatingText}>5.0★</Text>
+                  {item.ratingScore != null && (
+                    <Ionicons
+                      name="star"
+                      size={10}
+                      color={resolveColor('#F59E0B', 'color')}
+                    />
+                  )}
+                  <Text style={styles.doerCompletedRatingText}>
+                    {item.ratingScore != null
+                      ? `${Number(item.ratingScore).toFixed(1)}★`
+                      : 'Completed'}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>

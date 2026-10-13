@@ -178,7 +178,11 @@ export default function SwipeableNotificationItem({
             <View style={styles.notifCardBottomActionRow}>
               {item.targetScreen ? (
                 <Text style={styles.notifActionLinkText}>
-                  Tap to view request →
+                  {item.kind === 'completed' ||
+                  item.title?.toLowerCase().includes('completed') ||
+                  item.body?.toLowerCase().includes('completed')
+                    ? 'View task details →'
+                    : 'Tap for track & trace →'}
                 </Text>
               ) : (
                 <Text style={styles.notifSwipeHintText}>

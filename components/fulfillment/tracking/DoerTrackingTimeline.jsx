@@ -56,7 +56,7 @@ export default function DoerTrackingTimeline({
               4. Drop off & Complete
             </Text>
             <Text style={styles.timelineItemRoute}>
-              RECIPIENT CONFIRMATION → RELEASE ESCROW
+              RECIPIENT CONFIRMATION → DIRECT PAYMENT SETTLEMENT
             </Text>
             <Text style={styles.timelineItemActor}>
               Recipient: {task.requesterName} • {task.location}

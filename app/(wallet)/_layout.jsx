@@ -11,7 +11,7 @@ export default function WalletLayout() {
         initialRouteName="wallet"
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
+          contentStyle: { backgroundColor: '#163925' },
         }}
       >
         <Stack.Screen name="wallet" />

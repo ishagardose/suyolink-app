@@ -1,15 +1,21 @@
-export default function useProfileSummary({ reviews, completedCount, rating }) {
+export default function useProfileSummary({ reviews = [], completedCount, rating }) {
+  const numericRating =
+    rating != null && !isNaN(Number(rating)) && Number(rating) > 0
+      ? Number(rating).toFixed(1)
+      : null;
+
   return {
     completedSuyosCount:
       completedCount == null ? '\u2014' : String(completedCount),
     displayRating:
-      rating == null ? 'No ratings yet' : Number(rating).toFixed(1),
-    dynamicFeedbacks: reviews.map((review) => ({
-      id: review.id,
+      numericRating == null ? 'No ratings yet' : numericRating,
+    dynamicFeedbacks: (reviews || []).map((review) => ({
+      id: review.id || `${review.reviewer_id || 'rev'}-${review.created_at || Math.random()}`,
       author: review.reviewerName || 'Community member',
-      score: Number(review.score),
+      score: Number(review.score || 5),
       comment: (review.comment || '').trim(),
-      created_at: review.created_at,
+      tags: Array.isArray(review.tags) ? review.tags : [],
+      created_at: review.created_at || new Date().toISOString(),
     })),
   };
 }

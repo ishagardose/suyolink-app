@@ -1,1 +1,1 @@
-export { default } from '../RateSuyoScreen';
+export { default } from '../../../app/(requests)/rate-doer';

@@ -1117,6 +1117,158 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   await denied(editCall(), 'Anonymous edit denied');
   await denied(boostCall(2000), 'Anonymous boost denied');
 
+  await db.exec('reset role');
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610120001_fix_ratings_and_profiles.sql',
+      ),
+      'utf8',
+    ),
+  );
+  await actor(A);
+  await db.exec(
+    `select public.update_suyo_rating('${v2Req.id}', 5::smallint, 'Updated rating and comment')`,
+  );
+  const updatedRatingRow = await row(
+    `select score, comment from public.ratings where request_id='${v2Req.id}' and reviewer_id='${A}'`,
+  );
+  ok(
+    updatedRatingRow.score === 5 &&
+      updatedRatingRow.comment === 'Updated rating and comment',
+    'Reviewer can update existing rating and comment accurately',
+  );
+  const updatedProfile = (
+    await row(`select public.get_suyo_profile('${B}') as p`)
+  ).p;
+  ok(
+    updatedProfile.reviews.some(
+      (r) => r.comment === 'Updated rating and comment' && r.score === 5,
+    ),
+    'Updated rating and comment reflect accurately in profile',
+  );
+
+  // 15. Doer rates requester while task is awaiting confirmation and reflects in requester profile
+  await actor(A);
+  const doerReviewTask = await row(
+    `select * from public.create_suyo_request_v2('Doer rates requester task','Details','Queuing & Bills',15000,now()+interval '1 day','Tagum','Address','Notes','09123456789',7.1,125.6,'review-flow-001')`,
+  );
+  await actor(B);
+  await db.exec(`select public.accept_suyo('${doerReviewTask.id}')`);
+  await db.exec(
+    `select public.change_suyo_status('${doerReviewTask.id}', 'in_progress')`,
+  );
+  const doerProofPath = `${doerReviewTask.id}/${B}/proof.jpg`;
+  await db.exec(
+    `insert into storage.objects(bucket_id,name,owner_id) values ('suyo-proofs','${doerProofPath}','${B}')`,
+  );
+  await db.exec(
+    `select * from public.submit_suyo_proof('${doerReviewTask.id}', '${doerProofPath}', 'Delivered and paid')`,
+  );
+
+  // Status is now awaiting_confirmation; doer rates requester
+  const doerRatingResult = await row(
+    `select * from public.rate_suyo_user('${doerReviewTask.id}', 5::smallint, 'Prompt response, smooth transaction. Great requester!')`,
+  );
+  ok(
+    doerRatingResult.reviewer_id === B &&
+      doerRatingResult.provider_id === A &&
+      doerRatingResult.score === 5 &&
+      doerRatingResult.comment ===
+        'Prompt response, smooth transaction. Great requester!',
+    'Doer successfully rates requester while task is awaiting confirmation',
+  );
+
+  // Verify requester A profile displays the review and rating from doer B
+  const requesterProfile = (
+    await row(`select public.get_suyo_profile('${A}') as p`)
+  ).p;
+  ok(
+    requesterProfile.reviews.some(
+      (r) =>
+        r.reviewer_id === B &&
+        r.score === 5 &&
+        r.comment.includes('Great requester!'),
+    ),
+    'Requester profile displays review published by doer',
+  );
+
+  // Idempotent rating update via rate_suyo_user
+  await row(
+    `select * from public.rate_suyo_user('${doerReviewTask.id}', 5::smallint, 'Punctual, responsive, polite. Exceptional requester!')`,
+  );
+  const reloadedRequesterProfile = (
+    await row(`select public.get_suyo_profile('${A}') as p`)
+  ).p;
+  ok(
+    reloadedRequesterProfile.reviews.some((r) =>
+      r.comment.includes('Exceptional requester!'),
+    ),
+    'Updated review tags/text reflect in requester profile without duplication',
+  );
+
+  // Requester A rates doer B
+  await actor(A);
+  await db.exec(
+    `select * from public.rate_suyo_user('${doerReviewTask.id}', 5::smallint, 'Fast doer, highly recommended!')`,
+  );
+  const doerProfile = (
+    await row(`select public.get_suyo_profile('${B}') as p`)
+  ).p;
+  ok(
+    doerProfile.reviews.some((r) =>
+      r.comment.includes('Fast doer, highly recommended!'),
+    ),
+    'Doer profile displays review published by requester',
+  );
+
+  // 16. Test mark_suyo_received and completed status transition
+  await db.exec('reset role');
+  await db.exec(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '../supabase/migrations/202610120002_complete_task_on_rating_and_received.sql',
+      ),
+      'utf8',
+    ),
+  );
+
+  await actor(A);
+  const markReceivedTask = await row(
+    `select * from public.create_suyo_request_v2('Mark received test task','Details','Groceries',20000,now()+interval '1 day','Tagum','Address','Notes','09123456789',7.1,125.6,'mark-received-001')`,
+  );
+  await actor(B);
+  await db.exec(`select public.accept_suyo('${markReceivedTask.id}')`);
+  await db.exec(
+    `select public.change_suyo_status('${markReceivedTask.id}', 'in_progress')`,
+  );
+
+  // Only requester can mark received
+  await denied(
+    `select public.mark_suyo_received('${markReceivedTask.id}')`,
+    'Doer cannot mark suyo as received',
+  );
+
+  // Requester marks received -> auto completed and transaction created
+  await actor(A);
+  const completedReceived = await row(
+    `select * from public.mark_suyo_received('${markReceivedTask.id}')`,
+  );
+  ok(
+    completedReceived.status === 'completed' && completedReceived.completed_at !== null,
+    'Requester marking suyo as received transitions task to completed',
+  );
+
+  const txRow = await row(
+    `select count(*)::int as count from public.transactions where request_id='${markReceivedTask.id}'`,
+  );
+  ok(
+    txRow.count === 1,
+    'Transaction ledger record is generated upon marking as received',
+  );
+
   await db.close();
   console.log(
     'PASS: migration + ' +

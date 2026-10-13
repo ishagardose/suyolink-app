@@ -12,6 +12,7 @@ For the project shown in the supplied export, run each complete file in SQL Edit
 4. `migrations/202610080001_backend_profiles.sql` (required by the updated My Profile page).
 5. `migrations/202610080002_notification_deletion.sql` (dashboard notification removal).
 6. `migrations/202610090001_dashboard_task_actions.sql` (dashboard editing and reward boosts).
+7. `migrations/202610120001_fix_ratings_and_profiles.sql` (ratings & reviews recorded dynamically for both doer and requester profiles).
 
 These are transactional, one-time migrations. Do not rerun successful files: policies and tables intentionally detect duplicate application. If using the Supabase CLI, reconcile migration history before `db push` when earlier SQL was run manually.
 
@@ -57,5 +58,14 @@ Apply `migrations/202610090001_dashboard_task_actions.sql` before using the upda
 - Repost opens `/post-suyo?repost=<request-id>` and fetches the original owner's task details, including private contact/address/pin data. It leaves the deadline blank for review. Submitting uses the existing idempotent `create_suyo_request_v2` RPC and creates a new open request; the original task and its history remain unchanged. Missing historical pin/contact data must be supplied before posting.
 
 Published edits, boosts, and cancellation update the dashboard after the RPC succeeds. Failed requests retain the editor or task and display an error for retry. Boosting does not claim to notify every nearby doer. Archived templates remain session-local drafts, not persisted task records.
+
+## Ratings and Profile Reviews Sync
+
+Apply `migrations/202610120001_fix_ratings_and_profiles.sql` to enable dynamic real-world reviews between both participants:
+
+- **Doer Rating Requester & Requester Rating Doer**: Allows either participant to rate and comment with tag options dynamically. The rating is recorded in `public.ratings` where `provider_id` stores the recipient and `reviewer_id` stores the reviewer.
+- **Workflow State Flexibility**: Participants can rate tasks in `completed`, `awaiting_confirmation`, `in_progress`, or `assigned` status. Submitting a review does not fail if proof is currently awaiting confirmation.
+- **Dynamic Profile Display**: `get_suyo_profile` uses a `LEFT JOIN` on reviewer profiles, ensuring reviews are never dropped. The recipient's profile immediately reflects the aggregated star rating, count, and comments list.
+- **RLS & Idempotency**: Adds `ratings_insert` and `ratings_update` RLS policies for authenticated users and allows `update_suyo_rating` RPC for modifying existing ratings without duplicates.
 
 Run `npm test` for database authorization and workflow checks, and `npm run test:e2e -- dashboard-actions.spec.cjs` for browser persistence, failure/retry, boost/reset, cancellation, and repost checks. Hosted migration application and real-project smoke tests are separate from these local checks.

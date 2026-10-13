@@ -1,8 +1,10 @@
 import SuyoContactDetails from '../details/SuyoContactDetails';
 import SuyoRewardBoost from '../details/SuyoRewardBoost';
 import SuyoDetailActions from '../details/SuyoDetailActions';
-import React from 'react';
+import SuyoFullDetailsModal from './SuyoFullDetailsModal';
+import React, { useState, useRef, useEffect } from 'react';
 import { getRequestTiming } from '../../../lib/requestTiming';
+import { useSuyos } from '../../../context/SuyoContext';
 
 import {
   Text,
@@ -39,6 +41,37 @@ export default function SuyoDetailModal({
   triggerToast,
   userProfile,
 }) {
+  const { mutate } = useSuyos();
+  const [isFullDetailsOpen, setIsFullDetailsOpen] = useState(false);
+  const accepting = useRef(false);
+  const [acceptBusy, setAcceptBusy] = useState(false);
+
+  useEffect(() => {
+    setIsFullDetailsOpen(false);
+  }, [selectedSuyo?.id]);
+
+  const handleAccept = async () => {
+    if (accepting.current || !selectedSuyo?.id) return;
+    accepting.current = true;
+    setAcceptBusy(true);
+    try {
+      await mutate('accept_suyo', { p_request_id: selectedSuyo.id });
+      const id = selectedSuyo.id;
+      setSelectedSuyo(null);
+      setOpenedFromFavorites(false);
+      setIsFullDetailsOpen(false);
+      router.push({ pathname: '/fulfill', params: { id } });
+    } catch (err) {
+      triggerToast(
+        err.message || 'Could not accept this task. Please retry.',
+        'alert-circle',
+      );
+    } finally {
+      accepting.current = false;
+      setAcceptBusy(false);
+    }
+  };
+
   return (
     selectedSuyo && (
       <Modal
@@ -46,14 +79,34 @@ export default function SuyoDetailModal({
         animationType="slide"
         transparent={true}
         onRequestClose={() => {
-          if (!busy) handleCloseDetailModal();
+          if (!busy) {
+            if (isFullDetailsOpen) {
+              setIsFullDetailsOpen(false);
+            } else {
+              handleCloseDetailModal();
+            }
+          }
         }}
       >
         <View style={styles.modalBackdrop}>
-          <View
-            style={styles.suyoDetailModalCard}
-            pointerEvents={busy ? 'none' : 'auto'}
-          >
+          {isFullDetailsOpen ? (
+            <SuyoFullDetailsModal
+              selectedSuyo={selectedSuyo}
+              onBack={() => setIsFullDetailsOpen(false)}
+              onClose={() => {
+                setIsFullDetailsOpen(false);
+                handleCloseDetailModal();
+              }}
+              handleAccept={handleAccept}
+              acceptBusy={acceptBusy}
+              resolveColor={resolveColor}
+              styles={styles}
+            />
+          ) : (
+            <View
+              style={styles.suyoDetailModalCard}
+              pointerEvents={busy ? 'none' : 'auto'}
+            >
             {busy ? (
               <Text
                 accessibilityLiveRegion="polite"
@@ -126,82 +179,102 @@ export default function SuyoDetailModal({
             </View>
 
             {/* Title & Status Row: Status placed at opposite side, in line with Title */}
-            <View style={styles.detailTitleAndStatusRow}>
-              <Text style={styles.detailCardTitleInRow}>
-                {selectedSuyo.title}
-              </Text>
+            {(() => {
+              const timing = getRequestTiming(selectedSuyo.rawRequest || selectedSuyo);
+              const rawUrgency =
+                selectedSuyo.urgency ||
+                selectedSuyo.rawRequest?.urgency ||
+                (timing.overdue ? 'Urgent' : null);
 
-              <View
-                style={[
-                  styles.detailStatusPillInline,
-                  selectedSuyo.status === 'Cancelled'
-                    ? {
+              const isCancelled =
+                selectedSuyo.status === 'Cancelled' || selectedSuyo.status === 'cancelled';
+              const isCompleted =
+                selectedSuyoContext === 'completed' ||
+                selectedSuyo.status === 'completed' ||
+                selectedSuyo.status?.includes?.('Completed');
+              const isAccepted =
+                selectedSuyoContext === 'accepted' ||
+                ['assigned', 'in_progress', 'working', 'en_route'].includes(selectedSuyo.status) ||
+                selectedSuyo.status?.includes?.('In Progress') ||
+                selectedSuyo.status?.includes?.('Accepted');
+              const isArchived = selectedSuyoContext === 'archived';
+
+              let currentStatusLabel = 'Open';
+              let currentStatusBg = '#E8F5EE';
+              let currentStatusColor = '#1E4D2B';
+              let currentStatusIcon = null;
+
+              if (isCancelled) {
+                currentStatusLabel = 'Cancelled';
+                currentStatusBg = '#FEE2E2';
+                currentStatusColor = '#DC2626';
+              } else if (isCompleted) {
+                currentStatusLabel = 'Completed';
+                currentStatusBg = '#DCFCE7';
+                currentStatusColor = '#15803D';
+              } else if (isAccepted) {
+                currentStatusLabel = 'In Progress';
+                currentStatusBg = '#E0F2FE';
+                currentStatusColor = '#0369A1';
+              } else if (isArchived) {
+                currentStatusLabel = 'Archived';
+                currentStatusBg = '#F1F5F9';
+                currentStatusColor = '#475569';
+              } else if (rawUrgency === 'Urgent') {
+                currentStatusLabel = 'Urgent';
+                currentStatusBg = '#FEF2F2';
+                currentStatusColor = '#DC2626';
+                currentStatusIcon = 'flame';
+              } else if (rawUrgency === 'Due today') {
+                currentStatusLabel = 'Due today';
+                currentStatusBg = '#FEF3C7';
+                currentStatusColor = '#D97706';
+                currentStatusIcon = 'alarm';
+              } else if (rawUrgency === 'Due tomorrow') {
+                currentStatusLabel = 'Due tomorrow';
+                currentStatusBg = '#F0FDF4';
+                currentStatusColor = '#15803D';
+              }
+
+              return (
+                <View style={styles.detailTitleAndStatusRow}>
+                  <Text style={styles.detailCardTitleInRow}>
+                    {selectedSuyo.title}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.detailStatusPillInline,
+                      {
                         backgroundColor: resolveColor(
-                          '#FEE2E2',
+                          currentStatusBg,
                           'backgroundColor',
                         ),
-                      }
-                    : selectedSuyoContext === 'completed' ||
-                        selectedSuyo.status?.includes('Completed')
-                      ? {
-                          backgroundColor: resolveColor(
-                            '#DCFCE7',
-                            'backgroundColor',
-                          ),
-                        }
-                      : selectedSuyoContext === 'accepted' ||
-                          selectedSuyo.status?.includes('In Progress')
-                        ? {
-                            backgroundColor: resolveColor(
-                              '#E0F2FE',
-                              'backgroundColor',
-                            ),
-                          }
-                        : selectedSuyoContext === 'archived'
-                          ? {
-                              backgroundColor: resolveColor(
-                                '#F1F5F9',
-                                'backgroundColor',
-                              ),
-                            }
-                          : {
-                              backgroundColor: resolveColor(
-                                '#E0F2FE',
-                                'backgroundColor',
-                              ),
-                            },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.detailStatusPillInlineText,
-                    selectedSuyo.status === 'Cancelled'
-                      ? { color: resolveColor('#DC2626', 'color') }
-                      : selectedSuyoContext === 'completed' ||
-                          selectedSuyo.status?.includes('Completed')
-                        ? { color: resolveColor('#15803D', 'color') }
-                        : selectedSuyoContext === 'accepted' ||
-                            selectedSuyo.status?.includes('In Progress')
-                          ? { color: resolveColor('#0369A1', 'color') }
-                          : selectedSuyoContext === 'archived'
-                            ? { color: resolveColor('#475569', 'color') }
-                            : { color: resolveColor('#0369A1', 'color') },
-                  ]}
-                >
-                  {selectedSuyo.status === 'Cancelled'
-                    ? 'Cancelled'
-                    : selectedSuyoContext === 'completed' ||
-                        selectedSuyo.status?.includes('Completed')
-                      ? 'Completed'
-                      : selectedSuyoContext === 'accepted' ||
-                          selectedSuyo.status?.includes('In Progress')
-                        ? 'Accepted'
-                        : selectedSuyoContext === 'archived'
-                          ? 'Archived'
-                          : 'Open'}
-                </Text>
-              </View>
-            </View>
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: currentStatusIcon ? 4 : 0,
+                      },
+                    ]}
+                  >
+                    {currentStatusIcon ? (
+                      <Ionicons
+                        name={currentStatusIcon}
+                        size={11}
+                        color={resolveColor(currentStatusColor, 'color')}
+                      />
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.detailStatusPillInlineText,
+                        { color: resolveColor(currentStatusColor, 'color') },
+                      ]}
+                    >
+                      {currentStatusLabel}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })()}
 
             <View style={styles.detailDivider} />
 
@@ -351,8 +424,12 @@ export default function SuyoDetailModal({
               setSelectedSuyo={setSelectedSuyo}
               styles={styles}
               triggerToast={triggerToast}
+              onOpenFullDetails={() => setIsFullDetailsOpen(true)}
+              handleAccept={handleAccept}
+              acceptBusy={acceptBusy}
             />
           </View>
+          )}
         </View>
       </Modal>
     )

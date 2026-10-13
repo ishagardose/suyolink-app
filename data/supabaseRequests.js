@@ -8,6 +8,10 @@ export function fromPublicRow(row) {
     id: row.id,
     requesterId: row.requester_id,
     providerId: row.provider_id ?? null,
+    providerName:
+      row.provider_name || row.provider?.full_name || row.doer_name || null,
+    providerPhone: row.provider_phone || row.doer_phone || null,
+    providerRating: row.provider_rating || row.doer_rating || null,
     requesterName:
       row.requester_name || row.requester?.full_name || 'SuyoLink user',
     title: row.title,
@@ -39,6 +43,10 @@ export function fromDetailPayload(payload) {
     id: payload.id,
     requesterId: payload.requester_id,
     providerId: payload.provider_id ?? null,
+    providerName:
+      payload.provider_name || payload.provider?.full_name || payload.doer_name || null,
+    providerPhone: payload.provider_phone || payload.doer_phone || null,
+    providerRating: payload.provider_rating || payload.doer_rating || null,
     requesterName: payload.requester_name || 'SuyoLink user',
     title: payload.title,
     details: payload.details,

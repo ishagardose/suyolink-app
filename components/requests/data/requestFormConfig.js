@@ -122,7 +122,7 @@ export const DEADLINE_STATUS_OPTIONS = [
     textColor: '#166534',
     activeBg: '#15803D',
     description:
-      'Standard delivery and errand schedule with regular courier dispatch.',
+      'Standard delivery and suyo schedule with regular doer dispatch.',
   },
   {
     key: 'Flexible',

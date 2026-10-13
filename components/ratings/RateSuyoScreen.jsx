@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../lib/supabase';
+import { COMMUNITY_RATINGS_STORAGE_KEY } from '../account/useProfileData';
 import { useAuth } from '../../context/AuthContext';
 import { useSuyos } from '../../context/SuyoContext';
 import { useTheme } from '../../theme/ThemeContext';
@@ -32,27 +35,72 @@ export default function RateSuyoScreen() {
   const existingRating = ratings.find(
     (r) => r.request_id === id && r.reviewer_id === user?.id,
   );
-  const isRequester =
+  const isParticipant =
     request?.requesterId === user?.id || request?.providerId === user?.id;
-  const isCompleted = request?.status === 'completed';
+  const isAllowedStatus =
+    ['completed', 'awaiting_confirmation', 'in_progress', 'assigned'].includes(
+      request?.status,
+    );
 
   const handleSubmit = async () => {
     if (!score) return;
     setBusy(true);
     setError('');
     try {
+      const recipientId =
+        request.requesterId === user?.id
+          ? request.providerId
+          : request.requesterId;
+      const recipientName =
+        request.requesterId === user?.id
+          ? request.providerName || 'Doer'
+          : request.requesterName || 'Requester';
+
+      const reviewItem = {
+        id: `rating_${id}_${user?.id || Date.now()}`,
+        request_id: id,
+        reviewer_id: user?.id,
+        provider_id: recipientId,
+        recipient_id: recipientId,
+        recipientName: recipientName,
+        reviewerName:
+          user?.user_metadata?.full_name || user?.name || 'Community Member',
+        score,
+        comment: comment.trim(),
+        tags: [],
+        created_at: new Date().toISOString(),
+      };
+
+      try {
+        const rawLocal = await AsyncStorage.getItem(
+          COMMUNITY_RATINGS_STORAGE_KEY,
+        );
+        const list = rawLocal ? JSON.parse(rawLocal) : [];
+        const filtered = Array.isArray(list)
+          ? list.filter(
+              (r) => !(r.request_id === id && r.reviewer_id === user?.id),
+            )
+          : [];
+        filtered.unshift(reviewItem);
+        await AsyncStorage.setItem(
+          COMMUNITY_RATINGS_STORAGE_KEY,
+          JSON.stringify(filtered),
+        );
+      } catch (_) {}
+
       await mutate('rate_suyo_user', {
         p_request_id: id,
         p_score: score,
         p_comment: comment.trim(),
       });
+
       if (typeof recordTransaction === 'function' && request) {
         try {
           await recordTransaction({
             requestId: request.id,
             title: request.title,
             role: request.requesterId === user?.id ? 'requester' : 'provider',
-            otherUserName: request.requesterId === user?.id ? (request.providerName || 'Doer') : (request.requesterName || 'Requester'),
+            otherUserName: recipientName,
             rewardCentavos: request.rewardCentavos || 0,
             currency: request.currency || 'PHP',
             ratingScore: score,
@@ -64,6 +112,26 @@ export default function RateSuyoScreen() {
           console.warn('[RateSuyoScreen] recordTransaction warning:', e);
         }
       }
+
+      try {
+        if (supabase) {
+          if (recipientId) {
+            const ch = supabase.channel(`profile_ratings_live_${recipientId}`);
+            ch.send({
+              type: 'broadcast',
+              event: 'new_rating',
+              payload: reviewItem,
+            });
+          }
+          const feedCh = supabase.channel('community_ratings_feed');
+          feedCh.send({
+            type: 'broadcast',
+            event: 'new_rating',
+            payload: reviewItem,
+          });
+        }
+      } catch (_) {}
+
       if (id) await loadDetails(id, { force: true });
       await refresh();
       if (typeof reloadTransactions === 'function') {
@@ -77,7 +145,7 @@ export default function RateSuyoScreen() {
     }
   };
 
-  if (request && (!isRequester || !isCompleted)) {
+  if (request && (!isParticipant || !isAllowedStatus)) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <ScreenHeader
@@ -88,8 +156,7 @@ export default function RateSuyoScreen() {
         />
         <View style={{ padding: 20, gap: 16 }}>
           <ThemedText tone="danger">
-            You can only rate the provider after the task has been marked
-            completed.
+            You can only rate participants of active or completed tasks.
           </ThemedText>
           <ThemedButton
             title="Return to task"
@@ -207,7 +274,7 @@ export default function RateSuyoScreen() {
             <ThemedButton
               title={busy ? 'Submitting rating…' : 'Submit rating'}
               disabled={
-                busy || !score || !request || !isRequester || !isCompleted
+                busy || !score || !request || !isParticipant || !isAllowedStatus
               }
               onPress={handleSubmit}
             />

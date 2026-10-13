@@ -21,7 +21,7 @@ export default function RequestContactSection({
           size={18}
           color={colors.link}
         />
-        <Text style={styles.cardTitle}>Contact Info & Extra Instructions</Text>
+        <Text style={styles.cardTitle}>Contact Information</Text>
       </View>
 
       {/* Contact Phone (Mandatory) */}
@@ -87,29 +87,6 @@ export default function RequestContactSection({
         {fieldErrors.contactPhone && (
           <Text style={styles.fieldErrorText}>{fieldErrors.contactPhone}</Text>
         )}
-      </View>
-
-      {/* Extra Notes */}
-      <View style={styles.fieldBlock}>
-        <View style={styles.fieldLabelRow}>
-          <Text style={styles.fieldLabel}>Additional Notes (Optional)</Text>
-          <Text style={styles.counterText}>{draft.notes.length}/1000</Text>
-        </View>
-        <View style={styles.textareaWrapper}>
-          <TextInput
-            style={styles.textareaInput}
-            placeholder="Call upon arrival at lobby guard, receipt required..."
-            placeholderTextColor={colors.textMuted}
-            accessibilityLabel="Remarks"
-            value={draft.notes}
-            onChangeText={(val) => setDraft((p) => ({ ...p, notes: val }))}
-            multiline
-            numberOfLines={3}
-            maxLength={1000}
-            textAlignVertical="top"
-            editable={!busy}
-          />
-        </View>
       </View>
     </View>
   );

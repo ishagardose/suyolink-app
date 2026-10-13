@@ -27,9 +27,13 @@ async function fillForm(page) {
       exact: true,
     })
     .fill('+639171234567');
-  await page
-    .getByRole('textbox', { name: 'Additional notes (optional)', exact: true })
-    .fill('Call at the gate.');
+  const notes = page.getByRole('textbox', {
+    name: 'Additional notes (optional)',
+    exact: true,
+  });
+  if (await notes.count()) {
+    await notes.fill('Call at the gate.');
+  }
 }
 async function choosePin(page) {
   await page.getByTestId('task-map').click({ position: { x: 150, y: 150 } });

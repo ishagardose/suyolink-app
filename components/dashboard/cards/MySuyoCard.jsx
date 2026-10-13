@@ -223,8 +223,6 @@ export default function MySuyoCard({
             {suyo.location}
           </Text>
         </View>
-
-        <Text style={styles.mySuyoTapDetailHint}>Tap for options →</Text>
       </View>
     </TouchableOpacity>
   );

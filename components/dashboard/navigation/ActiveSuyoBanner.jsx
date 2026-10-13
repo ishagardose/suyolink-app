@@ -10,10 +10,21 @@ export default function ActiveSuyoBanner({
   resolveColor,
   router,
   styles,
+  onDismiss,
 }) {
+  const isTrulyActive =
+    hasActiveSuyo &&
+    activeSuyo &&
+    activeSuyo.status !== 'completed' &&
+    activeSuyo.status !== 'Completed' &&
+    activeSuyo.raw?.status !== 'completed' &&
+    activeSuyo.status !== 'Cancelled' &&
+    activeSuyo.raw?.status !== 'cancelled';
+
+  if (!isTrulyActive) return null;
+
   return (
-    hasActiveSuyo && (
-      <View
+    <View
         style={[
           styles.floatingActiveModalWrapper,
           { bottom: 62 + bottomInset },
@@ -26,7 +37,7 @@ export default function ActiveSuyoBanner({
           activeOpacity={0.92}
           onPress={() =>
             router.push({
-              pathname: '/requester-fulfill',
+              pathname: activeSuyo?.isDoer ? '/fulfill' : '/requester-fulfill',
               params: { id: activeSuyo.id },
             })
           }
@@ -44,16 +55,43 @@ export default function ActiveSuyoBanner({
                 <View style={styles.pulsingGreenDot} />
                 <Text style={styles.floatingActiveBadgeText}>ACTIVE SUYO</Text>
               </View>
-              <View style={styles.floatingTrackingTag}>
-                <Ionicons
-                  name="map-outline"
-                  size={11.5}
-                  color={resolveColor('#1E4D2B', 'color')}
-                  style={{ marginRight: 3 }}
-                />
-                <Text style={styles.floatingTrackingText}>
-                  {activeSuyo.trackingNumber}
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={styles.floatingTrackingTag}>
+                  <Ionicons
+                    name="map-outline"
+                    size={11.5}
+                    color={resolveColor('#1E4D2B', 'color')}
+                    style={{ marginRight: 3 }}
+                  />
+                  <Text style={styles.floatingTrackingText}>
+                    {activeSuyo.trackingNumber}
+                  </Text>
+                </View>
+                {onDismiss ? (
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      onDismiss();
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: 'rgba(0,0,0,0.06)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Dismiss active suyo banner"
+                  >
+                    <Ionicons
+                      name="close"
+                      size={13}
+                      color={resolveColor('#1E4D2B', 'color')}
+                    />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
 
@@ -90,6 +128,5 @@ export default function ActiveSuyoBanner({
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    )
   );
 }
