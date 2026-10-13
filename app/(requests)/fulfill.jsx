@@ -164,6 +164,16 @@ export default function FulfillTaskScreen() {
         params.providerId ||
         user?.id ||
         null,
+      createdAt:
+        activeSuyo?.createdAt ||
+        activeSuyo?.rawRequest?.created_at ||
+        dbTask?.created_at ||
+        null,
+      completedAt:
+        activeSuyo?.completedAt ||
+        activeSuyo?.rawRequest?.completed_at ||
+        dbTask?.completed_at ||
+        null,
     };
   }, [activeSuyo, dbTask, targetId, params, user?.id]);
 
@@ -211,29 +221,50 @@ export default function FulfillTaskScreen() {
     [task.latitude, task.longitude]
   );
 
-  // Dynamic timestamps for real-world testing
+  // Helper to format actual timestamp
+  const formatTimelineTime = (dateValue) => {
+    if (!dateValue) return null;
+    const d = new Date(dateValue);
+    if (isNaN(d.getTime())) return null;
+    const today = new Date();
+    const isToday =
+      d.getDate() === today.getDate() &&
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear();
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return isToday
+      ? `Today, ${timeStr}`
+      : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+  };
+
+  // Real dynamic timestamps based on actual database events and step progression
   const [timelineTimes, setTimelineTimes] = useState(() => {
-    const now = new Date();
-    const t0 = new Date(now.getTime() - 40 * 60000).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const t1 = new Date(now.getTime() - 20 * 60000).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const t2 = new Date(now.getTime() - 5 * 60000).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const t3 = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const initialStep = getStepFromStatus(task.status);
+    const acceptedStr =
+      formatTimelineTime(task.createdAt) ||
+      `Today, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const completedStr = task.completedAt ? formatTimelineTime(task.completedAt) : null;
+    const nowTimeStr = `Today, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     return {
-      accepted: `Today, ${t0}`,
-      enRoute: `Today, ${t1}`,
-      working: `Today, ${t2}`,
-      completed: `Today, ${t3}`,
+      accepted: acceptedStr,
+      enRoute: initialStep >= 1 ? nowTimeStr : null,
+      working: initialStep >= 2 ? nowTimeStr : null,
+      completed: completedStr || (initialStep >= 3 ? nowTimeStr : null),
     };
   });
+
+  // Sync completion timestamp if task gets completed
+  useEffect(() => {
+    if (task.completedAt) {
+      const cStr = formatTimelineTime(task.completedAt);
+      if (cStr) {
+        setTimelineTimes((prev) => ({
+          ...prev,
+          completed: cStr,
+        }));
+      }
+    }
+  }, [task.completedAt]);
 
   const channelRef = useRef(null);
   const isChannelReady = useRef(false);
