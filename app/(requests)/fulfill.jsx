@@ -1494,7 +1494,7 @@ export default function FulfillTaskScreen() {
             <View style={styles.consentNoticePill}>
               <Ionicons name="shield-checkmark" size={15} color="#1E4D2B" />
               <Text style={styles.consentNoticePillText}>
-                Task-scoped only • Automatically stops when done • Pause anytime
+                Task-scoped only • Automatically stops when done
               </Text>
             </View>
 
