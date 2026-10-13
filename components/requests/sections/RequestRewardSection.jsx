@@ -107,6 +107,18 @@ export default function RequestRewardSection({
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Direct Payment Disclaimer */}
+      <View style={styles.rewardDisclaimerBox}>
+        <Ionicons
+          name="cash-outline"
+          size={16}
+          color={resolveColor('#166534', 'color')}
+        />
+        <Text style={styles.rewardDisclaimerText}>
+          Payment for this suyo is settled directly between the requester and doer outside the app upon completion.
+        </Text>
+      </View>
     </View>
   );
 }

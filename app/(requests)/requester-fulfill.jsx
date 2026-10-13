@@ -592,6 +592,14 @@ export default function RequesterFulfillScreen() {
               Assigned Doer: {task.doerName}
             </Text>
           </View>
+
+          {/* Direct Payment Disclaimer */}
+          <View style={styles.paymentDisclaimerBox}>
+            <Ionicons name="cash-outline" size={16} color="#166534" />
+            <Text style={styles.paymentDisclaimerText}>
+              Payment for this suyo is settled directly between the requester and doer outside the app upon completion.
+            </Text>
+          </View>
         </View>
 
         {/* 2. PROGRESS DIAGRAM (Accepted -> En Route -> Working -> Completed) */}
@@ -1157,6 +1165,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#52695C',
+  },
+  paymentDisclaimerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 2,
+  },
+  paymentDisclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#166534',
+    fontWeight: '500',
   },
   taskMetaRow: {
     flexDirection: 'row',

@@ -419,6 +419,25 @@ const definitions = {
   presetPillTextActive: {
     color: '#FFFFFF',
   },
+  rewardDisclaimerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 6,
+  },
+  rewardDisclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16.5,
+    color: '#166534',
+    fontWeight: '500',
+  },
 
   /* DATE & TIME ROW */
   dateTimeRow: {
