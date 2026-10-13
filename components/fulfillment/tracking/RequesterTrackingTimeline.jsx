@@ -56,7 +56,7 @@ export default function RequesterTrackingTimeline({
               4. Drop off & Complete
             </Text>
             <Text style={styles.timelineItemRoute}>
-              RECIPIENT CONFIRMATION → RELEASE ESCROW
+              RECIPIENT CONFIRMATION → DIRECT PAYMENT SETTLEMENT
             </Text>
             <Text style={styles.timelineItemActor}>
               Delivered at {task.location} Doorstep

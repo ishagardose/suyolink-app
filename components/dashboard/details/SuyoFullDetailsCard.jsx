@@ -234,24 +234,83 @@ export default function SuyoFullDetailsCard({
           </View>
         )}
 
-        {/* 2. Reward & Escrow Guarantee (Skipped in fulfillment screens to avoid duplicates) */}
+        {/* 2. Reward & Direct Payment Notice (Skipped in fulfillment screens to avoid duplicates) */}
         {!skipHeaderAndReward && (
-          <View style={styles.fullDetailRewardBanner}>
-            <View style={styles.fullDetailRewardLeft}>
-              <Text style={styles.fullDetailRewardLabel}>Doer Offer Reward</Text>
-              <Text style={styles.fullDetailRewardAmountText}>{rewardDisplay}</Text>
-              <Text style={styles.fullDetailEscrowNoticeText}>
-                Payment is held securely in SuyoLink escrow and released immediately upon completion.
-              </Text>
+          <View
+            style={[
+              styles.fullDetailRewardBanner,
+              { flexDirection: 'column', alignItems: 'stretch', gap: 10 },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <View style={styles.fullDetailRewardLeft}>
+                <Text style={styles.fullDetailRewardLabel}>Doer Offer Reward</Text>
+                <Text style={styles.fullDetailRewardAmountText}>
+                  {rewardDisplay}
+                </Text>
+              </View>
+
+              <View style={styles.fullDetailEscrowBadge}>
+                <Ionicons
+                  name="cash-outline"
+                  size={16}
+                  color={resolveColor('#166534', 'color')}
+                />
+                <Text style={styles.fullDetailEscrowText}>Direct Payment</Text>
+              </View>
             </View>
 
-            <View style={styles.fullDetailEscrowBadge}>
-              <Ionicons
-                name="shield-checkmark"
-                size={16}
-                color={resolveColor('#166534', 'color')}
-              />
-              <Text style={styles.fullDetailEscrowText}>Escrow Secured</Text>
+            <Text style={styles.fullDetailEscrowNoticeText}>
+              Payment is settled directly between requester and doer upon task completion (e.g. cash on delivery or private transfer).
+            </Text>
+
+            {/* Disclaimer on App Limitation */}
+            <View
+              style={{
+                marginTop: 4,
+                padding: 10,
+                borderRadius: 10,
+                backgroundColor: '#FEF3C7',
+                borderWidth: 1,
+                borderColor: '#FDE68A',
+                gap: 4,
+              }}
+            >
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Ionicons
+                  name="alert-circle"
+                  size={15}
+                  color={resolveColor('#B45309', 'color')}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: resolveColor('#92400E', 'color'),
+                  }}
+                >
+                  Payment Disclaimer (App Limitation)
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 11.5,
+                  lineHeight: 16,
+                  color: resolveColor('#78350F', 'color'),
+                  fontWeight: '500',
+                }}
+              >
+                SuyoLink is a coordination platform and does not hold, process, or escrow funds. All payments between users are handled completely outside the app by mutual agreement.
+              </Text>
             </View>
           </View>
         )}
